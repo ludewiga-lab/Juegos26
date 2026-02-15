@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reto Disney 100: Edición Aleatoria 🏰</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        h1 { color: #1a73e8; margin: 10px 0; font-size: 1.4rem; text-align: center; }
+        .counter { background: #1a73e8; color: white; padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; font-weight: bold; }
+
+        .game-container {
+            width: 320px;
+            height: 380px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.5s;
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 20px;
+        }
+
+        .flipped .card-inner { transform: rotateY(180deg); }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            border: 4px solid #fff;
+        }
+
+        .card-front { background: white; font-size: 4rem; }
+        .card-back {
+            background: linear-gradient(135deg, #00b4db, #0083b0);
+            color: white;
+            transform: rotateY(180deg);
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .controls { margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        
+        button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            background-color: #1a73e8;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled { background-color: #bdc3c7; }
+        .btn-shuffle { background-color: #6a11cb; }
+
+        .hint { margin-top: 10px; color: #7f8c8d; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <h1>🏰 Adivina la Película (100)</h1>
+    <div class="counter" id="counter">1 / 100</div>
+
+    <div class="game-container" id="cardContainer" onclick="toggleFlip()">
+        <div class="card-inner" id="cardInner">
+            <div class="card-front" id="displayEmoji">🦁👑🌅</div>
+            <div class="card-back" id="displayTitle">El Rey León</div>
+        </div>
+    </div>
+
+    <p class="hint">Toca la tarjeta para ver la respuesta</p>
+
+    <div class="controls">
+        <button id="prevBtn" onclick="prevMovie()">⬅️</button>
+        <button class="btn-shuffle" onclick="shuffleGame()">🔀 Mezclar</button>
+        <button id="nextBtn" onclick="nextMovie()">Siguiente ➡️</button>
+    </div>
+
+    <script>
+        const allMovies = [
+            { emoji: "🦁👑🌅", title: "El Rey León" },
+            { emoji: "❄️👸🏼⛄", title: "Frozen" },
+            { emoji: "🧜‍♀️🦀🌊", title: "La Sirenita" },
+            { emoji: "🤠🚀🧸", title: "Toy Story" },
+            { emoji: "⚡🏎️🏆", title: "Cars" },
+            { emoji: "🐘🎪👂", title: "Dumbo" },
+            { emoji: "🎈🏠👴🏻", title: "Up" },
+            { emoji: "🍎👸🏽💎", title: "Blancanieves" },
+            { emoji: "👗👠🕛", title: "Cenicienta" },
+            { emoji: "🧞‍♂️🕌🐒", title: "Aladdín" },
+            { emoji: "🐀👨‍🍳🥘", title: "Ratatouille" },
+            { emoji: "🎸💀🕯️", title: "Coco" },
+            { emoji: "🏹🐻🌲", title: "Valiente" },
+            { emoji: "🍝🐕🐩", title: "La Dama y el Vagabundo" },
+            { emoji: "🌀🛶🌺", title: "Moana" },
+            { emoji: "🧚✨🏴‍☠️", title: "Peter Pan" },
+            { emoji: "🏰💇🏼‍♀️🍳", title: "Enredados" },
+            { emoji: "🥀👹🌹", title: "La Bella y la Bestia" },
+            { emoji: "🐠🤡🪸", title: "Buscando a Nemo" },
+            { emoji: "🦸‍♂️💥👊", title: "Los Increíbles" },
+            { emoji: "🍃🦍🌳", title: "Tarzán" },
+            { emoji: "👾🤜🍭", title: "Ralph el Demoledor" },
+            { emoji: "👽🏝️🎸", title: "Lilo & Stitch" },
+            { emoji: "🐉🗡️🌸", title: "Mulan" },
+            { emoji: "🐰🦊🏙️", title: "Zootopia" },
+            { emoji: "🐶🐾🧥", title: "101 Dálmatas" },
+            { emoji: "🐈🎹🎨", title: "Los Aristogatos" },
+            { emoji: "🕯️🏠⏳", title: "Encanto" },
+            { emoji: "🤖🌱🛸", title: "Wall-E" },
+            { emoji: "💤👸🏼🧚", title: "La Bella Durmiente" },
+            { emoji: "🍄🐱🎩", title: "Alicia en el País de las Maravillas" },
+            { emoji: "🏹🌲🦊", title: "Robin Hood" },
+            { emoji: "🐻🍯🌳", title: "Winnie Pooh" },
+            { emoji: "🐘🌳🐍", title: "El Libro de la Selva" },
+            { emoji: "⚔️🪨🧙‍♂️", title: "La Espada en la Piedra" },
+            { emoji: "🌊🐢💙", title: "Buscando a Dory" },
+            { emoji: "🧪🏔️🦙", title: "Las Locuras del Emperador" },
+            { emoji: "🐸💋👸🏽", title: "La Princesa y el Sapo" },
+            { emoji: "👻🏢👧🏻", title: "Monsters Inc." },
+            { emoji: "👺🌸🐼", title: "Red" },
+            { emoji: "🐲💎🗡️", title: "Raya y el Último Dragón" },
+            { emoji: "🛵🇮🇹🍝", title: "Luca" },
+            { emoji: "🎹🎷✨", title: "Soul" },
+            { emoji: "🧠🌈👩🏻‍🦰", title: "Intensamente" },
+            { emoji: "🦕🌋☄️", title: "Un Gran Dinosaurio" },
+            { emoji: "🧸🍓🚐", title: "Toy Story 3" },
+            { emoji: "🐘🪄🐭", title: "Fantasía" },
+            { emoji: "🐕🐾⛰️", title: "Bolt" },
+            { emoji: "🛸🏴‍☠️🌌", title: "El Planeta del Tesoro" },
+            { emoji: "⭐🌠🕯️", title: "Wish" },
+            { emoji: "🐜🍃🎪", title: "Bichos" },
+            { emoji: "🦌🌳❄️", title: "Bambi" },
+            { emoji: "🕷️🏙️🕸️", title: "Spider-Man" },
+            { emoji: "🦊🐶🌲", title: "El Zorro y el Sabueso" },
+            { emoji: "✈️☁️🚜", title: "Aviones" },
+            { emoji: "🐭🚢🎩", title: "Steamboat Willie" },
+            { emoji: "🏎️🏎️⚡", title: "Cars 2" },
+            { emoji: "❄️⛄👸🏼", title: "Frozen 2" },
+            { emoji: "🦸‍♂️🦸‍♀️👶", title: "Los Increíbles 2" },
+            { emoji: "🚀🧸🦖", title: "Toy Story 4" },
+            { emoji: "🚗⚡🌵", title: "Cars 3" },
+            { emoji: "🕹️🤛🍭", title: "Ralph el Demoledor 2" },
+            { emoji: "🧥🐩🐩", title: "Cruella" },
+            { emoji: "🏔️❄️🐕", title: "Balto" },
+            { emoji: "🕯️🕰️☕", title: "La Bella y la Bestia (Live Action)" },
+            { emoji: "🥥🎸💀", title: "Coco" },
+            { emoji: "🧞‍♂️💎🐒", title: "Aladdin (Live Action)" },
+            { emoji: "🌊🐢🪸", title: "Buscando a Nemo" },
+            { emoji: "🧚‍♀️🌸🪄", title: "Tinker Bell (Campanilla)" },
+            { emoji: "🗡️🐉🏛️", title: "Hércules" },
+            { emoji: "🦃🌽🍂", title: "Pocahontas" },
+            { emoji: "🧥🐾🎩", title: "Oliver y su Pandilla" },
+            { emoji: "🐁🕵️‍♂️🔍", title: "Policías y Ratones" },
+            { emoji: "🐻🌲🐟", title: "Tierra de Osos" },
+            { emoji: "🐓🚀👽", title: "Chicken Little" },
+            { emoji: "🐮🤠🚜", title: "Vacas Vaqueras" },
+            { emoji: "🏚️👻🎃", title: "El Extraño Mundo de Jack" },
+            { emoji: "🦴🏠🐶", title: "Frankenweenie" },
+            { emoji: "👰💀💍", title: "El Cadáver de la Novia" },
+            { emoji: "👹🏢🚪", title: "Monsters University" },
+            { emoji: "🎢👦🤖", title: "Grandes Héroes (Big Hero 6)" },
+            { emoji: "🦖🤠🌋", title: "The Good Dinosaur" },
+            { emoji: "🐑🏙️👮", title: "Zootopia" },
+            { emoji: "👸🏾🐸🌊", title: "La Princesa y el Sapo" },
+            { emoji: "🐚🧜‍♀️🔱", title: "La Sirenita (2023)" },
+            { emoji: "🐈🎩🪄", title: "El Gato Ensombrerado" },
+            { emoji: "🐦💙🇧🇷", title: "Rio" },
+            { emoji: "🧊🐿️🥜", title: "La Era de Hielo" },
+            { emoji: "🐼👊🧧", title: "Kung Fu Panda" },
+            { emoji: "🐉👦🔥", title: "Cómo entrenar a tu dragón" },
+            { emoji: "🐘🌳🍃", title: "Horton y el Mundo de los Quién" },
+            { emoji: "🦁🏙️🦒", title: "Madagascar" },
+            { emoji: "🏰⚔️🐉", title: "Onward (Unidos)" },
+            { emoji: "🌊⛵🌀", title: "Moana 2" },
+            { emoji: "🧠🌈🎢", title: "Intensamente 2" },
+            { emoji: "🍎🐦🏔️", title: "Paulie" },
+            { emoji: "🐢🍕🥋", title: "Tortugas Ninja" },
+            { emoji: "🤖🦾🚀", title: "Robots" },
+            { emoji: "🧛‍♂️🏨🦇", title: "Hotel Transylvania" },
+            { emoji: "🐒🍌🌳", title: "George de la Selva" }
+        ];
+
+        let movies = [...allMovies];
+        let currentIndex = 0;
+
+        const cardContainer = document.getElementById('cardContainer');
+        const displayEmoji = document.getElementById('displayEmoji');
+        const displayTitle = document.getElementById('displayTitle');
+        const counter = document.getElementById('counter');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function updateCard() {
+            cardContainer.classList.remove('flipped');
+            setTimeout(() => {
+                displayEmoji.innerText = movies[currentIndex].emoji;
+                displayTitle.innerText = movies[currentIndex].title;
+                counter.innerText = `${currentIndex + 1} / ${movies.length}`;
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex === movies.length - 1;
+            }, 150);
+        }
+
+        function toggleFlip() { cardContainer.classList.toggle('flipped'); }
+
+        function nextMovie() {
+            if (currentIndex < movies.length - 1) {
+                currentIndex++;
+                updateCard();
+            }
+        }
+
+        function prevMovie() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCard();
+            }
+        }
+
+        function shuffleGame() {
+            // Algoritmo Fisher-Yates para mezclar
+            for (let i = movies.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [movies[i], movies[j]] = [movies[j], movies[i]];
+            }
+            currentIndex = 0;
+            updateCard();
+            alert("¡Películas mezcladas! Empezamos de nuevo.");
+        }
+
+        updateCard();
+    </script>
+</body>
+</html>

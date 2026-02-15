@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Center 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card-game { transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .card-game:active { transform: scale(0.95); background-color: #1e293b; }
+    </style>
+</head>
+<body class="bg-slate-950 text-white font-sans min-h-screen pb-10">
+
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-black italic tracking-tighter text-blue-400">GAME CENTER 2026</h1>
+            <p class="text-slate-500 text-[10px] uppercase tracking-widest mt-1">GitHub Version</p>
+        </header>
+
+        <div id="section-featured" class="hidden">
+            <h2 class="text-xs font-bold mb-4 text-yellow-500 uppercase tracking-widest flex items-center gap-2">
+                <span class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span> Tus Favoritos
+            </h2>
+            <div id="featured-grid" class="grid grid-cols-2 gap-4 mb-10"></div>
+            <hr class="border-slate-800/50 mb-8">
+        </div>
+
+        <h2 class="text-xs font-bold mb-4 text-blue-500 uppercase tracking-widest">🎮 Galería Completa</h2>
+        <div id="all-games-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+    </div>
+
+    <script>
+        // Los nombres deben coincidir EXACTAMENTE con tus archivos .html (Mayúsculas/Minúsculas)
+        const games = [
+            { id: '1', name: 'Adivina_Cosa', emoji: '🧐' },
+            { id: '2', name: 'Buscaminas', emoji: '💣' },
+            { id: '3', name: 'Cuenta_Fruta', emoji: '🍎' },
+            { id: '4', name: 'Cuerda', emoji: '🪢' },
+            { id: '5', name: 'Disney_Movies', emoji: '🏰' },
+            { id: '6', name: 'Eliminacion', emoji: '❌' },
+            { id: '7', name: 'Encuentra_Cosa', emoji: '🔍' },
+            { id: '8', name: 'Fuerza', emoji: '💪' },
+            { id: '9', name: 'Gravedad', emoji: '🌌' },
+            { id: '10', name: 'Mastermind', emoji: '🧠' },
+            { id: '11', name: 'Memoria', emoji: '🧠' },
+            { id: '12', name: 'palabras', emoji: '📝' },
+            { id: '13', name: 'Peliculas', emoji: '🎬' },
+            { id: '14', name: 'Puente', emoji: '🌉' },
+            { id: '15', name: 'Puzzle', emoji: '🧩' },
+            { id: '16', name: 'Recolector', emoji: '🧺' },
+            { id: '17', name: 'Snake', emoji: '🐍' },
+            { id: '18', name: 'Sopa_Letras', emoji: '🔠' },
+            { id: '19', name: 'Sudoku', emoji: '🔢' },
+            { id: '20', name: 'Tetris', emoji: '🧱' },
+            { id: '21', name: 'TicTacToe', emoji: '⭕' },
+            { id: '22', name: 'Torre_Color', emoji: '🗼' }
+        ];
+
+        function track(id) {
+            let stats = JSON.parse(localStorage.getItem('gh_v2026_stats') || '{}');
+            stats[id] = (stats[id] || 0) + 1;
+            localStorage.setItem('gh_v2026_stats', JSON.stringify(stats));
+        }
+
+        function render() {
+            const stats = JSON.parse(localStorage.getItem('gh_v2026_stats') || '{}');
+            const allGrid = document.getElementById('all-games-grid');
+            const featuredGrid = document.getElementById('featured-grid');
+            const sectionFeatured = document.getElementById('section-featured');
+
+            // RUTA DIRECTA: Al estar en la misma carpeta, solo necesitamos el nombre del archivo
+            allGrid.innerHTML = games.map(game => `
+                <a href="${game.name}.html" onclick="track('${game.id}')" class="card-game bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg">
+                    <span class="text-3xl mb-2">${game.emoji}</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase truncate w-full">${game.name.replace(/_/g, ' ')}</span>
+                </a>
+            `).join('');
+
+            const sorted = [...games]
+                .filter(g => stats[g.id] > 0)
+                .sort((a, b) => stats[b.id] - stats[a.id])
+                .slice(0, 4);
+
+            if (sorted.length > 0) {
+                sectionFeatured.classList.remove('hidden');
+                featuredGrid.innerHTML = sorted.map(game => `
+                    <a href="${game.name}.html" onclick="track('${game.id}')" class="card-game bg-gradient-to-br from-slate-800 to-slate-900 border border-yellow-500/20 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-2xl relative">
+                        <span class="text-4xl mb-2">${game.emoji}</span>
+                        <span class="text-[11px] font-black text-white uppercase">${game.name.replace(/_/g, ' ')}</span>
+                        <div class="mt-2 text-[8px] text-yellow-500 font-bold bg-yellow-500/10 px-2 py-0.5 rounded-full">${stats[game.id]} partidas</div>
+                    </a>
+                `).join('');
+            }
+        }
+        render();
+    </script>
+</body>
+</html>

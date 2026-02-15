@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sliding Puzzle Tech</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #6366f1;
+            --success: #10b981;
+            --text: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #puzzle-board {
+            display: grid;
+            gap: 10px;
+            background: #334155;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            width: 90vw;
+            max-width: 400px;
+            height: 90vw;
+            max-height: 400px;
+        }
+
+        .tile {
+            background: var(--card);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s, background 0.2s;
+            border: 1px solid #475569;
+        }
+
+        .tile:active { transform: scale(0.95); }
+        .tile.empty { background: transparent; border: none; cursor: default; }
+        .tile.correct { background: var(--success); border-color: #059669; }
+
+        button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--card);
+            color: white;
+            border: 1px solid var(--accent);
+        }
+
+        .stats { margin-top: 15px; font-size: 1.1rem; color: #94a3b8; }
+        .victory { color: var(--success); font-weight: bold; display: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Puzzle Deslizable 🧩</h1>
+        <div class="stats">Movimientos: <span id="move-count">0</span></div>
+    </div>
+
+    <div class="controls">
+        <select id="level-select" onchange="Game.init()">
+            <option value="3">Nivel 1 (3x3)</option>
+            <option value="4" selected>Nivel 2 (4x4)</option>
+            <option value="5">Nivel 3 (5x5)</option>
+        </select>
+        <button onclick="Game.init()">Reiniciar</button>
+    </div>
+
+    <div id="puzzle-board"></div>
+    <div id="victory-msg" class="victory">¡Excelente! Puzzle resuelto. 🏆</div>
+
+    <script>
+        const Game = (() => {
+            let size = 4;
+            let tiles = []; // Array de números
+            let moves = 0;
+            const board = document.getElementById('puzzle-board');
+
+            const init = () => {
+                size = parseInt(document.getElementById('level-select').value);
+                tiles = Array.from({length: size * size}, (_, i) => i + 1);
+                tiles[tiles.length - 1] = 0; // El 0 es el espacio vacío
+                moves = 0;
+                document.getElementById('move-count').innerText = moves;
+                document.getElementById('victory-msg').style.display = 'none';
+                
+                shuffle();
+                render();
+            };
+
+            const shuffle = () => {
+                // Para asegurar que sea resoluble, hacemos movimientos aleatorios reales
+                for (let i = 0; i < 200; i++) {
+                    const neighbors = getValidMoves();
+                    const randomMove = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    swap(tiles.indexOf(0), randomMove);
+                }
+            };
+
+            const getValidMoves = () => {
+                const emptyIdx = tiles.indexOf(0);
+                const r = Math.floor(emptyIdx / size);
+                const c = emptyIdx % size;
+                const moves = [];
+
+                if (r > 0) moves.push(emptyIdx - size); // Arriba
+                if (r < size - 1) moves.push(emptyIdx + size); // Abajo
+                if (c > 0) moves.push(emptyIdx - 1); // Izquierda
+                if (c < size - 1) moves.push(emptyIdx + 1); // Derecha
+                
+                return moves;
+            };
+
+            const swap = (idx1, idx2) => {
+                [tiles[idx1], tiles[idx2]] = [tiles[idx2], tiles[idx1]];
+            };
+
+            const render = () => {
+                board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+                board.innerHTML = '';
+
+                tiles.forEach((num, idx) => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile' + (num === 0 ? ' empty' : '');
+                    
+                    // Comprobar si está en posición correcta para feedback visual
+                    if (num !== 0 && num === idx + 1) tile.classList.add('correct');
+                    
+                    tile.innerText = num === 0 ? '' : num;
+                    tile.onpointerdown = () => moveTile(idx);
+                    board.appendChild(tile);
+                });
+            };
+
+            const moveTile = (idx) => {
+                const emptyIdx = tiles.indexOf(0);
+                const neighbors = getValidMoves();
+
+                if (neighbors.includes(idx)) {
+                    swap(idx, emptyIdx);
+                    moves++;
+                    document.getElementById('move-count').innerText = moves;
+                    render();
+                    checkVictory();
+                }
+            };
+
+            const checkVictory = () => {
+                const win = tiles.every((num, idx) => {
+                    if (idx === tiles.length - 1) return num === 0;
+                    return num === idx + 1;
+                });
+
+                if (win) {
+                    document.getElementById('victory-msg').style.display = 'block';
+                }
+            };
+
+            return { init };
+        })();
+
+        Game.init();
+    </script>
+</body>
+</html>

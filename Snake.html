@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Tech Engine - Munich Mobile Edition</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --snake-head: #4cc9f0;
+            --snake-body: #4361ee;
+            --food-color: #f72585;
+            --wall-color: #3f37c9;
+            --accent: #ef476f;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .header { text-align: center; margin-top: 10px; }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            color: #4cc9f0;
+        }
+
+        canvas#snakeGame {
+            border: 5px solid var(--wall-color);
+            background-color: #0f0f1b;
+            box-shadow: 0 0 25px rgba(67, 97, 238, 0.4);
+            max-width: 90vw;
+            max-height: 40vh;
+        }
+
+        /* D-PAD PARA MÓVIL */
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(2, 60px);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .d-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(67, 97, 238, 0.3);
+            border: 2px solid var(--snake-body);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            user-select: none;
+        }
+
+        .d-btn:active { background: var(--snake-head); }
+        .up { grid-column: 2; }
+        .left { grid-column: 1; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+
+        .controls-container {
+            margin-top: 15px;
+            background: #242444;
+            padding: 10px;
+            border-radius: 10px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .buttons { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+        
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background: var(--snake-body);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .reset-btn { background-color: #e67e22; }
+
+        #fireworks {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 style="font-size: 1.5rem; margin: 0;">Snake Engine 🚀</h1>
+        <div class="stats">
+            <div>Pts: <span id="score">0</span></div>
+            <div>Top: <span id="high-score">0</span></div>
+        </div>
+    </div>
+
+    <canvas id="snakeGame" width="400" height="400"></canvas>
+    
+    <div class="d-pad">
+        <div class="d-btn up" onpointerdown="handleTouch('UP')">▲</div>
+        <div class="d-btn left" onpointerdown="handleTouch('LEFT')">◀</div>
+        <div class="d-btn down" onpointerdown="handleTouch('DOWN')">▼</div>
+        <div class="d-btn right" onpointerdown="handleTouch('RIGHT')">▶</div>
+    </div>
+
+    <div class="controls-container">
+        <div class="buttons">
+            <button onclick="setDifficulty(150, 2)">Fácil</button>
+            <button onclick="setDifficulty(100, 5)">Medio</button>
+            <button onclick="setDifficulty(50, 9)">Experto</button>
+            <button class="reset-btn" onclick="resetGame()">🔄 Reset</button>
+        </div>
+        <input type="range" id="speedSlider" min="1" max="10" value="5" oninput="updateSpeedFromSlider(this.value)" style="width:80%">
+    </div>
+
+    <canvas id="fireworks"></canvas>
+
+    <script>
+        const canvas = document.getElementById("snakeGame");
+        const ctx = canvas.getContext("2d");
+        const fwCanvas = document.getElementById("fireworks");
+        const fwCtx = fwCanvas.getContext("2d");
+
+        const grid = 20;
+        let score = 0;
+        let highScore = 0;
+        let snake = [{x: 160, y: 160}, {x: 140, y: 160}, {x: 120, y: 160}];
+        let dx = grid;
+        let dy = 0;
+        let food = {x: 0, y: 0};
+        let gameSpeed = 100;
+        let gameLoop;
+        let changingDirection = false;
+
+        window.addEventListener("keydown", changeDirection);
+        fwCanvas.width = window.innerWidth;
+        fwCanvas.height = window.innerHeight;
+
+        // FUNCIÓN PARA CONTROL TÁCTIL
+        function handleTouch(dir) {
+            if (changingDirection) return;
+            changingDirection = true;
+            if (dir === 'LEFT' && dx === 0) { dx = -grid; dy = 0; }
+            if (dir === 'UP' && dy === 0) { dx = 0; dy = -grid; }
+            if (dir === 'RIGHT' && dx === 0) { dx = grid; dy = 0; }
+            if (dir === 'DOWN' && dy === 0) { dx = 0; dy = grid; }
+        }
+
+        function updateSpeedFromSlider(val) {
+            gameSpeed = 220 - (val * 20);
+            document.getElementById("speedSlider").value = val;
+        }
+
+        function setDifficulty(ms, sliderVal) {
+            gameSpeed = ms;
+            document.getElementById("speedSlider").value = sliderVal;
+            resetGame();
+        }
+
+        function resetGame() {
+            clearTimeout(gameLoop);
+            score = 0;
+            document.getElementById("score").innerText = score;
+            snake = [{x: 160, y: 160}, {x: 140, y: 160}, {x: 120, y: 160}];
+            dx = grid;
+            dy = 0;
+            fwCanvas.style.display = "none";
+            createFood();
+            main();
+        }
+
+        function main() {
+            if (didGameEnd()) {
+                ctx.fillStyle = "white";
+                ctx.font = "30px Arial";
+                ctx.fillText("GAME OVER", canvas.width/4.5, canvas.height/2);
+                return;
+            }
+
+            changingDirection = false;
+            gameLoop = setTimeout(function onTick() {
+                clearCanvas();
+                drawFood();
+                advanceSnake();
+                drawSnake();
+                main();
+            }, gameSpeed);
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "#0f0f1b";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSnake() {
+            snake.forEach((part, index) => {
+                ctx.fillStyle = index === 0 ? "#4cc9f0" : "#4361ee";
+                ctx.fillRect(part.x, part.y, grid-2, grid-2);
+            });
+        }
+
+        function advanceSnake() {
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+            snake.unshift(head);
+            if (snake[0].x === food.x && snake[0].y === food.y) {
+                score += 1;
+                document.getElementById("score").innerText = score;
+                if (score > highScore) {
+                    highScore = score;
+                    document.getElementById("high-score").innerText = highScore;
+                }
+                if (score % 10 === 0 && score > 0) launchFireworks(); 
+                createFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function didGameEnd() {
+            for (let i = 4; i < snake.length; i++) {
+                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
+            }
+            return snake[0].x < 0 || snake[0].x >= canvas.width || snake[0].y < 0 || snake[0].y >= canvas.height;
+        }
+
+        function createFood() {
+            food.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
+            food.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
+        }
+
+        function drawFood() {
+            ctx.fillStyle = "#f72585";
+            ctx.beginPath();
+            ctx.arc(food.x + grid/2, food.y + grid/2, grid/2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function changeDirection(event) {
+            const keyPressed = event.keyCode;
+            const keys = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, A: 65, W: 87, D: 68, S: 83 };
+            if ([37, 65].includes(keyPressed)) handleTouch('LEFT');
+            if ([38, 87].includes(keyPressed)) handleTouch('UP');
+            if ([39, 68].includes(keyPressed)) handleTouch('RIGHT');
+            if ([40, 83].includes(keyPressed)) handleTouch('DOWN');
+        }
+
+        function launchFireworks() {
+            fwCanvas.style.display = "block";
+            let particles = [];
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: fwCanvas.width / 2,
+                    y: fwCanvas.height / 2,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`
+                });
+            }
+            let duration = 0;
+            function animate() {
+                fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.2;
+                    fwCtx.fillStyle = p.color;
+                    fwCtx.fillRect(p.x, p.y, 5, 5);
+                });
+                duration++;
+                if (duration < 100) requestAnimationFrame(animate);
+                else fwCanvas.style.display = "none";
+            }
+            animate();
+        }
+
+        updateSpeedFromSlider(5);
+        createFood();
+        main();
+    </script>
+</body>
+</html>

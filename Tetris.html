@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Beast Tetris Pro</title>
+    <style>
+        :root { --bg: #1e272e; --accent: #ee5253; --btn-bg: #341f97; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg); color: white; font-family: 'Arial', sans-serif;
+            margin: 0; padding: 0; display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden; touch-action: none;
+        }
+
+        #ui-header {
+            width: 100%; padding: 10px; display: flex;
+            justify-content: space-around; background: rgba(0,0,0,0.5);
+            font-weight: bold; font-size: 0.9rem; border-bottom: 2px solid #34495e;
+        }
+
+        /* Reducimos el área de juego para subir los botones */
+        #game-layout {
+            flex: 1; display: flex; justify-content: center;
+            align-items: center; gap: 10px; padding: 5px; min-height: 0;
+        }
+
+        canvas#tetris {
+            height: 85%; background: #000; border: 3px solid #34495e;
+            border-radius: 4px; aspect-ratio: 10 / 20;
+        }
+
+        #side-info { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        canvas#next-canvas { background: #000; border: 2px solid #34495e; width: 60px; height: 60px; }
+
+        /* CONTROLES MÁS ARRIBA (Margen inferior grande para evitar barra Android) */
+        #controls-container {
+            width: 100%; padding: 15px; background: #2d3436;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 10px; border-top: 3px solid var(--btn-bg);
+            padding-bottom: 60px; /* Espacio extra para que no lo tape la barra de Android */
+        }
+
+        .btn-row { display: flex; width: 100%; max-width: 280px; gap: 10px; justify-content: center; }
+
+        .btn {
+            background: var(--btn-bg); color: white; border: none;
+            border-radius: 12px; font-weight: bold; font-size: 1.5rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px #1a104d; transition: 0.1s;
+            user-select: none;
+        }
+
+        .btn:active { transform: translateY(2px); box-shadow: none; background: #5f27cd; }
+
+        .rotate-btn { width: 100%; height: 50px; background: var(--accent); box-shadow: 0 4px #8a2a2a; font-size: 1.2rem; }
+        .dir-btn { flex: 1; height: 60px; }
+        .pause-btn { width: 45px; height: 45px; background: #7f8c8d; font-size: 1rem; }
+
+        #overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center;
+        }
+
+        .diff-btn { margin: 5px; padding: 10px; width: 80px; font-size: 0.8rem; background: #57606f; color: white; border: none; border-radius: 5px; }
+        .active-diff { background: #00a8ff !important; border: 2px solid white; }
+    </style>
+</head>
+<body>
+
+<div id="ui-header">
+    <span>SCORE: <span id="score">0</span></span>
+    <span>HIGH: <span id="high-score">0</span></span>
+</div>
+
+<div id="game-layout">
+    <canvas id="tetris" width="200" height="400"></canvas>
+    <div id="side-info">
+        <span style="font-size: 0.7rem;">NEXT</span>
+        <canvas id="next-canvas" width="80" height="80"></canvas>
+        <button class="btn pause-btn" id="btn-pause">⏸</button>
+    </div>
+</div>
+
+<div id="controls-container">
+    <div class="btn-row">
+        <button class="btn rotate-btn" id="btn-rotate">ROTAR PIEZA</button>
+    </div>
+    <div class="btn-row">
+        <button class="btn dir-btn" id="btn-left">←</button>
+        <button class="btn dir-btn" id="btn-down">↓</button>
+        <button class="btn dir-btn" id="btn-right">→</button>
+    </div>
+</div>
+
+<div id="overlay">
+    <h1 style="color:var(--accent)">BEAST TETRIS</h1>
+    <p>Dificultad Inicial:</p>
+    <div style="margin-bottom: 20px;">
+        <button class="diff-btn" onclick="setDiff(800, this)">FÁCIL</button>
+        <button class="diff-btn active-diff" onclick="setDiff(500, this)">MEDIO</button>
+        <button class="diff-btn" onclick="setDiff(200, this)">BESTIA</button>
+    </div>
+    <button class="btn" style="width: 200px; height: 60px; background:#00a8ff;" onclick="start()">JUGAR</button>
+</div>
+
+<script>
+    const canvas = document.getElementById('tetris');
+    const ctx = canvas.getContext('2d');
+    const nCanvas = document.getElementById('next-canvas');
+    const nCtx = nCanvas.getContext('2d');
+
+    const colors = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+
+    function createPiece(t) {
+        if (t === 'T') return [[0, 1, 0], [1, 1, 1], [0, 0, 0]];
+        if (t === 'O') return [[2, 2], [2, 2]];
+        if (t === 'L') return [[0, 3, 0], [0, 3, 0], [0, 3, 3]];
+        if (t === 'J') return [[0, 4, 0], [0, 4, 0], [4, 4, 0]];
+        if (t === 'I') return [[0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0]];
+        if (t === 'S') return [[0, 6, 6], [6, 6, 0], [0, 0, 0]];
+        if (t === 'Z') return [[7, 7, 0], [0, 7, 7], [0, 0, 0]];
+    }
+
+    function drawMatrix(m, o, c, size = 20) {
+        m.forEach((row, y) => {
+            row.forEach((v, x) => {
+                if (v !== 0) {
+                    c.fillStyle = colors[v];
+                    c.fillRect((x + o.x) * size + 1, (y + o.y) * size + 1, size - 2, size - 2);
+                    c.fillStyle = 'rgba(255,255,255,0.2)';
+                    c.fillRect((x + o.x) * size + 1, (y + o.y) * size + 1, size - 2, size/4);
+                }
+            });
+        });
+    }
+
+    let arena = Array.from({length: 20}, () => Array(10).fill(0));
+    let player = { pos: {x: 0, y: 0}, matrix: null, next: null, score: 0 };
+    let dropInterval = 500, dropCounter = 0, lastTime = 0, paused = false, gameActive = false, isDownPressed = false;
+
+    function setDiff(s, b) {
+        dropInterval = s;
+        document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active-diff'));
+        b.classList.add('active-diff');
+    }
+
+    function playerReset() {
+        const p = 'ILJOTSZ';
+        player.matrix = player.next || createPiece(p[p.length * Math.random() | 0]);
+        player.next = createPiece(p[p.length * Math.random() | 0]);
+        player.pos.y = 0;
+        player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+        if (collide()) {
+            gameActive = false;
+            if(player.score > (localStorage.getItem('t-record') || 0)) localStorage.setItem('t-record', player.score);
+            document.getElementById('overlay').style.display = 'flex';
+        }
+    }
+
+    function collide() {
+        const [m, o] = [player.matrix, player.pos];
+        for (let y = 0; y < m.length; ++y) {
+            for (let x = 0; x < m[y].length; ++x) {
+                if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
+            }
+        }
+        return false;
+    }
+
+    function rotate(m) {
+        for (let y = 0; y < m.length; ++y) {
+            for (let x = 0; x < y; ++x) [m[x][y], m[y][x]] = [m[y][x], m[x][y]];
+        }
+        m.forEach(row => row.reverse());
+    }
+
+    function update(time = 0) {
+        if (!paused && gameActive) {
+            const dt = time - lastTime; lastTime = time;
+            dropCounter += dt;
+            let speed = isDownPressed ? 40 : dropInterval;
+            if (dropCounter > speed) {
+                player.pos.y++;
+                if (collide()) {
+                    player.pos.y--;
+                    player.matrix.forEach((row, y) => {
+                        row.forEach((v, x) => { if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v; });
+                    });
+                    playerReset();
+                    arenaSweep();
+                }
+                dropCounter = 0;
+            }
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawMatrix(arena, {x:0, y:0}, ctx);
+            drawMatrix(player.matrix, player.pos, ctx);
+            nCtx.fillStyle = '#000'; nCtx.fillRect(0, 0, nCanvas.width, nCanvas.height);
+            drawMatrix(player.next, {x:0, y:0}, nCtx);
+        }
+        requestAnimationFrame(update);
+    }
+
+    function arenaSweep() {
+        let rows = 0;
+        outer: for (let y = arena.length - 1; y > 0; --y) {
+            for (let x = 0; x < arena[y].length; ++x) { if (arena[y][x] === 0) continue outer; }
+            arena.splice(y, 1); arena.unshift(new Array(10).fill(0));
+            rows++; y++;
+        }
+        if(rows > 0) { 
+            player.score += rows * 10; 
+            document.getElementById('score').innerText = player.score;
+            // Dificultad progresiva: aumenta velocidad cada 50 puntos
+            if(player.score % 50 === 0 && dropInterval > 100) dropInterval -= 20;
+        }
+    }
+
+    function start() {
+        arena.forEach(row => row.fill(0));
+        player.score = 0; document.getElementById('score').innerText = 0;
+        document.getElementById('high-score').innerText = localStorage.getItem('t-record') || 0;
+        document.getElementById('overlay').style.display = 'none';
+        gameActive = true; playerReset(); update();
+    }
+
+    document.getElementById('btn-left').onclick = () => { if(!paused) { player.pos.x--; if(collide()) player.pos.x++; }};
+    document.getElementById('btn-right').onclick = () => { if(!paused) { player.pos.x++; if(collide()) player.pos.x--; }};
+    document.getElementById('btn-rotate').onclick = () => { if(!paused) { rotate(player.matrix); if(collide()) rotate(player.matrix); rotate(player.matrix); rotate(player.matrix); }};
+    
+    const btnDown = document.getElementById('btn-down');
+    btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); isDownPressed = true; });
+    btnDown.addEventListener('touchend', () => isDownPressed = false);
+    btnDown.addEventListener('mousedown', () => isDownPressed = true);
+    btnDown.addEventListener('mouseup', () => isDownPressed = false);
+
+    document.getElementById('btn-pause').onclick = () => { paused = !paused; };
+</script>
+</body>
+</html>

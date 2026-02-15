@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Master Ultra Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+
+        .header { margin-bottom: 2rem; }
+        h1 { font-size: 2rem; color: var(--primary); letter-spacing: -1px; }
+
+        .config-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            background: #334155;
+            color: white;
+            border: 1px solid #475569;
+            cursor: pointer;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .hearts-container {
+            font-size: 1.2rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2px;
+            color: var(--danger);
+        }
+
+        #word-display {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 0.5rem;
+            margin: 2rem 0;
+            color: var(--primary);
+            min-height: 4rem;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 60px;
+            height: 60px;
+            font-size: 2rem;
+            text-align: center;
+            border: 3px solid #475569;
+            border-radius: 12px;
+            background: transparent;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        input:focus { border-color: var(--primary); outline: none; }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-main { background: var(--primary); color: white; }
+        .btn-reset { background: transparent; color: var(--muted); border: 1px solid #475569; margin-top: 10px; }
+
+        #feedback { min-height: 25px; margin: 15px 0; font-weight: 600; }
+        .used { font-size: 0.9rem; color: var(--muted); }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="header">
+            <h1>WORD MASTER PRO 🚀</h1>
+            <p style="color: var(--muted)">Ingeniería en adivinación</p>
+        </div>
+
+        <div class="config-bar">
+            <select id="diff-select" onchange="Game.init()">
+                <option value="easy">Nivel: Fácil (3-4 letras)</option>
+                <option value="medium">Nivel: Medio (5-7 letras)</option>
+                <option value="hard" selected>Nivel: Experto (8+ letras)</option>
+            </select>
+            <div style="display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 8px;">
+                <span id="level-counter">Nivel 1</span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="hearts-container" id="hearts-display"></div>
+            <div id="category-display" style="font-weight: bold; color: var(--primary);">CATEGORÍA</div>
+        </div>
+
+        <div id="word-display">_ _ _ _</div>
+
+        <div class="input-area">
+            <input type="text" id="guess-input" maxlength="1" autocomplete="off">
+            <button class="btn btn-main" onclick="Game.makeGuess()">Probar</button>
+        </div>
+
+        <div id="feedback"></div>
+        <div class="used">Letras: <span id="used-list">-</span></div>
+        
+        <button class="btn btn-reset" onclick="Game.reset()">Reiniciar Sesión</button>
+    </div>
+
+    <script>
+        const Game = (() => {
+            const DATA = {
+                easy: [
+                    "SOL", "MAR", "PAN", "CASA", "GATO", "PERO", "LUNA", "BOLA", "TREN", "AZUL", "ROJO", "PATO", "VACA", "OJO", "PIE", "MANO", "NENE", "FLOR", "PEPE", "AIRE",
+                    "PAZ", "VIDA", "MESA", "SILLA", "CAJA", "LAPIZ", "DADO", "BOCA", "NARIZ", "PELO", "CAFE", "TE", "UVA", "COCO", "PIÑA", "PERA", "RAMA", "HOJA", "SAPO", "MONO"
+                ],
+                medium: [
+                    "PLANETA", "ESTRELLA", "COMIDA", "CABALLO", "VENTANA", "TECLADO", "ESPEJO", "CUADRO", "PUERTA", "CIUDAD", "CAMINO", "PUENTE", "DORMIR", "CORRER", "SALTAR",
+                    "COCHE", "MUNDO", "TIEMPO", "MUSICA", "DINERO", "HIERRO", "CRISTAL", "BOTELLA", "CAMISA", "ZAPATO", "FRUTA", "HUERTO", "JARDIN", "BOSQUE", "SELVA",
+                    "MONTAÑA", "PLAYA", "VIENTO", "TRUENO", "COHETE", "BARCO", "AVION", "LIBRO", "PLUMA", "DIBUJO"
+                ],
+                hard: [
+                    "TECNOLOGIA", "INGENIERIA", "PRODUCCION", "ELECTRONICA", "PROGRAMACION", "ALGORITMO", "ESTRUCTURA", "FINANZAS", "PSICOLOGIA", "FELICIDAD",
+                    "CALENDARIO", "DICCIONARIO", "UNIVERSO", "ATMOSFERA", "DINOSAURIO", "ESTERNOCLEIDOMASTOIDEO", "REVOLUCION", "CREATIVIDAD", "INTELIGENCIA", "REFRIGERADOR",
+                    "COMPUTADORA", "ESCRITORIO", "BICICLETA", "ASTRONAUTA", "EXPERIMENTO", "GEOGRAFIA", "HISTORIA", "LENGUAJE", "MATEMATICAS", "LITERATURA",
+                    "FOTOGRAFIA", "ARQUITECTURA", "RESTAURANTE", "HOSPITAL", "ESTACIONAMIENTO", "VOCABULARIO", "ESPECTACULO", "INSTRUMENTO", "ORQUESTA", "REMPLAZABLE"
+                ]
+            };
+
+            let state = {
+                word: '',
+                guessed: new Set(),
+                lives: 10,
+                level: 1,
+                difficulty: 'hard'
+            };
+
+            const ui = {
+                word: document.getElementById('word-display'),
+                hearts: document.getElementById('hearts-display'),
+                used: document.getElementById('used-list'),
+                input: document.getElementById('guess-input'),
+                feedback: document.getElementById('feedback'),
+                level: document.getElementById('level-counter'),
+                diff: document.getElementById('diff-select'),
+                cat: document.getElementById('category-display')
+            };
+
+            const init = () => {
+                state.difficulty = ui.diff.value;
+                const pool = DATA[state.difficulty];
+                state.word = pool[Math.floor(Math.random() * pool.length)].toUpperCase();
+                state.guessed.clear();
+                state.lives = 10;
+                
+                ui.input.disabled = false;
+                ui.input.value = '';
+                ui.feedback.innerText = '¡Ingresa una letra!';
+                ui.feedback.style.color = 'var(--muted)';
+                ui.cat.innerText = getCategoryName();
+                
+                render();
+            };
+
+            const getCategoryName = () => {
+                if (state.word.length <= 4) return "PALABRAS CORTAS";
+                if (state.word.length <= 7) return "OBJETOS Y ACCIONES";
+                return "DESAFÍO PRO";
+            };
+
+            const render = () => {
+                ui.word.innerText = state.word.split('').map(l => state.guessed.has(l) ? l : '_').join(' ');
+                ui.hearts.innerHTML = '❤️'.repeat(state.lives) + '🖤'.repeat(10 - state.lives);
+                ui.used.innerText = Array.from(state.guessed).join(', ') || '-';
+                ui.level.innerText = `Nivel ${state.level}`;
+            };
+
+            const makeGuess = () => {
+                const char = ui.input.value.toUpperCase().trim();
+                ui.input.value = '';
+                ui.input.focus();
+
+                if (!char || !/^[A-ZÑ]$/.test(char) || state.guessed.has(char)) return;
+
+                state.guessed.add(char);
+
+                if (state.word.includes(char)) {
+                    ui.feedback.innerText = "¡Acierto! 🔥";
+                    ui.feedback.style.color = "var(--success)";
+                } else {
+                    state.lives--;
+                    ui.feedback.innerText = "Error... 🧊";
+                    ui.feedback.style.color = "var(--danger)";
+                }
+
+                if (state.lives <= 0) {
+                    ui.word.innerText = state.word;
+                    ui.feedback.innerText = `FALLASTE. Era: ${state.word}`;
+                    ui.input.disabled = true;
+                } else if (state.word.split('').every(l => state.guessed.has(l))) {
+                    state.level++;
+                    ui.feedback.innerText = "¡NIVEL SUPERADO! Cargando...";
+                    ui.input.disabled = true;
+                    setTimeout(init, 2000);
+                }
+                render();
+            };
+
+            ui.input.addEventListener('keypress', e => e.key === 'Enter' && makeGuess());
+
+            return { init, makeGuess, reset: () => { state.level = 1; init(); } };
+        })();
+
+        Game.init();
+    </script>
+</body>
+</html>

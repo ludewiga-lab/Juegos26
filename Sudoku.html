@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sudoku Pro - Lógica Corregida</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --bg: #f8f9fa;
+            --cell-size: 50px;
+        }
+        body { font-family: sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; }
+        .menu { margin: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; gap: 10px; }
+        #grid { display: grid; border: 3px solid var(--primary); background: white; }
+        .cell {
+            width: var(--cell-size); height: var(--cell-size);
+            border: 1px solid #ddd; text-align: center;
+            font-size: 1.2rem; line-height: var(--cell-size);
+            outline: none; box-sizing: border-box;
+        }
+        .fixed { background: #f0f0f0; font-weight: bold; color: #555; cursor: default; }
+        .error { color: #e74c3c; background: #fdf2f2; }
+        .border-right { border-right: 3px solid var(--primary); }
+        .border-bottom { border-bottom: 3px solid var(--primary); }
+        .controls { margin-top: 20px; }
+        button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        #msg { margin-top: 15px; font-weight: bold; color: var(--accent); }
+    </style>
+</head>
+<body>
+    <h1>Sudoku Engineer Edition</h1>
+   
+    <div class="menu">
+        <select id="sizeSelect">
+            <option value="4">4x4 (2x2 subs)</option>
+            <option value="9" selected>9x9 (3x3 subs)</option>
+        </select>
+        <select id="diffSelect">
+            <option value="1">Nivel 1 (Fácil)</option>
+            <option value="2">Nivel 2 (Medio)</option>
+            <option value="3">Nivel 3 (Difícil)</option>
+        </select>
+        <button onclick="startNewGame()">Nuevo Juego</button>
+        <button onclick="giveHint()">Pista</button>
+    </div>
+    <div id="grid"></div>
+    <div id="msg"></div>
+    <script>
+        let size, subSize, board = [], solution = [], playerCorrect = 0;
+        
+        function swapRows(b, r1, r2) {
+            [b[r1], b[r2]] = [b[r2], b[r1]];
+        }
+        
+        function swapCols(b, c1, c2) {
+            for (let r = 0; r < size; r++) {
+                [b[r][c1], b[r][c2]] = [b[r][c2], b[r][c1]];
+            }
+        }
+        
+        function swapBands(b, bs1, bs2) {
+            for (let k = 0; k < subSize; k++) {
+                let r1 = bs1 * subSize + k;
+                let r2 = bs2 * subSize + k;
+                swapRows(b, r1, r2);
+            }
+        }
+        
+        function swapStacks(b, ss1, ss2) {
+            for (let k = 0; k < subSize; k++) {
+                let c1 = ss1 * subSize + k;
+                let c2 = ss2 * subSize + k;
+                swapCols(b, c1, c2);
+            }
+        }
+        
+        function randomizeSolution() {
+            // Intercambios de filas dentro de bandas
+            for (let band = 0; band < subSize; band++) {
+                for (let s = 0; s < subSize * 2; s++) {
+                    let row1 = band * subSize + Math.floor(Math.random() * subSize);
+                    let row2 = band * subSize + Math.floor(Math.random() * subSize);
+                    if (row1 !== row2) swapRows(solution, row1, row2);
+                }
+            }
+            // Intercambios de columnas dentro de stacks
+            for (let stack = 0; stack < subSize; stack++) {
+                for (let s = 0; s < subSize * 2; s++) {
+                    let col1 = stack * subSize + Math.floor(Math.random() * subSize);
+                    let col2 = stack * subSize + Math.floor(Math.random() * subSize);
+                    if (col1 !== col2) swapCols(solution, col1, col2);
+                }
+            }
+            // Intercambio de bandas
+            let numBandSwaps = Math.floor(Math.random() * 2) + 1;
+            for (let s = 0; s < numBandSwaps; s++) {
+                let b1 = Math.floor(Math.random() * subSize);
+                let b2 = Math.floor(Math.random() * subSize);
+                if (b1 !== b2) swapBands(solution, b1, b2);
+            }
+            // Intercambio de stacks
+            let numStackSwaps = Math.floor(Math.random() * 2) + 1;
+            for (let s = 0; s < numStackSwaps; s++) {
+                let s1 = Math.floor(Math.random() * subSize);
+                let s2 = Math.floor(Math.random() * subSize);
+                if (s1 !== s2) swapStacks(solution, s1, s2);
+            }
+            // Transposición aleatoria (50% chance)
+            if (Math.random() < 0.5) {
+                let newBoard = Array.from({ length: size }, () => Array(size).fill(0));
+                for (let r = 0; r < size; r++) {
+                    for (let c = 0; c < size; c++) {
+                        newBoard[c][r] = solution[r][c];
+                    }
+                }
+                solution = newBoard;
+            }
+        }
+        
+        function startNewGame() {
+            size = parseInt(document.getElementById('sizeSelect').value);
+            subSize = Math.sqrt(size);
+            document.getElementById('msg').innerText = "";
+            playerCorrect = 0;
+            generateValidSudoku();
+            renderBoard();
+        }
+        
+        // --- LÓGICA DE VALIDACIÓN (BACKTRACKING) ---
+        function isValid(b, row, col, num) {
+            // Verificar fila (saltar la celda actual)
+            for (let i = 0; i < size; i++) {
+                if (i !== col && b[row][i] === num) return false;
+            }
+            // Verificar columna (saltar la celda actual)
+            for (let i = 0; i < size; i++) {
+                if (i !== row && b[i][col] === num) return false;
+            }
+            // Verificar subcuadrícula (saltar la celda actual)
+            let startRow = row - (row % subSize);
+            let startCol = col - (col % subSize);
+            for (let i = 0; i < subSize; i++) {
+                for (let j = 0; j < subSize; j++) {
+                    let sr = i + startRow;
+                    let sc = j + startCol;
+                    if (sr !== row || sc !== col) {
+                        if (b[sr][sc] === num) return false;
+                    }
+                }
+            }
+            return true;
+        }
+        
+        function countSolutions(original) {
+            let b = original.map(row => [...row]);
+            let count = [0];
+            function solver(r, c) {
+                if (count[0] > 1) return false;
+                if (r === size) {
+                    count[0]++;
+                    return count[0] === 1;
+                }
+                let nr = r, nc = c + 1;
+                if (nc === size) {
+                    nr++;
+                    nc = 0;
+                }
+                if (b[r][c] !== 0) return solver(nr, nc);
+                for (let num = 1; num <= size; num++) {
+                    if (isValid(b, r, c, num)) {
+                        b[r][c] = num;
+                        if (!solver(nr, nc)) {
+                            b[r][c] = 0;
+                            return false;
+                        }
+                        b[r][c] = 0;
+                    }
+                }
+                return true;
+            }
+            solver(0, 0);
+            return count[0];
+        }
+        
+        function solve(b) {
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    if (b[row][col] === 0) {
+                        for (let num = 1; num <= size; num++) {  // Sin shuffle para velocidad
+                            if (isValid(b, row, col, num)) {
+                                b[row][col] = num;
+                                if (solve(b)) return true;
+                                b[row][col] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        
+        function generateValidSudoku() {
+            solution = Array.from({ length: size }, () => Array(size).fill(0));
+            solve(solution); // Generamos tablero completo resuelto
+            randomizeSolution(); // Aleatorizamos para variedad
+            
+            board = solution.map(row => [...row]);
+            const difficulty = parseInt(document.getElementById('diffSelect').value);
+            
+            // Calcular cuántas celdas eliminar según dificultad (máximo)
+            const totalCells = size * size;
+            const targetRemove = Math.floor(totalCells * (0.2 + difficulty * 0.2));
+            
+            // Lista de posiciones para intentar eliminar en orden aleatorio
+            let positions = [];
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    positions.push({ r, c });
+                }
+            }
+            positions.sort(() => Math.random() - 0.5);
+            
+            let removed = 0;
+            for (let i = 0; i < positions.length; i++) {
+                if (removed >= targetRemove) break;
+                const { r, c } = positions[i];
+                if (board[r][c] === 0) continue;
+                
+                let temp = board[r][c];
+                board[r][c] = 0;
+                
+                if (countSolutions(board) === 1) {
+                    removed++;
+                } else {
+                    board[r][c] = temp;
+                }
+            }
+            
+            // Inicializar contadores
+            playerCorrect = 0;
+        }
+        
+        function renderBoard() {
+            const grid = document.getElementById('grid');
+            grid.style.gridTemplateColumns = `repeat(${size}, var(--cell-size))`;
+            grid.innerHTML = '';
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    if ((c + 1) % subSize === 0 && c !== size - 1) cell.classList.add('border-right');
+                    if ((r + 1) % subSize === 0 && r !== size - 1) cell.classList.add('border-bottom');
+                    if (board[r][c] !== 0) {
+                        cell.innerText = board[r][c];
+                        cell.classList.add('fixed');
+                    } else {
+                        cell.contentEditable = "true";
+                        cell.oninput = (e) => handleInput(e, r, c);
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+        }
+        
+        function handleInput(e, r, c) {
+            let oldVal = board[r][c];
+            let valStr = e.target.innerText.trim();
+            let val = parseInt(valStr);
+            if (isNaN(val) || val < 1 || val > size || valStr.length > 1) {
+                e.target.innerText = "";
+                board[r][c] = 0;
+                e.target.classList.remove('error');
+                checkWin();
+                return;
+            }
+            let wasEmpty = oldVal === 0;
+            board[r][c] = val;
+            e.target.innerText = val;
+            e.target.classList.remove('error');
+            if (!isValid(board, r, c, val)) {
+                e.target.classList.add('error');
+            } else if (wasEmpty && val === solution[r][c]) {
+                playerCorrect++;
+                if (playerCorrect % 3 === 0 && playerCorrect > 0) {
+                    giveHint();
+                }
+            }
+            checkWin();
+        }
+        
+        function giveHint() {
+            let empties = [];
+            for (let rr = 0; rr < size; rr++) {
+                for (let cc = 0; cc < size; cc++) {
+                    if (board[rr][cc] === 0) empties.push({ rr, cc });
+                }
+            }
+            if (empties.length === 0) return;
+            let idx = Math.floor(Math.random() * empties.length);
+            let { rr, cc } = empties[idx];
+            let cell = document.querySelector(`[data-row="${rr}"][data-col="${cc}"]`);
+            if (cell) {
+                cell.innerText = solution[rr][cc];
+                cell.classList.add('fixed');
+                cell.contentEditable = false;
+                board[rr][cc] = solution[rr][cc];
+                document.getElementById('msg').innerText = "¡Pista revelada automáticamente!";
+                setTimeout(() => document.getElementById('msg').innerText = "", 2000);
+                checkWin();
+            }
+        }
+        
+        function checkWin() {
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    if (board[r][c] !== solution[r][c]) return;
+                }
+            }
+            document.getElementById('msg').innerText = "¡Nivel Completado! Cargando siguiente...";
+            setTimeout(() => {
+                startNewGame();
+            }, 2000);
+        }
+        
+        startNewGame();
+    </script>
+</body>
+</html>

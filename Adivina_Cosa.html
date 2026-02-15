@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartas con Emojis para Niños</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-color: #ffffff;
+            --accent-color: #4cd137;
+            --text-color: #2f3640;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .card {
+            background: var(--card-color);
+            width: 85%;
+            max-width: 320px;
+            aspect-ratio: 1 / 1.2;
+            border-radius: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            border: 8px solid white;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
+        }
+
+        .emoji-display {
+            font-size: 120px;
+            margin: 0;
+            line-height: 1;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.1));
+        }
+
+        .name-display {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-color);
+            margin-top: 25px;
+            text-transform: capitalize;
+            letter-spacing: -1px;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 22px 50px;
+            border-radius: 60px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: 0 10px 20px rgba(76, 209, 55, 0.4);
+            transition: all 0.1s;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        .btn:active {
+            transform: scale(0.90);
+            background-color: #44bd32;
+            box-shadow: 0 5px 10px rgba(76, 209, 55, 0.2);
+        }
+
+        /* Pequeña animación de entrada */
+        .pop-in {
+            animation: popIn 0.4s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card pop-in" id="card-container">
+        <div class="emoji-display" id="emoji">🦁</div>
+        <div class="name-display" id="name">León</div>
+    </div>
+
+    <button class="btn" onclick="cambiarCarta()">¡Cambiar! 🎲</button>
+
+    <script>
+        const lista = [
+            // 20 ANIMALES
+            { n: "León", e: "🦁" }, { n: "Tigre", e: "🐯" }, { n: "Elefante", e: "🐘" },
+            { n: "Jirafa", e: "🦒" }, { n: "Mono", e: "🐒" }, { n: "Cebra", e: "🦓" },
+            { n: "Panda", e: "🐼" }, { n: "Oso", e: "🐻" }, { n: "Lobo", e: "🐺" },
+            { n: "Zorro", e: "🦊" }, { n: "Conejo", e: "🐰" }, { n: "Gato", e: "🐱" },
+            { n: "Perro", e: "🐶" }, { n: "Cerdo", e: "🐷" }, { n: "Vaca", e: "🐮" },
+            { n: "Pingüino", e: "🐧" }, { n: "Búho", e: "🦉" }, { n: "Tortuga", e: "🐢" },
+            { n: "Delfín", e: "🐬" }, { n: "Tiburón", e: "🦈" },
+
+            // 20 COSAS
+            { n: "Pelota", e: "⚽" }, { n: "Bicicleta", e: "🚲" }, { n: "Coche", e: "🚗" },
+            { n: "Avión", e: "✈️" }, { n: "Tren", e: "🚂" }, { n: "Cohete", e: "🚀" },
+            { n: "Guitarra", e: "🎸" }, { n: "Libro", e: "📖" }, { n: "Reloj", e: "⌚" },
+            { n: "Lupa", e: "🔍" }, { n: "Llave", e: "🔑" }, { n: "Lámpara", e: "💡" },
+            { n: "Cuchara", e: "🥄" }, { n: "Mochila", e: "🎒" }, { n: "Martillo", e: "🔨" },
+            { n: "Teléfono", e: "📱" }, { n: "Regalo", e: "🎁" }, { n: "Globo", e: "🎈" },
+            { n: "Sombrero", e: "🎩" }, { n: "Paraguas", e: "☔" },
+
+            // 20 COMIDAS
+            { n: "Pizza", e: "🍕" }, { n: "Hamburguesa", e: "🍔" }, { n: "Taco", e: "🌮" },
+            { n: "Sushi", e: "🍣" }, { n: "Pasta", e: "🍝" }, { n: "Helado", e: "🍦" },
+            { n: "Manzana", e: "🍎" }, { n: "Plátano", e: "🍌" }, { n: "Sandía", e: "🍉" },
+            { n: "Zanahoria", e: "🥕" }, { n: "Huevo", e: "🥚" }, { n: "Queso", e: "🧀" },
+            { n: "Pan", e: "🍞" }, { n: "Chocolate", e: "🍫" }, { n: "Rosquilla", e: "🍩" },
+            { n: "Pastel", e: "🍰" }, { n: "Cereza", e: "🍒" }, { n: "Aguacate", e: "🥑" },
+            { n: "Papas Fritas", e: "🍟" }, { n: "Galleta", e: "🍪" }
+        ];
+
+        let indexAnterior = -1;
+
+        function cambiarCarta() {
+            const card = document.getElementById('card-container');
+            let index;
+
+            // Evitar repetición
+            do {
+                index = Math.floor(Math.random() * lista.length);
+            } while (index === indexAnterior);
+            
+            indexAnterior = index;
+            const item = lista[index];
+
+            // Animación de salida rápida
+            card.style.transform = 'scale(0.95)';
+            card.style.opacity = '0.5';
+
+            setTimeout(() => {
+                document.getElementById('emoji').innerText = item.e;
+                document.getElementById('name').innerText = item.n;
+                
+                // Animación de entrada
+                card.style.transform = 'scale(1)';
+                card.style.opacity = '1';
+            }, 100);
+        }
+    </script>
+</body>
+</html>

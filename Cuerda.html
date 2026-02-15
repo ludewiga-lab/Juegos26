@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Beast Games: Tug of War Pro</title>
+    <style>
+        :root {
+            --beast-blue: #00a8ff;
+            --beast-pink: #ff0055;
+            --gold: #fbc531;
+            --pc-color: #95a5a6;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Arial Black', sans-serif;
+            background: #1e272e;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: none;
+            color: white;
+        }
+
+        #header {
+            padding: 10px;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            border-bottom: 2px solid var(--beast-blue);
+        }
+
+        #score-board { color: var(--gold); font-size: 0.9rem; }
+
+        /* Escenario */
+        .arena {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: linear-gradient(90deg, #0f1418 0%, #2f3640 50%, #0f1418 100%);
+        }
+
+        #rope {
+            position: absolute;
+            width: 200%;
+            height: 12px;
+            background: repeating-linear-gradient(90deg, #7f8c8d, #bdc3c7 20px);
+            left: -50%;
+            transition: left 0.1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #marker {
+            width: 35px; height: 35px;
+            background: var(--beast-pink);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--beast-pink);
+        }
+
+        .finish-line {
+            position: absolute; height: 80%; width: 5px;
+            background: rgba(255,255,255,0.3);
+        }
+        .left-line { left: 15%; border-left: 5px solid var(--beast-pink); }
+        .right-line { right: 15%; border-right: 5px solid #4cd137; }
+
+        /* Controles */
+        .controls { display: none; height: 30vh; }
+        .tap-zone {
+            flex: 1; display: flex; align-items: center;
+            justify-content: center; font-size: 1.5rem;
+            -webkit-user-select: none;
+        }
+        #btn-left { background: #c23616; border-right: 2px solid #000; }
+        #btn-right { background: #44bd32; }
+
+        /* Menú Dinámico */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 100; text-align: center; padding: 20px;
+        }
+
+        .btn-group { width: 100%; max-width: 300px; margin-bottom: 20px; }
+        .btn-menu {
+            margin: 5px; padding: 15px; width: 100%;
+            background: var(--gold); border: none;
+            border-radius: 10px; font-weight: bold; font-size: 1rem;
+        }
+
+        .diff-btn { width: 30% !important; font-size: 0.8rem !important; background: #7f8c8d; }
+        .diff-active { background: var(--beast-blue) !important; transform: scale(1.1); }
+
+        .confetti {
+            position: absolute; width: 8px; height: 8px;
+            animation: fall 3s linear forwards;
+        }
+        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <div id="score-board">MÁXIMA FUERZA: <span id="high-score">0</span></div>
+    </div>
+
+    <div class="arena">
+        <div class="finish-line left-line"></div>
+        <div class="finish-line right-line"></div>
+        <div id="rope">
+            <div id="marker"></div>
+        </div>
+    </div>
+
+    <div id="controls" class="controls">
+        <div id="btn-left" class="tap-zone">TIRA</div>
+        <div id="btn-right" class="tap-zone">TIRA</div>
+    </div>
+
+    <div id="overlay">
+        <h1 id="msg">BEAST TUG</h1>
+        
+        <p>MODO 1 JUGADOR (Dificultad):</p>
+        <div class="btn-group">
+            <button class="btn-menu diff-btn" onclick="setDiff(150, this)">FÁCIL</button>
+            <button class="btn-menu diff-btn diff-active" onclick="setDiff(100, this)">MEDIO</button>
+            <button class="btn-menu diff-btn" onclick="setDiff(60, this)">BESTIA</button>
+        </div>
+
+        <button class="btn-menu" onclick="init(1)" style="background: var(--beast-blue); color: white;">VS PC</button>
+        <button class="btn-menu" onclick="init(2)">2 JUGADORES (PVP)</button>
+    </div>
+
+    <script>
+        let ropePos = 50;
+        let gameActive = false;
+        let mode = 1;
+        let pcSpeed = 100; // Default Medio
+        let currentClicks = 0;
+        let highScore = localStorage.getItem('beastTugScore') || 0;
+
+        document.getElementById('high-score').innerText = highScore;
+
+        function setDiff(speed, btn) {
+            pcSpeed = speed;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('diff-active'));
+            btn.classList.add('diff-active');
+        }
+
+        function init(m) {
+            mode = m;
+            ropePos = 50;
+            currentClicks = 0;
+            gameActive = true;
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('controls').style.display = 'flex';
+            
+            if(mode === 1) {
+                document.getElementById('btn-left').innerText = "TÚ";
+                document.getElementById('btn-right').style.background = "#555";
+                document.getElementById('btn-right').innerText = "CPU";
+                startPC();
+            } else {
+                document.getElementById('btn-left').innerText = "ROJO";
+                document.getElementById('btn-right').innerText = "VERDE";
+                document.getElementById('btn-right').style.background = "#44bd32";
+            }
+            updateRope();
+        }
+
+        function startPC() {
+            if (!gameActive || mode !== 1) return;
+            
+            setTimeout(() => {
+                if(gameActive) {
+                    // El PC tira más fuerte si vas ganando (auto-equilibrio)
+                    let boost = ropePos < 40 ? 1.5 : 0;
+                    ropePos += (2 + boost); 
+                    updateRope();
+                    startPC();
+                }
+            }, pcSpeed);
+        }
+
+        function handlePull(side) {
+            if (!gameActive) return;
+            if (mode === 1 && side === 'right') return; // Bloquear botón PC
+
+            if (side === 'left') {
+                ropePos -= 2.2;
+                if(mode === 1) currentClicks++;
+            } else {
+                ropePos += 2.2;
+            }
+            updateRope();
+        }
+
+        function updateRope() {
+            const rope = document.getElementById('rope');
+            rope.style.left = `calc(${-50 + (50 - ropePos)}%)`;
+
+            if (ropePos <= 15) endGame("¡VICTORIA!", true);
+            if (ropePos >= 85) endGame("¡DERROTA!", false);
+        }
+
+        function endGame(msg, playerWon) {
+            gameActive = false;
+            document.getElementById('overlay').style.display = 'flex';
+            document.getElementById('msg').innerText = msg;
+            
+            if (mode === 1 && playerWon && currentClicks > highScore) {
+                highScore = currentClicks;
+                localStorage.setItem('beastTugScore', highScore);
+                document.getElementById('high-score').innerText = highScore;
+                document.getElementById('msg').innerText = "¡NUEVO RÉCORD!";
+                celebrate();
+            }
+        }
+
+        function celebrate() {
+            for (let i = 0; i < 40; i++) {
+                let c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random() * 100 + 'vw';
+                c.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                c.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 3000);
+            }
+        }
+
+        const bL = document.getElementById('btn-left');
+        const bR = document.getElementById('btn-right');
+
+        bL.addEventListener('touchstart', (e) => { e.preventDefault(); handlePull('left'); });
+        bR.addEventListener('touchstart', (e) => { e.preventDefault(); handlePull('right'); });
+        bL.addEventListener('mousedown', () => handlePull('left'));
+        bR.addEventListener('mousedown', () => handlePull('right'));
+    </script>
+</body>
+</html>

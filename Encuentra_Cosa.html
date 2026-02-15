@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Emoji Match Pro</title>
+    <style>
+        :root {
+            --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853;
+            --bg: #F8F9FA; --surface: #FFFFFF; --text: #202124;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: var(--bg);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            color: var(--text); touch-action: none;
+            /* Soporte para el notch y barra de navegación de Android */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .logo-container { margin-bottom: 30px; display: flex; gap: 4px; font-size: 2.2rem; font-weight: bold; }
+        .l-b { color: var(--g-blue); } .l-r { color: var(--g-red); } 
+        .l-y { color: var(--g-yellow); } .l-g { color: var(--g-green); }
+
+        .main-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+
+        @media (min-width: 900px) {
+            .main-container { flex-direction: row; }
+            #p1-section { transform: none !important; border-right: 1px solid #ddd; border-bottom: none !important; }
+        }
+
+        .player-section { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; height: 50%; }
+        #p1-section { background-color: #E8F0FE; transform: rotate(180deg); border-bottom: 2px solid #ddd; }
+        #p2-section { background-color: #FEF7E0; }
+
+        .hud { 
+            padding: 5px 15px; display: flex; justify-content: space-between; 
+            align-items: center; z-index: 10; height: 60px; flex-shrink: 0;
+        }
+        
+        .home-btn {
+            background: var(--surface); border: none; border-radius: 12px;
+            width: 40px; height: 40px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-size: 1.2rem;
+        }
+
+        .score-pill { background: var(--surface); padding: 5px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; border: 1px solid #eee; }
+        .target-circle { 
+            width: 50px; height: 50px; background: var(--surface); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 2rem; border: 3px solid var(--g-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .board-container { 
+            flex-grow: 1; display: flex; justify-content: center; 
+            align-items: center; padding: 10px 15px 25px 15px; /* Más padding abajo para la barra de Android */
+            overflow: hidden;
+        }
+        
+        .board { display: grid; gap: 6px; justify-content: center; align-content: center; }
+
+        .cell {
+            background: var(--surface); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: background 0.1s; border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .modal { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+        .hidden { display: none !important; }
+        
+        .level-group { display: flex; gap: 10px; margin-bottom: 30px; }
+        button.action-btn { padding: 14px 40px; border: none; border-radius: 28px; cursor: pointer; font-weight: 600; margin: 8px; font-size: 1.1rem; width: 220px; }
+        .btn-blue { background: var(--g-blue); color: white; box-shadow: 0 4px 6px rgba(66,133,244,0.2); }
+        .btn-outline { background: white; border: 1px solid #dadce0; color: #5f6368; padding: 12px 18px; border-radius: 14px; min-width: 80px; }
+        .btn-outline.active { border-color: var(--g-blue); color: var(--g-blue); background: #e8f0fe; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="menu" class="modal">
+    <div class="logo-container">
+        <span class="l-b">G</span><span class="l-r">o</span><span class="l-y">o</span><span class="l-g">g</span><span class="l-b">l</span><span class="l-r">e</span>
+        <span style="color:#5f6368; margin-left:10px">Match</span>
+    </div>
+    <p style="color:#5f6368; margin-bottom:15px; font-weight: 500;">Nivel de agudeza</p>
+    <div class="level-group">
+        <button class="btn-outline active" onclick="setLevel(1, this)">Básico</button>
+        <button class="btn-outline" onclick="setLevel(2, this)">Pro</button>
+        <button class="btn-outline" onclick="setLevel(3, this)">Elite</button>
+    </div>
+    <button class="action-btn btn-blue" onclick="startGame(1)">Solo</button>
+    <button class="action-btn btn-blue" onclick="startGame(2)">Duelo</button>
+</div>
+
+<div class="main-container">
+    <div id="p1-section" class="player-section">
+        <div class="hud">
+            <button class="home-btn" onclick="location.reload()">🏠</button>
+            <div class="score-pill">P1: <span id="p1-score">0</span></div>
+            <div class="target-circle" id="p1-target"></div>
+        </div>
+        <div class="board-container"><div id="p1-board" class="board"></div></div>
+    </div>
+    
+    <div id="p2-section" class="player-section">
+        <div class="hud">
+            <button class="home-btn" onclick="location.reload()">🏠</button>
+            <div class="score-pill">P2: <span id="p2-score">0</span></div>
+            <div class="target-circle" id="p2-target"></div>
+        </div>
+        <div class="board-container"><div id="p2-board" class="board"></div></div>
+    </div>
+</div>
+
+<div id="win-overlay" class="modal hidden">
+    <h1 id="win-text" style="font-size: 2.5rem;">¡Victoria!</h1>
+    <button class="action-btn btn-blue" onclick="location.reload()">Volver a empezar</button>
+</div>
+
+<script>
+    const emojis = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🐤","🐣","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🦋","🐌","🐞","🐢","🐍","🐙","🐠","🐬","🐘","🦒","🦘","🦓","🐪","🐆","🐊","🦀","🐡","🐋","🐿️","🦦","🍍","🍎","🍓","⚽","🚗","🚀"];
+
+    let scores = { p1: 0, p2: 0 };
+    let gameMode = 2;
+    let currentLevel = 1;
+    const WIN_SCORE = 5;
+
+    // CONFIGURACIÓN HORIZONTAL: Más columnas, menos filas
+    const levelConfigs = {
+        1: { cols: 5, rows: 2, total: 10 },
+        2: { cols: 6, rows: 3, total: 18 },
+        3: { cols: 7, rows: 4, total: 28 }
+    };
+
+    function setLevel(lvl, btn) {
+        currentLevel = lvl;
+        document.querySelectorAll('.level-group button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function startGame(mode) {
+        gameMode = mode;
+        document.getElementById('menu').classList.add('hidden');
+        if(mode === 1) {
+            document.getElementById('p1-section').classList.add('hidden');
+            document.getElementById('p2-section').style.height = "100%";
+            // En modo solo usamos una config más cuadrada
+            levelConfigs[currentLevel].rows += 2; 
+            levelConfigs[currentLevel].total = levelConfigs[currentLevel].cols * levelConfigs[currentLevel].rows;
+        }
+        initRound();
+    }
+
+    function initRound() {
+        const config = levelConfigs[currentLevel];
+        let pool = [...emojis].sort(() => Math.random() - 0.5).slice(0, config.total);
+        const target = pool[Math.floor(Math.random() * pool.length)];
+
+        if(gameMode === 2) renderBoard('p1', target, pool, config);
+        renderBoard('p2', target, pool, config);
+    }
+
+    function renderBoard(pId, target, pool, config) {
+        const board = document.getElementById(`${pId}-board`);
+        const container = board.parentElement;
+        const targetBox = document.getElementById(`${pId}-target`);
+        
+        board.innerHTML = '';
+        targetBox.innerText = target;
+
+        const availableWidth = container.clientWidth - 30;
+        const availableHeight = container.clientHeight - 30;
+        
+        const sizeW = Math.floor(availableWidth / config.cols) - 8;
+        const sizeH = Math.floor(availableHeight / config.rows) - 8;
+        const finalSize = Math.min(sizeW, sizeH, 75);
+
+        board.style.gridTemplateColumns = `repeat(${config.cols}, ${finalSize}px)`;
+
+        pool.forEach(emoji => {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.style.width = `${finalSize}px`;
+            cell.style.height = `${finalSize}px`;
+            cell.style.fontSize = `${finalSize * 0.55}px`;
+            cell.innerText = emoji;
+            
+            cell.onpointerdown = (e) => {
+                e.preventDefault();
+                if(emoji === target) {
+                    processPoint(pId);
+                } else {
+                    cell.style.background = "#FAD2CF";
+                    setTimeout(() => cell.style.background = "var(--surface)", 200);
+                }
+            };
+            board.appendChild(cell);
+        });
+    }
+
+    function processPoint(pId) {
+        scores[pId]++;
+        document.getElementById(`${pId}-score`).innerText = scores[pId];
+        if(scores[pId] >= WIN_SCORE) {
+            document.getElementById('win-text').innerText = gameMode === 1 ? '¡Objetivo Logrado!' : `Ganador: ${pId === 'p1' ? 'Azul' : 'Amarillo'}`;
+            document.getElementById('win-overlay').classList.remove('hidden');
+        } else {
+            initRound();
+        }
+    }
+
+    // Recalcular si se gira el teléfono
+    window.addEventListener('resize', () => {
+        if(!document.getElementById('menu').classList.contains('hidden')) return;
+        initRound();
+    });
+</script>
+</body>
+</html>

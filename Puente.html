@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Squid Bridge - Memory</title>
+    <style>
+        :root {
+            --pink: #ff4b91;
+            --glass: #4682b4;
+            --dark: #0f0f0f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--dark);
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        #ui {
+            padding: 15px;
+            text-align: center;
+            width: 100%;
+            background: rgba(0,0,0,0.8);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .difficulty-btns button {
+            background: transparent;
+            border: 2px solid var(--pink);
+            color: var(--pink);
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .difficulty-btns button.active {
+            background: var(--pink);
+            color: white;
+        }
+
+        #game-board {
+            display: flex;
+            flex-direction: column-reverse; /* El inicio está abajo */
+            gap: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .tile {
+            height: 70px;
+            background: var(--glass);
+            border-radius: 6px;
+            box-shadow: inset 0 0 15px rgba(255,255,255,0.2);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        /* Estados de la baldosa */
+        .tile.correct { background: #2ecc71; opacity: 1; }
+        .tile.broken { background: #e74c3c; transform: scale(0.8); opacity: 0.3; }
+        .tile.disabled { pointer-events: none; }
+
+        #msg { height: 25px; margin: 10px 0; color: #aaa; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <h2 style="margin: 0 0 10px 0; color: var(--pink);">SQUID TILES</h2>
+    <div class="difficulty-btns">
+        <button onclick="initGame(5, this)">Fácil</button>
+        <button onclick="initGame(10, this)" class="active">Medio</button>
+        <button onclick="initGame(15, this)">Difícil</button>
+    </div>
+    <div id="msg">¡Llega al final sin caer!</div>
+</div>
+
+<div id="game-board"></div>
+
+<script>
+    let correctPath = [];
+    let currentStep = 0;
+    let isGameOver = false;
+
+    function initGame(rows, btn) {
+        // Actualizar UI de botones
+        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        const board = document.getElementById('game-board');
+        board.innerHTML = '';
+        correctPath = [];
+        currentStep = 0;
+        isGameOver = false;
+        document.getElementById('msg').innerText = "Empieza desde la primera fila";
+
+        // Generar el camino lógico
+        for (let i = 0; i < rows; i++) {
+            correctPath.push(Math.floor(Math.random() * 2)); // 0 o 1
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'row';
+            
+            for (let j = 0; j < 2; j++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.id = `t-${i}-${j}`;
+                tile.onclick = () => checkTile(i, j);
+                rowDiv.appendChild(tile);
+            }
+            board.appendChild(rowDiv);
+        }
+    }
+
+    function checkTile(row, col) {
+        if (isGameOver || row !== currentStep) return;
+
+        const tile = document.getElementById(`t-${row}-${col}`);
+
+        if (col === correctPath[row]) {
+            // Acierto
+            tile.classList.add('correct');
+            currentStep++;
+            document.getElementById('msg').innerText = "¡Bien! Siguiente fila...";
+            
+            if (currentStep === correctPath.length) {
+                document.getElementById('msg').innerText = "¡HAS GANADO! 🏆";
+                isGameOver = true;
+            }
+        } else {
+            // Error
+            tile.classList.add('broken');
+            isGameOver = true;
+            document.getElementById('msg').innerText = "¡CRAC! Caíste. Reiniciando...";
+            
+            // Reinicio automático tras un segundo para que memoricen
+            setTimeout(() => {
+                resetBoard();
+            }, 1000);
+        }
+    }
+
+    function resetBoard() {
+        currentStep = 0;
+        isGameOver = false;
+        document.getElementById('msg').innerText = "Inténtalo de nuevo...";
+        // Limpiamos los colores pero el camino (correctPath) sigue siendo el mismo
+        document.querySelectorAll('.tile').forEach(t => {
+            t.classList.remove('correct', 'broken');
+        });
+    }
+
+    // Iniciar por defecto en nivel medio
+    initGame(10);
+</script>
+
+</body>
+</html>

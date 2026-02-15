@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>La Trampa de los 100: Versión Final</title>
+    <style>
+        body { background-color: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .setup-screen { position: absolute; background: #1e293b; padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; z-index: 100; text-align: center; }
+        #grid { display: grid; grid-template-columns: repeat(10, 35px); gap: 4px; background: #1e293b; padding: 10px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .cell { width: 35px; height: 35px; background: #334155; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: 0.2s; color: #64748b; }
+        .p1-selected { background: #3b82f6 !important; color: white; box-shadow: 0 0 15px #3b82f6; font-weight: bold; transform: scale(1.1); }
+        .p2-selected { background: #ec4899 !important; color: white; box-shadow: 0 0 15px #ec4899; font-weight: bold; transform: scale(1.1); }
+        .eliminated { background: #991b1b !important; opacity: 0.1; pointer-events: none; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        button { padding: 10px 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; background: #22c55e; color: white; }
+        button:disabled { background: #475569; opacity: 0.5; }
+        .active-turn { border: 2px solid yellow; transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+    <div id="setup" class="setup-screen">
+        <h2>MODO DE JUEGO</h2>
+        <button onclick="initGame(1)">1 JUGADOR</button>
+        <button onclick="initGame(2)" style="background: #ec4899;">2 JUGADORES</button>
+    </div>
+
+    <h1 id="title" style="display:none; color: #38bdf8;">TRAMPA DE LOS 100</h1>
+    <div id="status" style="margin-bottom: 15px; text-align: center;"></div>
+
+    <div id="grid" style="display:none;"></div>
+
+    <div class="controls" id="game-controls" style="display:none;">
+        <button id="actionBtn" onclick="processRound()" disabled>INICIAR ELIMINACIÓN (10)</button>
+        <button onclick="location.reload()" style="background: #64748b;">REINICIAR</button>
+    </div>
+
+    <script>
+        let numPlayers = 0;
+        let players = {
+            1: { pos: null, alive: true, class: 'p1-selected', label: 'P1' },
+            2: { pos: null, alive: true, class: 'p2-selected', label: 'P2' }
+        };
+        let currentPlayerToSet = 1;
+        let isMovingMode = false;
+        let playerToMove = null;
+        let cells = [];
+        let round = 1;
+
+        function initGame(n) {
+            numPlayers = n;
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('grid').style.display = 'grid';
+            document.getElementById('game-controls').style.display = 'flex';
+            document.getElementById('title').style.display = 'block';
+            
+            const grid = document.getElementById('grid');
+            for (let i = 0; i < 100; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.innerText = i + 1;
+                cell.onclick = () => handleCellClick(i);
+                grid.appendChild(cell);
+                cells.push(cell);
+            }
+            updateStatus(`Jugador 1: Elije tu posición`);
+        }
+
+        function handleCellClick(index) {
+            if (cells[index].classList.contains('eliminated')) return;
+
+            // FASE INICIAL DE POSICIONAMIENTO
+            if (currentPlayerToSet > 0) {
+                setPlayerPos(currentPlayerToSet, index);
+                if (numPlayers === 1 || currentPlayerToSet === 2) {
+                    currentPlayerToSet = 0;
+                    isMovingMode = true;
+                    updateStatus("¡Posiciones listas! Inicia la ronda o cámbiate.");
+                    document.getElementById('actionBtn').disabled = false;
+                } else {
+                    currentPlayerToSet = 2;
+                    updateStatus("Jugador 2: Elije tu posición");
+                }
+                return;
+            }
+
+            // FASE DE MOVIMIENTO (Entre rondas)
+            if (isMovingMode) {
+                // Si haces clic en una celda donde ya hay un jugador, lo seleccionas para mover
+                if (index === players[1].pos && players[1].alive) {
+                    playerToMove = 1;
+                    updateStatus("Moviendo Jugador 1... elije nuevo cuadro.");
+                } else if (index === players[2].pos && players[2].alive && numPlayers === 2) {
+                    playerToMove = 2;
+                    updateStatus("Moviendo Jugador 2... elije nuevo cuadro.");
+                } else if (playerToMove) {
+                    // Mover al jugador seleccionado al nuevo cuadro vacío
+                    if (index === players[1].pos || index === players[2].pos) return;
+                    setPlayerPos(playerToMove, index);
+                    playerToMove = null;
+                    updateStatus("Posición actualizada. ¿Listo?");
+                }
+            }
+        }
+
+        function setPlayerPos(pNum, index) {
+            if (players[pNum].pos !== null) {
+                cells[players[pNum].pos].classList.remove(players[pNum].class);
+                cells[players[pNum].pos].innerText = players[pNum].pos + 1;
+            }
+            players[pNum].pos = index;
+            cells[index].classList.add(players[pNum].class);
+            cells[index].innerText = players[pNum].label;
+        }
+
+        async function processRound() {
+            isMovingMode = false;
+            document.getElementById('actionBtn').disabled = true;
+            updateStatus("Eliminando 10 cuadros...");
+
+            let available = [];
+            cells.forEach((c, i) => { if (!c.classList.contains('eliminated')) available.push(i); });
+            let toEliminate = available.sort(() => Math.random() - 0.5).slice(0, 10);
+
+            for (let idx of toEliminate) {
+                await new Promise(r => setTimeout(r, 200));
+                cells[idx].classList.add('eliminated');
+                if (idx === players[1].pos) players[1].alive = false;
+                if (idx === players[2].pos) players[2].alive = false;
+            }
+
+            checkGameState();
+        }
+
+        function checkGameState() {
+            let msg = "";
+            if (numPlayers === 1) {
+                if (!players[1].alive) msg = "¡ELIMINADO! Game Over.";
+                else msg = "¡Sobreviviste! Haz clic en tu cuadro para moverte o continúa.";
+            } else {
+                if (!players[1].alive && !players[2].alive) msg = "¡AMBOS ELIMINADOS! Empate.";
+                else if (!players[1].alive) msg = "¡P1 ELIMINADO! P2 sigue solo.";
+                else if (!players[2].alive) msg = "¡P2 ELIMINADO! P1 sigue solo.";
+                else msg = "¡Ambos vivos! Hagan clic en su color para moverse.";
+            }
+
+            if (players[1].alive || (numPlayers === 2 && players[2].alive)) {
+                round++;
+                if (round > 10) {
+                    updateStatus("🏆 ¡FIN DEL JUEGO! Han ganado.");
+                } else {
+                    updateStatus(msg);
+                    isMovingMode = true;
+                    document.getElementById('actionBtn').disabled = false;
+                    document.getElementById('actionBtn').innerText = `RONDA ${round} (Iniciar)`;
+                }
+            } else {
+                updateStatus(msg);
+            }
+        }
+
+        function updateStatus(txt) { document.getElementById('status').innerHTML = `<b>${txt}</b>`; }
+    </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reto: La Torre de Cristal Pro</title>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: white;
+            font-family: 'Arial Black', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        h1 { color: #00f2ff; text-shadow: 0 0 10px #00f2ff; margin: 10px; font-size: 1.8rem; text-align: center; }
+
+        #game-container {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 5px;
+            min-height: 200px;
+            margin-bottom: 20px;
+        }
+
+        .block {
+            width: 140px;
+            height: 35px;
+            border-radius: 8px;
+            border: 3px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .hidden { background-color: #334155 !important; border: 3px dashed #64748b !important; }
+
+        .controls-top { margin-bottom: 20px; text-align: center; }
+        
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            background: #1e293b;
+            color: #00f2ff;
+            border: 1px solid #00f2ff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #palette {
+            display: flex;
+            gap: 12px;
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .color-opt {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid white;
+            transition: transform 0.1s;
+        }
+
+        .color-opt:active { transform: scale(0.85); }
+
+        #message { font-size: 1.2rem; height: 30px; margin-bottom: 10px; color: #f87171; }
+        #timer { font-size: 1.8rem; color: #fbbf24; margin-bottom: 10px; }
+
+        button#start-btn {
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px #16a34a;
+        }
+
+        button#start-btn:active { transform: translateY(2px); box-shadow: 0 1px #16a34a; }
+    </style>
+</head>
+<body>
+
+    <h1>TORRE DE CRISTAL 💎</h1>
+    
+    <div class="controls-top">
+        <label for="gameMode">Modo de Juego:</label>
+        <select id="gameMode" onchange="resetGame()">
+            <option value="persist">Persistente (Mantiene colores)</option>
+            <option value="chaos">Caos (Todo cambia)</option>
+        </select>
+    </div>
+
+    <div id="timer"></div>
+    <div id="message"></div>
+
+    <div id="game-container"></div>
+
+    <div id="palette" style="display: none;"></div>
+
+    <button id="start-btn" onclick="startChallenge()">VER TORRE</button>
+
+    <script>
+        const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308', '#a855f7'];
+        let towerSequence = [];
+        let playerSequence = [];
+        let currentLevel = 3;
+
+        const container = document.getElementById('game-container');
+        const palette = document.getElementById('palette');
+        const message = document.getElementById('message');
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('start-btn');
+        const modeSelector = document.getElementById('gameMode');
+
+        // Inicializar paleta
+        colors.forEach(color => {
+            const opt = document.createElement('div');
+            opt.className = 'color-opt';
+            opt.style.backgroundColor = color;
+            opt.onclick = () => selectColor(color);
+            palette.appendChild(opt);
+        });
+
+        function resetGame() {
+            currentLevel = 3;
+            towerSequence = [];
+            message.innerText = "Modo cambiado. ¡Listo!";
+            container.innerHTML = "";
+            startBtn.innerText = "EMPEZAR";
+            startBtn.style.display = 'block';
+            palette.style.display = 'none';
+        }
+
+        function startChallenge() {
+            startBtn.style.display = 'none';
+            message.innerText = "";
+            playerSequence = [];
+            container.innerHTML = "";
+
+            const mode = modeSelector.value;
+
+            if (mode === 'chaos' || towerSequence.length === 0) {
+                // Generar secuencia completamente nueva
+                towerSequence = [];
+                for(let i=0; i < currentLevel; i++) {
+                    towerSequence.push(colors[Math.floor(Math.random() * colors.length)]);
+                }
+            } else {
+                // Modo Persistente: Mantener anteriores y añadir uno nuevo
+                towerSequence.push(colors[Math.floor(Math.random() * colors.length)]);
+            }
+
+            // Dibujar torre
+            towerSequence.forEach(color => {
+                const block = document.createElement('div');
+                block.className = 'block';
+                block.style.backgroundColor = color;
+                container.appendChild(block);
+            });
+
+            let timeLeft = 3;
+            timerDisplay.innerText = `Memoriza: ${timeLeft}`;
+            
+            const countdown = setInterval(() => {
+                timeLeft--;
+                if(timeLeft > 0) {
+                    timerDisplay.innerText = `Memoriza: ${timeLeft}`;
+                } else {
+                    clearInterval(countdown);
+                    hideTower();
+                }
+            }, 1000);
+        }
+
+        function hideTower() {
+            timerDisplay.innerText = "¡RECONSTRUYE!";
+            const blocks = document.querySelectorAll('.block');
+            blocks.forEach(b => b.classList.add('hidden'));
+            palette.style.display = 'flex';
+        }
+
+        function selectColor(color) {
+            const step = playerSequence.length;
+            const blocks = document.querySelectorAll('.block');
+
+            if (color === towerSequence[step]) {
+                playerSequence.push(color);
+                blocks[step].style.backgroundColor = color;
+                blocks[step].classList.remove('hidden');
+                
+                if (playerSequence.length === towerSequence.length) {
+                    victory();
+                }
+            } else {
+                gameOver();
+            }
+        }
+
+        function victory() {
+            palette.style.display = 'none';
+            timerDisplay.innerText = "¡NIVEL COMPLETADO! 🔥";
+            currentLevel++;
+            setTimeout(() => {
+                startBtn.innerText = "SIGUIENTE NIVEL";
+                startBtn.style.display = 'block';
+            }, 1200);
+        }
+
+        function gameOver() {
+            palette.style.display = 'none';
+            message.innerText = "¡LA TORRE SE DERRUMBÓ! 💥";
+            timerDisplay.innerText = "GAME OVER";
+            towerSequence = []; // Limpiar para el reinicio
+            currentLevel = 3;
+            setTimeout(() => {
+                startBtn.innerText = "REINTENTAR";
+                startBtn.style.display = 'block';
+            }, 1800);
+        }
+    </script>
+</body>
+</html>

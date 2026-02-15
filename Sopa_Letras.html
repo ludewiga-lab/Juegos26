@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sopa de Letras Pro | Full Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--primary); letter-spacing: -1px; }
+
+        .config-panel {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #334155;
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        #grid {
+            display: grid;
+            gap: 4px;
+            background: #334155;
+            padding: 8px;
+            border-radius: 10px;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .cell {
+            width: 35px; height: 35px;
+            background: var(--card);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1rem;
+            border-radius: 4px; transition: 0.2s;
+        }
+
+        .cell.selected { background: var(--primary) !important; color: white; }
+        .cell.found { background: var(--success) !important; color: white; }
+
+        .game-info {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .word-tag {
+            padding: 5px 10px;
+            background: var(--card);
+            border: 1px solid #334155;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .word-tag.done {
+            background: var(--success);
+            color: white;
+            text-decoration: line-through;
+        }
+
+        .victory-banner {
+            margin: 15px;
+            padding: 10px 20px;
+            background: var(--success);
+            border-radius: 8px;
+            display: none;
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.05); } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>SOPA DE LETRAS MASTER 🧩</h1>
+        <p style="color: var(--muted)">Más de 100 palabras | Persistencia activada</p>
+    </div>
+
+    <div class="config-panel">
+        <select id="diff-select">
+            <option value="easy">Fácil (8x8)</option>
+            <option value="medium" selected>Medio (10x10)</option>
+            <option value="hard">Experto (12x12)</option>
+        </select>
+        <button onclick="Game.init()" style="background: var(--primary)">Nuevo Juego</button>
+    </div>
+
+    <div id="victory-banner" class="victory-banner">¡NIVEL COMPLETADO! 🎉</div>
+    <div id="grid"></div>
+    <div class="game-info" id="word-list"></div>
+
+    <script>
+        const Game = (() => {
+            const DATA = {
+                easy: ["SOL", "MAR", "PAN", "CASA", "GATO", "PERRO", "LUNA", "BOLA", "TREN", "AZUL", "ROJO", "PATO", "VACA", "OJO", "PIE", "MANO", "NENE", "FLOR", "PEPE", "AIRE", "PAZ", "VIDA", "MESA", "SILLA", "CAJA", "LAPIZ", "DADO", "BOCA", "NARIZ", "PELO", "CAFE", "TE", "UVA", "COCO", "PIÑA", "PERA", "RAMA", "HOJA", "SAPO", "MONO"],
+                medium: ["PLANETA", "ESTRELLA", "COMIDA", "CABALLO", "VENTANA", "TECLADO", "ESPEJO", "CUADRO", "PUERTA", "CIUDAD", "CAMINO", "PUENTE", "DORMIR", "CORRER", "SALTAR", "COCHE", "MUNDO", "TIEMPO", "MUSICA", "DINERO", "HIERRO", "CRISTAL", "BOTELLA", "CAMISA", "ZAPATO", "FRUTA", "HUERTO", "JARDIN", "BOSQUE", "SELVA", "MONTAÑA", "PLAYA", "VIENTO", "TRUENO", "COHETE", "BARCO", "AVION", "LIBRO", "PLUMA", "DIBUJO"],
+                hard: ["TECNOLOGIA", "INGENIERIA", "PRODUCCION", "ELECTRONICA", "PROGRAMACION", "ALGORITMO", "ESTRUCTURA", "FINANZAS", "PSICOLOGIA", "FELICIDAD", "CALENDARIO", "DICCIONARIO", "UNIVERSO", "ATMOSFERA", "DINOSAURIO", "REVOLUCION", "CREATIVIDAD", "INTELIGENCIA", "REFRIGERADOR", "COMPUTADORA", "ESCRITORIO", "BICICLETA", "ASTRONAUTA", "EXPERIMENTO", "GEOGRAFIA", "HISTORIA", "LENGUAJE", "MATEMATICAS", "LITERATURA", "FOTOGRAFIA", "ARQUITECTURA", "RESTAURANTE", "HOSPITAL", "ESTACIONAMIENTO", "VOCABULARIO", "ESPECTACULO", "INSTRUMENTO", "ORQUESTA", "REMPLAZABLE"]
+            };
+
+            let state = {
+                grid: [],
+                size: 10,
+                words: [],
+                foundWords: [],
+                foundCells: new Set(), // Formato "r-c"
+                isDragging: false,
+                selection: []
+            };
+
+            const init = () => {
+                const diff = document.getElementById('diff-select').value;
+                state.size = diff === 'easy' ? 8 : (diff === 'medium' ? 10 : 12);
+                state.words = [...DATA[diff]].sort(() => Math.random() - 0.5).slice(0, 8);
+                state.foundWords = [];
+                state.foundCells.clear();
+                document.getElementById('victory-banner').style.display = 'none';
+                
+                generateGrid();
+                placeWords();
+                fillRandom();
+                render();
+            };
+
+            const generateGrid = () => {
+                state.grid = Array.from({ length: state.size }, () => Array(state.size).fill(''));
+            };
+
+            const placeWords = () => {
+                state.words.forEach(word => {
+                    let placed = false;
+                    let attempts = 0;
+                    while (!placed && attempts < 150) {
+                        const dir = Math.floor(Math.random() * 2); // 0:H, 1:V
+                        const r = Math.floor(Math.random() * state.size);
+                        const c = Math.floor(Math.random() * state.size);
+                        if (canPlace(word, r, c, dir)) {
+                            for (let i = 0; i < word.length; i++) {
+                                const row = dir === 0 ? r : r + i;
+                                const col = dir === 0 ? c + i : c;
+                                state.grid[row][col] = word[i];
+                            }
+                            placed = true;
+                        }
+                        attempts++;
+                    }
+                });
+            };
+
+            const canPlace = (word, r, c, dir) => {
+                if (dir === 0 && c + word.length > state.size) return false;
+                if (dir === 1 && r + word.length > state.size) return false;
+                for (let i = 0; i < word.length; i++) {
+                    const row = dir === 0 ? r : r + i;
+                    const col = dir === 0 ? c + i : c;
+                    if (state.grid[row][col] !== '' && state.grid[row][col] !== word[i]) return false;
+                }
+                return true;
+            };
+
+            const fillRandom = () => {
+                const abc = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+                for (let r = 0; r < state.size; r++) {
+                    for (let c = 0; c < state.size; c++) {
+                        if (state.grid[r][c] === '') state.grid[r][c] = abc[Math.floor(Math.random() * abc.length)];
+                    }
+                }
+            };
+
+            const render = () => {
+                const container = document.getElementById('grid');
+                container.style.gridTemplateColumns = `repeat(${state.size}, 35px)`;
+                container.innerHTML = '';
+
+                state.grid.forEach((row, r) => {
+                    row.forEach((char, c) => {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.innerText = char;
+                        cell.dataset.pos = `${r}-${c}`;
+                        if (state.foundCells.has(`${r}-${c}`)) cell.classList.add('found');
+                        
+                        cell.onpointerdown = (e) => { e.preventDefault(); startDrag(r, c); };
+                        cell.onpointerenter = () => updateDrag(r, c);
+                        container.appendChild(cell);
+                    });
+                });
+
+                const list = document.getElementById('word-list');
+                list.innerHTML = state.words.map(w => `
+                    <div class="word-tag ${state.foundWords.includes(w) ? 'done' : ''}">${w}</div>
+                `).join('');
+            };
+
+            const startDrag = (r, c) => {
+                state.isDragging = true;
+                state.selection = [[r, c]];
+                highlight();
+            };
+
+            const updateDrag = (r, c) => {
+                if (!state.isDragging) return;
+                const last = state.selection[state.selection.length - 1];
+                if (last[0] !== r || last[1] !== c) {
+                    state.selection.push([r, c]);
+                    highlight();
+                }
+            };
+
+            const highlight = () => {
+                document.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
+                state.selection.forEach(([r, c]) => {
+                    const el = document.querySelector(`[data-pos="${r}-${c}"]`);
+                    if (el) el.classList.add('selected');
+                });
+            };
+
+            window.onpointerup = () => {
+                if (!state.isDragging) return;
+                state.isDragging = false;
+                const word = state.selection.map(([r, c]) => state.grid[r][c]).join('');
+                const rev = word.split('').reverse().join('');
+                
+                const foundWord = state.words.find(w => (w === word || w === rev) && !state.foundWords.includes(w));
+                
+                if (foundWord) {
+                    state.foundWords.push(foundWord);
+                    state.selection.forEach(([r, c]) => state.foundCells.add(`${r}-${c}`));
+                }
+                
+                state.selection = [];
+                render();
+                if (state.foundWords.length === state.words.length) {
+                    document.getElementById('victory-banner').style.display = 'block';
+                }
+            };
+
+            return { init };
+        })();
+
+        Game.init();
+    </script>
+</body>
+</html>

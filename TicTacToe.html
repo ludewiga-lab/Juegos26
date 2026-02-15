@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Familiar Pro</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --x-color: #e74c3c;
+            --o-color: #3498db;
+            --y-color: #2ecc71;
+            --z-color: #f39c12;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0; background-color: var(--bg-color);
+            transition: background 0.4s;
+        }
+
+        body.win-x { background-color: #fadbd8; }
+        body.win-o { background-color: #d6eaf8; }
+        body.win-y { background-color: #d5f5e3; }
+        body.win-z { background-color: #fdebd0; }
+
+        .setup { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .difficulty-settings { margin-bottom: 20px; display: none; gap: 10px; animation: fadeIn 0.5s; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        button {
+            padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer;
+            font-weight: bold; transition: 0.2s; background: #bdc3c7;
+        }
+
+        button.active { background: var(--primary); color: white; transform: scale(1.1); }
+        .diff-btn.active { background: #8e44ad; color: white; }
+
+        .status { font-size: 1.8rem; font-weight: bold; margin-bottom: 15px; color: var(--primary); text-align: center; }
+
+        .board {
+            display: grid; gap: 8px; background: #95a5a6; padding: 12px;
+            border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .cell {
+            width: 70px; height: 70px; background: white; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+
+        .cell:hover { background: #ecf0f1; }
+        .cell.x { color: var(--x-color); }
+        .cell.o { color: var(--o-color); }
+        .cell.y { color: var(--y-color); }
+        .cell.z { color: var(--z-color); }
+
+        .winner-cell {
+            background-color: #f1c40f !important; color: white !important;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+        .reset-btn { margin-top: 25px; background: var(--primary); color: white; padding: 12px 30px; font-size: 1.1rem; }
+    </style>
+</head>
+<body id="body">
+
+    <div class="setup" id="setup">
+        <button onclick="changeMode(1, 3)" id="btn1">1 Jugador</button>
+        <button onclick="changeMode(2, 3)" id="btn2">2 Jugadores</button>
+        <button onclick="changeMode(3, 4)" id="btn3">3 Jugadores</button>
+        <button onclick="changeMode(4, 5)" id="btn4">4 Jugadores</button>
+    </div>
+
+    <div class="difficulty-settings" id="diffContainer">
+        <button onclick="setDifficulty('easy')" id="diffEasy" class="diff-btn">Fácil</button>
+        <button onclick="setDifficulty('medium')" id="diffMedium" class="diff-btn">Media</button>
+        <button onclick="setDifficulty('hard')" id="diffHard" class="diff-btn">Difícil</button>
+    </div>
+
+    <div class="status" id="status">Selecciona modo</div>
+    <div id="board" class="board"></div>
+    <button class="reset-btn" onclick="initGame()">Reiniciar Partida</button>
+
+    <script>
+        let size = 3;
+        let playerCount = 2;
+        let difficulty = 'easy'; // easy, medium, hard
+        let players = ["X", "O"];
+        let currentPlayerIdx = 0;
+        let gameState = [];
+        let gameActive = true;
+        const winTarget = 3;
+
+        const colors = { 'X': 'var(--x-color)', 'O': 'var(--o-color)', 'Y': 'var(--y-color)', 'Z': 'var(--z-color)' };
+        
+        function changeMode(p, s) {
+            playerCount = p;
+            size = s;
+            players = ["X", "O", "Y", "Z"].slice(0, p === 1 ? 2 : p);
+            
+            document.querySelectorAll('.setup button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn' + p).classList.add('active');
+            
+            document.getElementById('diffContainer').style.display = (p === 1) ? 'flex' : 'none';
+            if(p === 1) setDifficulty(difficulty);
+            
+            initGame();
+        }
+
+        function setDifficulty(d) {
+            difficulty = d;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('diff' + d.charAt(0).toUpperCase() + d.slice(1)).classList.add('active');
+            initGame();
+        }
+
+        function initGame() {
+            gameActive = true;
+            currentPlayerIdx = 0;
+            gameState = Array(size * size).fill("");
+            document.getElementById('body').className = "";
+            const boardEl = document.getElementById('board');
+            boardEl.style.gridTemplateColumns = `repeat(${size}, 70px)`;
+            boardEl.innerHTML = '';
+
+            for (let i = 0; i < size * size; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.onclick = () => handleMove(i, cell);
+                boardEl.appendChild(cell);
+            }
+            updateStatus();
+        }
+
+        function handleMove(idx, cell) {
+            if (gameState[idx] !== "" || !gameActive) return;
+            executeTurn(idx, cell);
+            if (gameActive && playerCount === 1 && currentPlayerIdx === 1) {
+                setTimeout(aiMove, 600);
+            }
+        }
+
+        function executeTurn(idx, cell) {
+            const player = players[currentPlayerIdx];
+            gameState[idx] = player;
+            cell.innerText = player;
+            cell.classList.add(player.toLowerCase());
+
+            const winLine = checkWin(idx, player);
+            if (winLine) {
+                endGame(player, winLine);
+            } else if (!gameState.includes("")) {
+                document.getElementById('status').innerText = "¡Empate! 🤝";
+                gameActive = false;
+            } else {
+                currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+                updateStatus();
+            }
+        }
+
+        function aiMove() {
+            if (!gameActive) return;
+            const available = gameState.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+            let move;
+
+            // Lógica de dificultad
+            if (difficulty === 'easy') {
+                move = available[Math.floor(Math.random() * available.length)];
+            } else {
+                // Probabilidad de error en Difícil para que siempre se pueda ganar (80% acierto)
+                const makeError = (difficulty === 'hard' && Math.random() < 0.2);
+
+                if (!makeError) {
+                    // 1. Intentar ganar
+                    move = findBestMove("O"); 
+                    // 2. Bloquear al jugador
+                    if (move === null) move = findBestMove("X");
+                }
+
+                // 3. Estrategia por posición (Solo en difícil)
+                if (move === null && difficulty === 'hard' && !makeError) {
+                    const center = Math.floor((size*size)/2);
+                    if (gameState[center] === "") move = center;
+                }
+
+                // 4. Si nada de lo anterior funciona, azar
+                if (move === null) move = available[Math.floor(Math.random() * available.length)];
+            }
+
+            const cell = document.getElementById('board').children[move];
+            executeTurn(move, cell);
+        }
+
+        function findBestMove(playerSymbol) {
+            for (let i = 0; i < gameState.length; i++) {
+                if (gameState[i] === "") {
+                    gameState[i] = playerSymbol;
+                    if (checkWin(i, playerSymbol)) {
+                        gameState[i] = "";
+                        return i;
+                    }
+                    gameState[i] = "";
+                }
+            }
+            return null;
+        }
+
+        function updateStatus() {
+            const p = players[currentPlayerIdx];
+            let label = p;
+            if (playerCount === 1) {
+                label = (p === "X") ? "Tu Turno" : "IA Pensando...";
+            }
+            document.getElementById('status').innerHTML = `Turno de: <span style="color:${colors[p]}">${label}</span>`;
+        }
+
+        function checkWin(idx, player) {
+            const r = Math.floor(idx / size), c = idx % size;
+            const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+            for (let [dr, dc] of dirs) {
+                let matches = [idx];
+                [[dr, dc], [-dr, -dc]].forEach(([tr, tc]) => {
+                    let curR = r + tr, curC = c + tc;
+                    while(curR>=0 && curR<size && curC>=0 && curC<size && gameState[curR*size+curC] === player) {
+                        matches.push(curR*size+curC);
+                        curR += tr; curC += tc;
+                    }
+                });
+                if (matches.length >= winTarget) return matches;
+            }
+            return null;
+        }
+
+        function endGame(winner, line) {
+            gameActive = false;
+            let msg = `¡VICTORIA PARA ${winner}! 🏆`;
+            if (playerCount === 1) msg = (winner === "X") ? "¡Ganaste! 🎉" : "IA Ganó 🤖";
+            document.getElementById('status').innerHTML = msg;
+            document.getElementById('body').className = `win-${winner.toLowerCase()}`;
+            const cells = document.querySelectorAll('.cell');
+            line.forEach(i => cells[i].classList.add('winner-cell'));
+        }
+
+        changeMode(2, 3);
+    </script>
+</body>
+</html>

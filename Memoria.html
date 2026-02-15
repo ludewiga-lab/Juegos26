@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tech Memory Munich</title>
+    <style>
+        :root {
+            --bg-default: #f4f4f9;
+            --p1-color: #3498db; /* Azul */
+            --p2-color: #e74c3c; /* Rojo */
+            --card-back: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 100dvh; 
+            box-sizing: border-box;
+            overflow: hidden; /* Evita el scroll que rompe el juego */
+            transition: background-color 0.4s;
+        }
+
+        h1 { font-size: 1.1rem; margin: 0 0 10px 0; text-align: center; color: #2c3e50; }
+
+        .header-controls {
+            flex-shrink: 0; /* Evita que los botones se achiquen */
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        button {
+            padding: 8px 10px;
+            font-size: 11px;
+            border: none;
+            border-radius: 8px;
+            background: #dcdde1;
+            color: #2f3640;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        button.active { background: #2c3e50; color: white; }
+
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .player-box {
+            padding: 5px 15px;
+            border-radius: 10px;
+            background: white;
+            border: 3px solid #ddd;
+            text-align: center;
+            min-width: 70px;
+            transition: all 0.3s;
+        }
+
+        .turn-p1 { border-color: var(--p1-color); background: #ebf5fb; transform: scale(1.05); }
+        .turn-p2 { border-color: var(--p2-color); background: #fdedec; transform: scale(1.05); }
+
+        /* EL FIX DEL GRID */
+        #board-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0; /* Importante para flexbox */
+        }
+
+        .game-board {
+            display: grid;
+            gap: 6px;
+            width: 100%;
+            height: 100%;
+            max-width: 400px;
+            max-height: calc(100dvh - 180px); /* Espacio dinámico para el resto de la UI */
+            margin: auto;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s;
+        }
+
+        .card.flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 1.5rem;
+        }
+
+        .card-back { background-color: var(--card-back); color: white; }
+        .card-front { background-color: #ecf0f1; transform: rotateY(180deg); }
+
+        /* Colores de acierto */
+        .card.matched-p1 .card-front { background-color: var(--p1-color) !important; color: white; }
+        .card.matched-p2 .card-front { background-color: var(--p2-color) !important; color: white; }
+
+    </style>
+</head>
+<body id="bg">
+
+    <div class="header-controls">
+        <h1>Memory Tech Munich</h1>
+        
+        <div class="controls">
+            <button id="m1" class="active" onclick="setMode(1)">1 Jugador</button>
+            <button id="m2" onclick="setMode(2)">2 Jugadores</button>
+        </div>
+
+        <div class="controls">
+            <button id="l1" class="active" onclick="startGame('easy')">Fácil</button>
+            <button id="l2" onclick="startGame('medium')">Medio</button>
+            <button id="l3" onclick="startGame('hard')">Experto</button>
+        </div>
+
+        <div class="scoreboard">
+            <div id="p1-ui" class="player-box turn-p1">P1: <span id="s1">0</span></div>
+            <div id="p2-ui" class="player-box" style="display:none">P2: <span id="s2">0</span></div>
+        </div>
+    </div>
+    
+    <div id="board-container">
+        <div class="game-board" id="board"></div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const icons = ['🚗', '💻', '🍺', '🥨', '⚽', '⚙️', '⚡', '📱', '🤖', '🚀', '🧠', '💡', '🎮', '🏠', '🦖', '🍕', '🌍', '🚁'];
+        
+        let flippedCards = [];
+        let matchedCount = 0;
+        let numPlayers = 1;
+        let currentPlayer = 1;
+        let scores = [0, 0];
+        let currentLevel = 'easy';
+        let canFlip = true;
+
+        function setMode(n) {
+            numPlayers = n;
+            document.getElementById('m1').classList.toggle('active', n===1);
+            document.getElementById('m2').classList.toggle('active', n===2);
+            document.getElementById('p2-ui').style.display = n === 2 ? 'block' : 'none';
+            startGame(currentLevel);
+        }
+
+        function startGame(level) {
+            currentLevel = level;
+            document.getElementById('l1').className = level === 'easy' ? 'active' : '';
+            document.getElementById('l2').className = level === 'medium' ? 'active' : '';
+            document.getElementById('l3').className = level === 'hard' ? 'active' : '';
+
+            let pairs, cols, rows;
+            if (level === 'easy') { pairs = 6; cols = 3; rows = 4; }
+            else if (level === 'medium') { pairs = 8; cols = 4; rows = 4; }
+            else { pairs = 18; cols = 4; rows = 9; } // 4x9 es mejor para móviles que 6x6
+
+            board.innerHTML = '';
+            board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            board.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            
+            matchedCount = 0;
+            scores = [0, 0];
+            currentPlayer = 1;
+            flippedCards = [];
+            canFlip = true;
+            updateUI();
+
+            const selectedIcons = icons.slice(0, pairs);
+            const gameIcons = [...selectedIcons, ...selectedIcons].sort(() => Math.random() - 0.5);
+
+            gameIcons.forEach(icon => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                const fSize = level === 'hard' ? '1.2rem' : '1.8rem';
+                card.innerHTML = `
+                    <div class="card-face card-back">?</div>
+                    <div class="card-face card-front" style="font-size:${fSize}">${icon}</div>
+                `;
+                card.addEventListener('click', () => flipCard(card, icon));
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard(card, icon) {
+            if (!canFlip || card.classList.contains('flipped') || card.className.includes('matched')) return;
+            card.classList.add('flipped');
+            flippedCards.push({ card, icon });
+
+            if (flippedCards.length === 2) {
+                canFlip = false;
+                setTimeout(checkMatch, 600);
+            }
+        }
+
+        function checkMatch() {
+            const [c1, c2] = flippedCards;
+            if (c1.icon === c2.icon) {
+                const matchClass = currentPlayer === 1 ? 'matched-p1' : 'matched-p2';
+                c1.card.classList.add(matchClass);
+                c2.card.classList.add(matchClass);
+                scores[currentPlayer - 1]++;
+                matchedCount += 2;
+                if (matchedCount === document.querySelectorAll('.card').length) {
+                    alert(`¡Fin del juego! Ganador: P${scores[0] > scores[1] ? '1' : (numPlayers === 1 ? '1' : '2')}`);
+                }
+            } else {
+                c1.card.classList.remove('flipped');
+                c2.card.classList.remove('flipped');
+                if (numPlayers === 2) currentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+            flippedCards = [];
+            canFlip = true;
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('s1').innerText = scores[0];
+            document.getElementById('s2').innerText = scores[1];
+            
+            const p1box = document.getElementById('p1-ui');
+            const p2box = document.getElementById('p2-ui');
+            const bg = document.getElementById('bg');
+
+            if (numPlayers === 2) {
+                p1box.className = 'player-box' + (currentPlayer === 1 ? ' turn-p1' : '');
+                p2box.className = 'player-box' + (currentPlayer === 2 ? ' turn-p2' : '');
+                bg.style.backgroundColor = currentPlayer === 1 ? '#ebf5fb' : '#fdedec';
+            } else {
+                p1box.className = 'player-box turn-p1';
+                bg.style.backgroundColor = '#f4f4f9';
+            }
+        }
+
+        startGame('easy');
+    </script>
+</body>
+</html>

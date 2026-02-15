@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Beast Games: Resistencia Extrema</title>
+    <style>
+        :root {
+            --sky: #0984e3;
+            --lava: #d63031;
+            --rope: #f1c40f;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Arial Black', sans-serif;
+            background: linear-gradient(to bottom, var(--sky) 0%, #2d3436 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 10px; width: 100%;
+            text-align: center;
+            color: white;
+            z-index: 20;
+        }
+
+        #difficulty-meter {
+            color: #fab1a0;
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .arena {
+            flex-grow: 1;
+            display: flex;
+            position: relative;
+            border-bottom: 20px solid var(--lava);
+        }
+
+        .track {
+            flex: 1;
+            position: relative;
+            display: none; /* Se activa según el modo */
+            justify-content: center;
+        }
+
+        .rope {
+            position: absolute;
+            top: 0; width: 8px; height: 100%;
+            background: repeating-linear-gradient(45deg, #a89400, #f1c40f 10px);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+
+        .player {
+            position: absolute;
+            width: 60px; height: 80px;
+            background: #fff;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            transition: top 0.05s linear;
+            z-index: 10;
+        }
+
+        #p1 { border: 5px solid #ff7675; }
+        #p2 { border: 5px solid #55efc4; }
+
+        .controls {
+            display: none; /* Se activa al empezar */
+            height: 30vh;
+            background: #1e272e;
+        }
+
+        .tap-zone {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            -webkit-user-select: none;
+            user-select: none;
+            border-top: 5px solid rgba(255,255,255,0.1);
+        }
+
+        #btn1 { background-color: #ae1f11; border-right: 2px solid #000; }
+        #btn2 { background-color: #1b8d4a; }
+
+        #btn1:active { background-color: #ff7675; transform: scale(0.98); }
+        #btn2:active { background-color: #55efc4; transform: scale(0.98); }
+
+        /* Menú y Pantalla Final */
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: #f1c40f;
+            text-align: center;
+        }
+
+        .btn-menu {
+            margin-top: 15px;
+            padding: 20px 40px;
+            font-size: 1.3rem;
+            background: #f1c40f;
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
+            width: 80%;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1 style="margin: 0; font-size: 1.5rem;">BEAST CHALLENGE</h1>
+        <div id="difficulty-meter">Gravedad: 1.0x</div>
+    </div>
+
+    <div class="arena">
+        <div id="track1" class="track">
+            <div class="rope"></div>
+            <div id="p1" class="player" style="top: 15%;">🔴</div>
+        </div>
+        <div id="track2" class="track">
+            <div class="rope"></div>
+            <div id="p2" class="player" style="top: 15%;">🟢</div>
+        </div>
+    </div>
+
+    <div id="controls" class="controls">
+        <div id="btn1" class="tap-zone">PULSA P1</div>
+        <div id="btn2" class="tap-zone">PULSA P2</div>
+    </div>
+
+    <div id="overlay">
+        <h1 id="title-text">BEAST GAMES</h1>
+        <p id="stats-text">Elige modo de juego</p>
+        <button class="btn-menu" id="start1">1 JUGADOR</button>
+        <button class="btn-menu" id="start2">2 JUGADORES</button>
+        <button class="btn-menu" id="reload-btn" style="display:none;" onclick="location.reload()">VOLVER AL MENÚ</button>
+    </div>
+
+    <script>
+        const p1 = document.getElementById('p1');
+        const p2 = document.getElementById('p2');
+        const meter = document.getElementById('difficulty-meter');
+        const overlay = document.getElementById('overlay');
+        
+        let pos1 = 15, pos2 = 15;
+        let gameActive = false;
+        let players = 2;
+        
+        let gravityBase = 0.4; 
+        let multiplier = 1.0;
+        const jumpPower = 6;
+
+        function startGame(num) {
+            players = num;
+            gameActive = true;
+            overlay.style.display = 'none';
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('track1').style.display = 'flex';
+            
+            if (num === 2) {
+                document.getElementById('track2').style.display = 'flex';
+                document.getElementById('btn2').style.display = 'flex';
+            } else {
+                document.getElementById('track2').style.display = 'none';
+                document.getElementById('btn2').style.display = 'none';
+            }
+            
+            startLoops();
+        }
+
+        function startLoops() {
+            const difficultyTimer = setInterval(() => {
+                if (!gameActive) { clearInterval(difficultyTimer); return; }
+                multiplier += 0.15;
+                meter.innerText = `Gravedad: ${multiplier.toFixed(1)}x`;
+            }, 2000);
+
+            const gameLoop = setInterval(() => {
+                if (!gameActive) { clearInterval(gameLoop); return; }
+
+                pos1 += (gravityBase * multiplier);
+                if (players === 2) pos2 += (gravityBase * multiplier);
+
+                p1.style.top = pos1 + "%";
+                if (players === 2) p2.style.top = pos2 + "%";
+
+                if (pos1 >= 85) endGame(players === 2 ? "¡EL VERDE SOBREVIVE!" : "¡CAÍSTE!");
+                if (players === 2 && pos2 >= 85) endGame("¡EL ROJO SOBREVIVE!");
+            }, 30);
+        }
+
+        function handleInput(player) {
+            if (!gameActive) return;
+            if (player === 1) pos1 = Math.max(2, pos1 - jumpPower);
+            if (player === 2) pos2 = Math.max(2, pos2 - jumpPower);
+        }
+
+        // Eventos táctiles
+        document.getElementById('start1').onclick = () => startGame(1);
+        document.getElementById('start2').onclick = () => startGame(2);
+
+        document.getElementById('btn1').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(1); });
+        document.getElementById('btn2').addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(2); });
+        document.getElementById('btn1').addEventListener('mousedown', () => handleInput(1));
+        document.getElementById('btn2').addEventListener('mousedown', () => handleInput(2));
+
+        function endGame(text) {
+            gameActive = false;
+            overlay.style.display = 'flex';
+            document.getElementById('title-text').innerText = text;
+            document.getElementById('stats-text').innerText = `Dificultad final: ${multiplier.toFixed(1)}x`;
+            document.getElementById('start1').style.display = 'none';
+            document.getElementById('start2').style.display = 'none';
+            document.getElementById('reload-btn').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
