@@ -2,21 +2,29 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sopa de Letras Pro | Full Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sopa de Letras Pro | Mobile Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --success: #10b981;
+            --primary: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+            --success: linear-gradient(135deg, #10b981 0%, #059669 100%);
             --danger: #ef4444;
             --bg: #0f172a;
             --card: #1e293b;
             --text: #f8fafc;
             --muted: #94a3b8;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
@@ -25,135 +33,166 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
+            overflow-x: hidden;
         }
 
-        .header { text-align: center; margin-bottom: 20px; }
-        h1 { color: var(--primary); letter-spacing: -1px; }
+        .header { text-align: center; margin-bottom: 15px; }
+        h1 { font-size: 1.5rem; background: var(--primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.05);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
 
         .config-panel {
             background: var(--card);
-            padding: 15px;
-            border-radius: 12px;
+            padding: 12px;
+            border-radius: 16px;
             display: flex;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 20px;
             border: 1px solid #334155;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
         select, button {
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 10px;
             border: 1px solid #475569;
             background: #334155;
             color: white;
-            cursor: pointer;
             font-family: inherit;
+            font-weight: 600;
         }
 
         #grid {
             display: grid;
-            gap: 4px;
+            gap: 5px;
             background: #334155;
-            padding: 8px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 12px;
             user-select: none;
-            touch-action: none;
+            touch-action: none; /* Crucial para scroll */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .cell {
-            width: 35px; height: 35px;
+            width: 32px;
+            height: 32px;
             background: var(--card);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1rem;
-            border-radius: 4px; transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            transition: transform 0.1s;
         }
 
-        .cell.selected { background: var(--primary) !important; color: white; }
-        .cell.found { background: var(--success) !important; color: white; }
+        .cell.selected { background: #6366f1; color: white; transform: scale(0.9); }
+        .cell.found { background: #10b981; color: white; }
 
-        .game-info {
+        .word-list {
             width: 100%;
-            max-width: 500px;
+            max-width: 400px;
             margin-top: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
         }
 
         .word-tag {
-            padding: 5px 10px;
+            padding: 6px 12px;
             background: var(--card);
-            border: 1px solid #334155;
-            border-radius: 20px;
-            text-align: center;
-            font-size: 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
             color: var(--muted);
+            border: 1px solid #334155;
         }
 
         .word-tag.done {
             background: var(--success);
             color: white;
             text-decoration: line-through;
+            border: none;
         }
 
-        .victory-banner {
-            margin: 15px;
-            padding: 10px 20px;
-            background: var(--success);
-            border-radius: 8px;
+        #victory {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #10b981;
             display: none;
-            animation: bounce 0.5s infinite alternate;
+            z-index: 100;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
-
-        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.05); } }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>SOPA DE LETRAS MASTER 🧩</h1>
-        <p style="color: var(--muted)">Más de 100 palabras | Persistencia activada</p>
+        <h1>SOPA DE LETRAS PRO</h1>
+    </div>
+
+    <div class="stats">
+        <span>Puntos: <b id="score">0</b></span>
+        <span>Récord: <b id="high-score">0</b></span>
     </div>
 
     <div class="config-panel">
         <select id="diff-select">
-            <option value="easy">Fácil (8x8)</option>
-            <option value="medium" selected>Medio (10x10)</option>
-            <option value="hard">Experto (12x12)</option>
+            <option value="easy">8x8</option>
+            <option value="medium" selected>10x10</option>
+            <option value="hard">12x12</option>
         </select>
-        <button onclick="Game.init()" style="background: var(--primary)">Nuevo Juego</button>
+        <button onclick="Game.init()" style="background: var(--primary)">Nuevo Reto</button>
     </div>
 
-    <div id="victory-banner" class="victory-banner">¡NIVEL COMPLETADO! 🎉</div>
     <div id="grid"></div>
-    <div class="game-info" id="word-list"></div>
+    <div class="word-list" id="word-list"></div>
+
+    <div id="victory">
+        <h2 style="color:#10b981">¡EXCELENTE! 🎉</h2>
+        <p id="final-msg" style="margin:15px 0">Has encontrado todas las palabras.</p>
+        <button onclick="Game.init()" style="background: var(--primary); width: 100%">Jugar de nuevo</button>
+    </div>
 
     <script>
         const Game = (() => {
             const DATA = {
-                easy: ["SOL", "MAR", "PAN", "CASA", "GATO", "PERRO", "LUNA", "BOLA", "TREN", "AZUL", "ROJO", "PATO", "VACA", "OJO", "PIE", "MANO", "NENE", "FLOR", "PEPE", "AIRE", "PAZ", "VIDA", "MESA", "SILLA", "CAJA", "LAPIZ", "DADO", "BOCA", "NARIZ", "PELO", "CAFE", "TE", "UVA", "COCO", "PIÑA", "PERA", "RAMA", "HOJA", "SAPO", "MONO"],
-                medium: ["PLANETA", "ESTRELLA", "COMIDA", "CABALLO", "VENTANA", "TECLADO", "ESPEJO", "CUADRO", "PUERTA", "CIUDAD", "CAMINO", "PUENTE", "DORMIR", "CORRER", "SALTAR", "COCHE", "MUNDO", "TIEMPO", "MUSICA", "DINERO", "HIERRO", "CRISTAL", "BOTELLA", "CAMISA", "ZAPATO", "FRUTA", "HUERTO", "JARDIN", "BOSQUE", "SELVA", "MONTAÑA", "PLAYA", "VIENTO", "TRUENO", "COHETE", "BARCO", "AVION", "LIBRO", "PLUMA", "DIBUJO"],
-                hard: ["TECNOLOGIA", "INGENIERIA", "PRODUCCION", "ELECTRONICA", "PROGRAMACION", "ALGORITMO", "ESTRUCTURA", "FINANZAS", "PSICOLOGIA", "FELICIDAD", "CALENDARIO", "DICCIONARIO", "UNIVERSO", "ATMOSFERA", "DINOSAURIO", "REVOLUCION", "CREATIVIDAD", "INTELIGENCIA", "REFRIGERADOR", "COMPUTADORA", "ESCRITORIO", "BICICLETA", "ASTRONAUTA", "EXPERIMENTO", "GEOGRAFIA", "HISTORIA", "LENGUAJE", "MATEMATICAS", "LITERATURA", "FOTOGRAFIA", "ARQUITECTURA", "RESTAURANTE", "HOSPITAL", "ESTACIONAMIENTO", "VOCABULARIO", "ESPECTACULO", "INSTRUMENTO", "ORQUESTA", "REMPLAZABLE"]
+                easy: ["SOL", "MAR", "CASA", "GATO", "PERRO", "LUNA", "TREN", "FLOR"],
+                medium: ["PLANETA", "ESTRELLA", "VENTANA", "TECLADO", "CIUDAD", "BOTELLA", "CAMISA", "BOSQUE"],
+                hard: ["TECNOLOGIA", "ALGORITMO", "PSICOLOGIA", "UNIVERSO", "DINOSAURIO", "CREATIVIDAD", "MATEMATICAS", "FOTOGRAFIA"]
             };
 
             let state = {
-                grid: [],
-                size: 10,
-                words: [],
-                foundWords: [],
-                foundCells: new Set(), // Formato "r-c"
-                isDragging: false,
-                selection: []
+                grid: [], size: 10, words: [], foundWords: [],
+                foundCells: new Set(), isDragging: false, selection: [],
+                score: 0
             };
 
             const init = () => {
                 const diff = document.getElementById('diff-select').value;
                 state.size = diff === 'easy' ? 8 : (diff === 'medium' ? 10 : 12);
-                state.words = [...DATA[diff]].sort(() => Math.random() - 0.5).slice(0, 8);
+                state.words = [...DATA[diff]].sort(() => Math.random() - 0.5);
                 state.foundWords = [];
                 state.foundCells.clear();
-                document.getElementById('victory-banner').style.display = 'none';
+                state.score = 0;
+                
+                document.getElementById('victory').style.display = 'none';
+                document.getElementById('high-score').innerText = localStorage.getItem('sopaHighScore') || 0;
                 
                 generateGrid();
                 placeWords();
@@ -169,8 +208,8 @@
                 state.words.forEach(word => {
                     let placed = false;
                     let attempts = 0;
-                    while (!placed && attempts < 150) {
-                        const dir = Math.floor(Math.random() * 2); // 0:H, 1:V
+                    while (!placed && attempts < 100) {
+                        const dir = Math.floor(Math.random() * 2); 
                         const r = Math.floor(Math.random() * state.size);
                         const c = Math.floor(Math.random() * state.size);
                         if (canPlace(word, r, c, dir)) {
@@ -208,7 +247,7 @@
 
             const render = () => {
                 const container = document.getElementById('grid');
-                container.style.gridTemplateColumns = `repeat(${state.size}, 35px)`;
+                container.style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
                 container.innerHTML = '';
 
                 state.grid.forEach((row, r) => {
@@ -216,63 +255,82 @@
                         const cell = document.createElement('div');
                         cell.className = 'cell';
                         cell.innerText = char;
-                        cell.dataset.pos = `${r}-${c}`;
+                        cell.setAttribute('data-r', r);
+                        cell.setAttribute('data-c', c);
                         if (state.foundCells.has(`${r}-${c}`)) cell.classList.add('found');
-                        
-                        cell.onpointerdown = (e) => { e.preventDefault(); startDrag(r, c); };
-                        cell.onpointerenter = () => updateDrag(r, c);
                         container.appendChild(cell);
                     });
                 });
 
-                const list = document.getElementById('word-list');
-                list.innerHTML = state.words.map(w => `
+                document.getElementById('word-list').innerHTML = state.words.map(w => `
                     <div class="word-tag ${state.foundWords.includes(w) ? 'done' : ''}">${w}</div>
                 `).join('');
+                document.getElementById('score').innerText = state.score;
             };
 
-            const startDrag = (r, c) => {
-                state.isDragging = true;
-                state.selection = [[r, c]];
-                highlight();
-            };
-
-            const updateDrag = (r, c) => {
+            // LÓGICA TÁCTIL CORREGIDA
+            const handleMove = (e) => {
                 if (!state.isDragging) return;
-                const last = state.selection[state.selection.length - 1];
-                if (last[0] !== r || last[1] !== c) {
-                    state.selection.push([r, c]);
-                    highlight();
+                
+                // Obtener coordenadas ya sea de mouse o touch
+                const touch = e.touches ? e.touches[0] : e;
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                if (target && target.classList.contains('cell')) {
+                    const r = parseInt(target.getAttribute('data-r'));
+                    const c = parseInt(target.getAttribute('data-c'));
+                    
+                    const last = state.selection[state.selection.length - 1];
+                    if (!last || last[0] !== r || last[1] !== c) {
+                        state.selection.push([r, c]);
+                        target.classList.add('selected');
+                    }
                 }
             };
 
-            const highlight = () => {
-                document.querySelectorAll('.cell').forEach(el => el.classList.remove('selected'));
-                state.selection.forEach(([r, c]) => {
-                    const el = document.querySelector(`[data-pos="${r}-${c}"]`);
-                    if (el) el.classList.add('selected');
-                });
-            };
-
-            window.onpointerup = () => {
+            const handleEnd = () => {
                 if (!state.isDragging) return;
                 state.isDragging = false;
-                const word = state.selection.map(([r, c]) => state.grid[r][c]).join('');
-                const rev = word.split('').reverse().join('');
+
+                const selectedWord = state.selection.map(([r, c]) => state.grid[r][c]).join('');
+                const reversed = selectedWord.split('').reverse().join('');
                 
-                const foundWord = state.words.find(w => (w === word || w === rev) && !state.foundWords.includes(w));
-                
-                if (foundWord) {
-                    state.foundWords.push(foundWord);
+                const found = state.words.find(w => (w === selectedWord || w === reversed) && !state.foundWords.includes(w));
+
+                if (found) {
+                    state.foundWords.push(found);
                     state.selection.forEach(([r, c]) => state.foundCells.add(`${r}-${c}`));
+                    state.score += 100;
+                    checkHighScore();
                 }
-                
+
                 state.selection = [];
                 render();
+
                 if (state.foundWords.length === state.words.length) {
-                    document.getElementById('victory-banner').style.display = 'block';
+                    document.getElementById('victory').style.display = 'block';
                 }
             };
+
+            const checkHighScore = () => {
+                const current = parseInt(localStorage.getItem('sopaHighScore') || 0);
+                if (state.score > current) {
+                    localStorage.setItem('sopaHighScore', state.score);
+                    document.getElementById('high-score').innerText = state.score;
+                }
+            };
+
+            // Event Listeners Globales para el Grid
+            const gridEl = document.getElementById('grid');
+            
+            gridEl.addEventListener('pointerdown', (e) => {
+                state.isDragging = true;
+                state.selection = [];
+                handleMove(e);
+            });
+
+            window.addEventListener('pointermove', handleMove);
+            window.addEventListener('pointerup', handleEnd);
 
             return { init };
         })();
