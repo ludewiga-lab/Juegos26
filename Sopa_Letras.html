@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sopa de Letras Pro | Mobile Edition</title>
+    <title>Sopa de Letras Pro | Responsive</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
-            --success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --danger: #ef4444;
+            --success: #10b981;
             --bg: #0f172a;
             --card: #1e293b;
             --text: #f8fafc;
             --muted: #94a3b8;
-            --safe-top: env(safe-area-inset-top);
-            --safe-bottom: env(safe-area-inset-bottom);
         }
 
         * { 
@@ -23,6 +20,7 @@
             margin: 0; 
             padding: 0; 
             -webkit-tap-highlight-color: transparent;
+            touch-action: none; /* Bloquea el scroll mientras se juega */
         }
 
         body {
@@ -33,121 +31,121 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
-            overflow-x: hidden;
+            padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom);
         }
 
-        .header { text-align: center; margin-bottom: 15px; }
-        h1 { font-size: 1.5rem; background: var(--primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header { text-align: center; padding: 15px 0 10px; }
+        h1 { font-size: 1.3rem; color: #818cf8; }
 
         .stats {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 15px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             background: rgba(255,255,255,0.05);
-            padding: 8px 15px;
+            padding: 5px 15px;
             border-radius: 20px;
         }
 
         .config-panel {
-            background: var(--card);
-            padding: 12px;
-            border-radius: 16px;
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            gap: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 350px;
         }
 
         select, button {
+            flex: 1;
             padding: 10px;
             border-radius: 10px;
             border: 1px solid #475569;
             background: #334155;
             color: white;
             font-family: inherit;
-            font-weight: 600;
+            font-size: 0.9rem;
         }
 
-        #grid {
-            display: grid;
-            gap: 5px;
+        /* TABLERO RESPONSIVO */
+        #grid-container {
+            width: 100%;
+            max-width: 95vw; /* Nunca se sale del ancho del móvil */
+            aspect-ratio: 1 / 1;
             background: #334155;
-            padding: 10px;
+            padding: 6px;
             border-radius: 12px;
-            user-select: none;
-            touch-action: none; /* Crucial para scroll */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: grid;
+            gap: 4px; /* Espacio entre celdas */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
         }
 
         .cell {
-            width: 32px;
-            height: 32px;
             background: var(--card);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 0.9rem;
-            border-radius: 6px;
-            transition: transform 0.1s;
+            font-size: 1.1rem; /* Se ajusta solo */
+            border-radius: 4px;
+            user-select: none;
+            transition: background 0.2s;
         }
 
-        .cell.selected { background: #6366f1; color: white; transform: scale(0.9); }
+        /* Dinámico para que el texto quepa en 12x12 */
+        .cell-small { font-size: 0.85rem; }
+
+        .cell.selected { background: #6366f1; color: white; }
         .cell.found { background: #10b981; color: white; }
 
         .word-list {
             width: 100%;
-            max-width: 400px;
-            margin-top: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px;
+            max-width: 350px;
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
         }
 
         .word-tag {
-            padding: 6px 12px;
+            padding: 5px;
             background: var(--card);
-            border-radius: 15px;
-            font-size: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            text-align: center;
             color: var(--muted);
             border: 1px solid #334155;
+            text-transform: uppercase;
         }
 
         .word-tag.done {
             background: var(--success);
             color: white;
             text-decoration: line-through;
-            border: none;
         }
 
         #victory {
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             background: var(--card);
-            padding: 30px;
+            padding: 25px;
             border-radius: 20px;
             text-align: center;
             border: 2px solid #10b981;
             display: none;
-            z-index: 100;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            z-index: 1000;
+            width: 80%;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>SOPA DE LETRAS PRO</h1>
+        <h1>SOPA DE LETRAS</h1>
     </div>
 
     <div class="stats">
-        <span>Puntos: <b id="score">0</b></span>
+        <span>Pts: <b id="score">0</b></span>
         <span>Récord: <b id="high-score">0</b></span>
     </div>
 
@@ -157,22 +155,22 @@
             <option value="medium" selected>10x10</option>
             <option value="hard">12x12</option>
         </select>
-        <button onclick="Game.init()" style="background: var(--primary)">Nuevo Reto</button>
+        <button onclick="Game.init()" style="background: var(--primary)">Nuevo</button>
     </div>
 
-    <div id="grid"></div>
+    <div id="grid-container"></div>
     <div class="word-list" id="word-list"></div>
 
     <div id="victory">
-        <h2 style="color:#10b981">¡EXCELENTE! 🎉</h2>
-        <p id="final-msg" style="margin:15px 0">Has encontrado todas las palabras.</p>
-        <button onclick="Game.init()" style="background: var(--primary); width: 100%">Jugar de nuevo</button>
+        <h2 style="color:#10b981">¡COMPLETADO! 🎉</h2>
+        <p style="margin:10px 0">¡Eres un experto!</p>
+        <button onclick="Game.init()" style="background: var(--primary); border:none; width:100%">Jugar de nuevo</button>
     </div>
 
     <script>
         const Game = (() => {
             const DATA = {
-                easy: ["SOL", "MAR", "CASA", "GATO", "PERRO", "LUNA", "TREN", "FLOR"],
+                easy: ["SOL", "MAR", "CASA", "GATO", "PERRO", "LUNA", "PIE", "PAN"],
                 medium: ["PLANETA", "ESTRELLA", "VENTANA", "TECLADO", "CIUDAD", "BOTELLA", "CAMISA", "BOSQUE"],
                 hard: ["TECNOLOGIA", "ALGORITMO", "PSICOLOGIA", "UNIVERSO", "DINOSAURIO", "CREATIVIDAD", "MATEMATICAS", "FOTOGRAFIA"]
             };
@@ -192,7 +190,7 @@
                 state.score = 0;
                 
                 document.getElementById('victory').style.display = 'none';
-                document.getElementById('high-score').innerText = localStorage.getItem('sopaHighScore') || 0;
+                document.getElementById('high-score').innerText = localStorage.getItem('sopaHS') || 0;
                 
                 generateGrid();
                 placeWords();
@@ -210,8 +208,9 @@
                     let attempts = 0;
                     while (!placed && attempts < 100) {
                         const dir = Math.floor(Math.random() * 2); 
-                        const r = Math.floor(Math.random() * state.size);
-                        const c = Math.floor(Math.random() * state.size);
+                        const r = Math.floor(Math.random() * (state.size - (dir === 1 ? word.length : 0)));
+                        const c = Math.floor(Math.random() * (state.size - (dir === 0 ? word.length : 0)));
+                        
                         if (canPlace(word, r, c, dir)) {
                             for (let i = 0; i < word.length; i++) {
                                 const row = dir === 0 ? r : r + i;
@@ -226,8 +225,6 @@
             };
 
             const canPlace = (word, r, c, dir) => {
-                if (dir === 0 && c + word.length > state.size) return false;
-                if (dir === 1 && r + word.length > state.size) return false;
                 for (let i = 0; i < word.length; i++) {
                     const row = dir === 0 ? r : r + i;
                     const col = dir === 0 ? c + i : c;
@@ -246,17 +243,16 @@
             };
 
             const render = () => {
-                const container = document.getElementById('grid');
+                const container = document.getElementById('grid-container');
                 container.style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
                 container.innerHTML = '';
 
                 state.grid.forEach((row, r) => {
                     row.forEach((char, c) => {
                         const cell = document.createElement('div');
-                        cell.className = 'cell';
+                        cell.className = 'cell' + (state.size > 10 ? ' cell-small' : '');
                         cell.innerText = char;
-                        cell.setAttribute('data-r', r);
-                        cell.setAttribute('data-c', c);
+                        cell.setAttribute('data-pos', `${r}-${c}`);
                         if (state.foundCells.has(`${r}-${c}`)) cell.classList.add('found');
                         container.appendChild(cell);
                     });
@@ -268,69 +264,49 @@
                 document.getElementById('score').innerText = state.score;
             };
 
-            // LÓGICA TÁCTIL CORREGIDA
-            const handleMove = (e) => {
+            const handleAction = (e) => {
                 if (!state.isDragging) return;
-                
-                // Obtener coordenadas ya sea de mouse o touch
-                const touch = e.touches ? e.touches[0] : e;
-                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                const point = e.touches ? e.touches[0] : e;
+                const target = document.elementFromPoint(point.clientX, point.clientY);
                 
                 if (target && target.classList.contains('cell')) {
-                    const r = parseInt(target.getAttribute('data-r'));
-                    const c = parseInt(target.getAttribute('data-c'));
+                    const pos = target.getAttribute('data-pos');
+                    const [r, c] = pos.split('-').map(Number);
                     
-                    const last = state.selection[state.selection.length - 1];
-                    if (!last || last[0] !== r || last[1] !== c) {
+                    if (state.selection.length === 0 || 
+                        state.selection[state.selection.length-1][0] !== r || 
+                        state.selection[state.selection.length-1][1] !== c) {
                         state.selection.push([r, c]);
                         target.classList.add('selected');
                     }
                 }
             };
 
-            const handleEnd = () => {
+            const endAction = () => {
                 if (!state.isDragging) return;
                 state.isDragging = false;
 
                 const selectedWord = state.selection.map(([r, c]) => state.grid[r][c]).join('');
                 const reversed = selectedWord.split('').reverse().join('');
-                
                 const found = state.words.find(w => (w === selectedWord || w === reversed) && !state.foundWords.includes(w));
 
                 if (found) {
                     state.foundWords.push(found);
                     state.selection.forEach(([r, c]) => state.foundCells.add(`${r}-${c}`));
                     state.score += 100;
-                    checkHighScore();
+                    const hs = localStorage.getItem('sopaHS') || 0;
+                    if (state.score > hs) localStorage.setItem('sopaHS', state.score);
                 }
 
                 state.selection = [];
                 render();
-
-                if (state.foundWords.length === state.words.length) {
-                    document.getElementById('victory').style.display = 'block';
-                }
+                if (state.foundWords.length === state.words.length) document.getElementById('victory').style.display = 'block';
             };
 
-            const checkHighScore = () => {
-                const current = parseInt(localStorage.getItem('sopaHighScore') || 0);
-                if (state.score > current) {
-                    localStorage.setItem('sopaHighScore', state.score);
-                    document.getElementById('high-score').innerText = state.score;
-                }
-            };
-
-            // Event Listeners Globales para el Grid
-            const gridEl = document.getElementById('grid');
-            
-            gridEl.addEventListener('pointerdown', (e) => {
-                state.isDragging = true;
-                state.selection = [];
-                handleMove(e);
-            });
-
-            window.addEventListener('pointermove', handleMove);
-            window.addEventListener('pointerup', handleEnd);
+            const grid = document.getElementById('grid-container');
+            grid.addEventListener('pointerdown', (e) => { state.isDragging = true; state.selection = []; handleAction(e); });
+            window.addEventListener('pointermove', handleAction);
+            window.addEventListener('pointerup', endAction);
 
             return { init };
         })();
