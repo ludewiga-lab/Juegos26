@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deutsch Lernen - 150 Wörter Edition</title>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --primary: #ff9800;
+            --correct: #2ecc71;
+            --wrong: #e74c3c;
+            --idle: #3498db;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .level-menu { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-level {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            background: #bdc3c7;
+            transition: 0.3s;
+        }
+        .btn-level.active { background: var(--primary); transform: scale(1.1); box-shadow: 0 4px 10px rgba(255,152,0,0.4); }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            background: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            font-size: 1.2rem;
+        }
+
+        .game-box {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 40px;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.05);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .btn-speak {
+            background: var(--primary);
+            border: none;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            font-size: 60px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #e68a00;
+            margin-bottom: 25px;
+        }
+
+        .btn-speak:active { transform: translateY(5px); box-shadow: 0 3px 0 #e68a00; }
+
+        .options-grid { display: grid; gap: 15px; }
+
+        .btn-option {
+            background: var(--idle);
+            border: none;
+            padding: 20px;
+            border-radius: 20px;
+            font-size: 1.6rem;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #2980b9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: background 0.2s;
+        }
+
+        .btn-option.correct { background: var(--correct) !important; box-shadow: 0 6px 0 #27ae60 !important; }
+        .btn-option.wrong { background: var(--wrong) !important; box-shadow: 0 6px 0 #c0392b !important; animation: shake 0.4s; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+        #canvas-confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="level-menu">
+        <button class="btn-level active" onclick="changeLevel(1, this)">Nivel 1</button>
+        <button class="btn-level" onclick="changeLevel(2, this)">Nivel 2</button>
+        <button class="btn-level" onclick="changeLevel(3, this)">Nivel 3</button>
+    </div>
+
+    <div class="stats">
+        <div style="color: #ff9800;">🔥 <span id="streak">0</span></div>
+        <div style="color: #2ecc71;">✅ <span id="good">0</span></div>
+        <div style="color: #e74c3c;">❌ <span id="bad">0</span></div>
+    </div>
+
+    <div class="game-box">
+        <button class="btn-speak" onclick="playCurrentWord()">🔊</button>
+        <div class="options-grid" id="options"></div>
+    </div>
+
+    <canvas id="canvas-confetti"></canvas>
+
+    <script>
+        const allLevels = {
+            1: [ // NIVEL 1: CASA Y KINDERGARTEN BÁSICO (50)
+                { de: "Apfel", es: "Manzana", icon: "🍎" }, { de: "Haus", es: "Casa", icon: "🏠" }, { de: "Hund", es: "Perro", icon: "🐶" }, { de: "Katze", es: "Gato", icon: "🐱" }, { de: "Milch", es: "Leche", icon: "🥛" },
+                { de: "Wasser", es: "Agua", icon: "💧" }, { de: "Brot", es: "Pan", icon: "🍞" }, { de: "Auto", es: "Coche", icon: "🚗" }, { de: "Sonne", es: "Sol", icon: "☀️" }, { de: "Buch", es: "Libro", icon: "📖" },
+                { de: "Bett", es: "Cama", icon: "🛏️" }, { de: "Ball", es: "Pelota", icon: "⚽" }, { de: "Schuhe", es: "Zapatos", icon: "👟" }, { de: "Mama", es: "Mamá", icon: "👩" }, { de: "Papa", es: "Papá", icon: "👨" },
+                { de: "Tisch", es: "Mesa", icon: "🪑" }, { de: "Stuhl", es: "Silla", icon: "🪑" }, { de: "Mund", es: "Boca", icon: "👄" }, { de: "Nase", es: "Nariz", icon: "👃" }, { de: "Auge", es: "Ojo", icon: "👁️" },
+                { de: "Eis", es: "Helado", icon: "🍦" }, { de: "Baum", es: "Árbol", icon: "🌳" }, { de: "Blume", es: "Flor", icon: "🌻" }, { de: "Baby", es: "Bebé", icon: "👶" }, { de: "Hand", es: "Mano", icon: "🖐️" },
+                { de: "Fuß", es: "Pie", icon: "🦶" }, { de: "Vogel", es: "Pájaro", icon: "🐦" }, { de: "Fisch", es: "Pez", icon: "🐟" }, { de: "Rot", es: "Rojo", icon: "🔴" }, { de: "Blau", es: "Azul", icon: "🔵" },
+                { de: "Gelb", es: "Amarillo", icon: "🟡" }, { de: "Grün", es: "Verde", icon: "🟢" }, { de: "Mond", es: "Luna", icon: "🌙" }, { de: "Stern", es: "Estrella", icon: "⭐" }, { de: "Jacke", es: "Chaqueta", icon: "🧥" },
+                { de: "Mütze", es: "Gorro", icon: "🧶" }, { de: "Löffel", es: "Cuchara", icon: "🥄" }, { de: "Gabel", es: "Tenedor", icon: "🍴" }, { de: "Banane", es: "Plátano", icon: "🍌" }, { de: "Kuchen", es: "Pastel", icon: "🍰" },
+                { de: "Ente", es: "Pato", icon: "🦆" }, { de: "Maus", es: "Ratón", icon: "🐭" }, { de: "Regen", es: "Lluvia", icon: "🌧️" }, { de: "Hut", es: "Sombrero", icon: "🎩" }, { de: "Käse", es: "Queso", icon: "🧀" },
+                { de: "Zaft", es: "Zumo", icon: "🧃" }, { de: "Tee", es: "Té", icon: "☕" }, { de: "Ei", es: "Huevo", icon: "🥚" }, { de: "Tür", es: "Puerta", icon: "🚪" }, { de: "Fenster", es: "Ventana", icon: "🪟" }
+            ],
+            2: [ // NIVEL 2: ANIMALES, ROPA Y CIUDAD (50)
+                { de: "Rucksack", es: "Mochila", icon: "🎒" }, { de: "Brotzeit", es: "Almuerzo", icon: "🍱" }, { de: "Fahrrad", es: "Bici", icon: "🚲" }, { de: "Elefant", es: "Elefante", icon: "🐘" }, { de: "Löwe", es: "León", icon: "🦁" },
+                { de: "Bär", es: "Oso", icon: "🐻" }, { de: "Giraffe", es: "Jirafa", icon: "🦒" }, { de: "Affe", es: "Mono", icon: "🐒" }, { de: "Schwein", es: "Cerdo", icon: "🐷" }, { de: "Kuh", es: "Vaca", icon: "🐮" },
+                { de: "Pferd", es: "Caballo", icon: "🐴" }, { de: "Hase", es: "Conejo", icon: "🐰" }, { de: "Schildkröte", es: "Tortuga", icon: "🐢" }, { de: "Frosch", es: "Rana", icon: "🐸" }, { de: "Spinne", es: "Araña", icon: "🕷️" },
+                { de: "Biene", es: "Abeja", icon: "🐝" }, { de: "Schmetterling", es: "Mariposa", icon: "🦋" }, { de: "Hose", es: "Pantalón", icon: "👖" }, { de: "Kleid", es: "Vestido", icon: "👗" }, { de: "Hemd", es: "Camisa", icon: "👕" },
+                { de: "Socken", es: "Calcetines", icon: "🧦" }, { de: "Schal", es: "Bufanda", icon: "🧣" }, { de: "Handschuhe", es: "Guantes", icon: "🧤" }, { de: "Brille", es: "Gafas", icon: "👓" }, { de: "Regenschirm", es: "Paraguas", icon: "☂️" },
+                { de: "Tasche", es: "Bolso", icon: "👜" }, { de: "Schlüssel", es: "Llave", icon: "🔑" }, { de: "Uhr", es: "Reloj", icon: "⌚" }, { de: "Handy", es: "Móvil", icon: "📱" }, { de: "Computer", es: "Ordenador", icon: "💻" },
+                { de: "Schule", es: "Escuela", icon: "🏫" }, { de: "Lehrer", es: "Profe", icon: "👨‍🏫" }, { de: "Freunde", es: "Amigos", icon: "👫" }, { de: "Spielplatz", es: "Parque", icon: "🛝" }, { de: "Rutsche", es: "Tobogán", icon: "🛝" },
+                { de: "Schaukel", es: "Columpio", icon: "🪑" }, { de: "Sand", es: "Arena", icon: "⏳" }, { de: "Bus", es: "Bus", icon: "🚌" }, { de: "Zug", es: "Tren", icon: "🚆" }, { de: "Flugzeug", es: "Avión", icon: "✈️" },
+                { de: "Boot", es: "Barco", icon: "⛵" }, { de: "LKW", es: "Camión", icon: "🚚" }, { de: "Polizei", es: "Policía", icon: "🚓" }, { de: "Feuerwehr", es: "Bomberos", icon: "🚒" }, { de: "Krankenhaus", es: "Hospital", icon: "🏥" },
+                { de: "Apotheke", es: "Farmacia", icon: "💊" }, { de: "Bäcker", es: "Panadería", icon: "🥨" }, { de: "Supermarkt", es: "Súper", icon: "🛒" }, { de: "Kino", es: "Cine", icon: "🎬" }, { de: "Park", es: "Parque", icon: "🌳" }
+            ],
+            3: [ // NIVEL 3: NATURALEZA, OBJETOS Y CIENCIA (50)
+                { de: "Wald", es: "Bosque", icon: "🌲" }, { de: "Berg", es: "Montaña", icon: "⛰️" }, { de: "See", es: "Lago", icon: "🌊" }, { de: "Meer", es: "Mar", icon: "🌊" }, { de: "Fluß", es: "Río", icon: "🏞️" },
+                { de: "Insel", es: "Isla", icon: "🏝️" }, { de: "Strand", es: "Playa", icon: "🏖️" }, { de: "Schnee", es: "Nieve", icon: "❄️" }, { de: "Eisberg", es: "Iceberg", icon: "🏔️" }, { de: "Wolke", es: "Nube", icon: "☁️" },
+                { de: "Wind", es: "Viento", icon: "🌬️" }, { de: "Gewitter", es: "Tormenta", icon: "⚡" }, { de: "Regenbogen", es: "Arcoíris", icon: "🌈" }, { de: "Erde", es: "Tierra", icon: "🌍" }, { de: "Weltraum", es: "Espacio", icon: "🚀" },
+                { de: "Rakete", es: "Cohete", icon: "🚀" }, { de: "Planet", es: "Planeta", icon: "🪐" }, { de: "Komet", es: "Cometa", icon: "☄️" }, { de: "Aliens", es: "Marciano", icon: "👽" }, { de: "Roboter", es: "Robot", icon: "🤖" },
+                { de: "Dinosaurier", es: "Dino", icon: "🦖" }, { de: "Drache", es: "Dragón", icon: "🐉" }, { de: "Einhorn", es: "Unicornio", icon: "🦄" }, { de: "Schloss", es: "Castillo", icon: "🏰" }, { de: "König", es: "Rey", icon: "👑" },
+                { de: "Pirat", es: "Pirata", icon: "🏴‍☠️" }, { de: "Schatz", es: "Tesoro", icon: "💰" }, { de: "Zelt", es: "Tienda", icon: "⛺" }, { de: "Fuego", es: "Lagerfeuer", icon: "🔥" }, { de: "Kompass", es: "Brújula", icon: "🧭" },
+                { de: "Taschenlampe", es: "Linterna", icon: "🔦" }, { de: "Kamera", es: "Cámara", icon: "📷" }, { de: "Gitarre", es: "Guitarra", icon: "🎸" }, { de: "Klavier", es: "Piano", icon: "🎹" }, { de: "Trommel", es: "Tambor", icon: "🥁" },
+                { de: "Pinsel", es: "Pincel", icon: "🖌️" }, { de: "Farben", es: "Colores", icon: "🎨" }, { de: "Schere", es: "Tijeras", icon: "✂️" }, { de: "Kleber", es: "Pegamento", icon: "🧪" }, { de: "Papier", es: "Papel", icon: "📄" },
+                { de: "Seife", es: "Jabón", icon: "🧼" }, { de: "Zahnbürste", es: "Cepillo", icon: "🪥" }, { de: "Handtuch", es: "Toalla", icon: "🧖" }, { de: "Badewanne", es: "Bañera", icon: "🛁" }, { de: "Spiegel", es: "Espejo", icon: "🪞" },
+                { de: "Kamm", es: "Peine", icon: "🪮" }, { de: "Fön", es: "Secador", icon: "💨" }, { de: "Pilz", es: "Seta", icon: "🍄" }, { de: "Krokodil", es: "Cocodrilo", icon: "🐊" }, { de: "Erdbeere", es: "Fresa", icon: "🍓" }
+            ]
+        };
+
+        let currentLevel = 1;
+        let wordQueue = [];
+        let currentWord = {};
+        let stats = { streak: 0, good: 0, bad: 0 };
+        let isLocked = false;
+        
+        const canvas = document.getElementById("canvas-confetti");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+        let animId;
+
+        function changeLevel(lvl, btn) {
+            currentLevel = lvl;
+            document.querySelectorAll('.btn-level').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            stats.streak = 0; // Reiniciar racha al cambiar nivel
+            updateStats();
+            initLevel();
+        }
+
+        function initLevel() {
+            wordQueue = [...allLevels[currentLevel]].sort(() => Math.random() - 0.5);
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            isLocked = false;
+            if (wordQueue.length === 0) wordQueue = [...allLevels[currentLevel]].sort(() => Math.random() - 0.5);
+            
+            currentWord = wordQueue.pop();
+            
+            // Elegir distractores
+            let distractors = [];
+            let allAvailable = [...allLevels[1], ...allLevels[2], ...allLevels[3]].filter(w => w.de !== currentWord.de);
+            allAvailable.sort(() => Math.random() - 0.5);
+            distractors = allAvailable.slice(0, 2);
+
+            let choices = [currentWord, ...distractors].sort(() => Math.random() - 0.5);
+
+            const container = document.getElementById('options');
+            container.innerHTML = '';
+            choices.forEach(c => {
+                const b = document.createElement('button');
+                b.className = 'btn-option';
+                b.innerHTML = `<span>${c.icon}</span> <span>${c.es}</span>`;
+                b.onclick = (e) => check(c, e.currentTarget);
+                container.appendChild(b);
+            });
+            playCurrentWord();
+        }
+
+        function playCurrentWord() {
+            const ut = new SpeechSynthesisUtterance(currentWord.de);
+            ut.lang = 'de-DE';
+            ut.rate = 0.75;
+            window.speechSynthesis.speak(ut);
+        }
+
+        function check(selected, element) {
+            if(isLocked) return;
+            if(selected.de === currentWord.de) {
+                isLocked = true;
+                stats.good++; stats.streak++;
+                updateStats();
+                element.classList.add('correct');
+                const v = new SpeechSynthesisUtterance("Richtig!"); v.lang = 'de-DE'; window.speechSynthesis.speak(v);
+                startConfetti();
+                setTimeout(() => { stopConfetti(); nextQuestion(); }, 1500);
+            } else {
+                stats.bad++; stats.streak = 0;
+                updateStats();
+                element.classList.add('wrong');
+                const v = new SpeechSynthesisUtterance("Nein"); v.lang = 'de-DE'; window.speechSynthesis.speak(v);
+                setTimeout(() => element.classList.remove('wrong'), 500);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('streak').innerText = stats.streak;
+            document.getElementById('good').innerText = stats.good;
+            document.getElementById('bad').innerText = stats.bad;
+        }
+
+        function startConfetti() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            particles = Array.from({length: 40}, () => ({
+                x: canvas.width/2, y: canvas.height/2,
+                vx: (Math.random()-0.5)*15, vy: (Math.random()-0.8)*15,
+                color: `hsl(${Math.random()*360}, 100%, 50%)`, size: 6, opacity: 1
+            }));
+            animate();
+        }
+
+        function animate() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.4; p.opacity -= 0.015;
+                ctx.globalAlpha = Math.max(0, p.opacity);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            animId = requestAnimationFrame(animate);
+        }
+
+        function stopConfetti() { cancelAnimationFrame(animId); ctx.clearRect(0,0,canvas.width,canvas.height); }
+
+        window.speechSynthesis.onvoiceschanged = initLevel;
+        if(window.speechSynthesis.getVoices().length > 0) initLevel();
+    </script>
+</body>
+</html>
