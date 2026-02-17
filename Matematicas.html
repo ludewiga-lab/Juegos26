@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Math Master Pro</title>
+    <style>
+        :root {
+            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary: #ffffff;
+            --success: #00b894;
+            --error: #ff7675;
+            --text-dark: #2d3436;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: var(--safe-top) 0 var(--safe-bottom) 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none; /* Anti-scroll para evitar gestos del navegador */
+        }
+
+        /* Contenedor Principal Adaptativo 1:1 o Portrait */
+        .game-container {
+            width: 95vw;
+            max-width: 500px;
+            aspect-ratio: 9 / 16; /* Orientación Vertical Premium */
+            background: var(--secondary);
+            margin: auto;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        h1 {
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
+            margin: 0;
+            background: var(--primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Selectores de Operación y Nivel */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        select, button {
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid #eee;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+        }
+
+        .btn-action:active { transform: scale(0.95); }
+
+        /* Área de Juego */
+        .display-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #f8faff;
+            border-radius: 20px;
+            margin: 10px 0;
+            transition: background 0.3s;
+        }
+
+        .equation {
+            font-size: clamp(3rem, 12vw, 5rem);
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+        }
+
+        input[type="number"] {
+            width: 80%;
+            height: 80px;
+            font-size: 3rem;
+            text-align: center;
+            border: 4px solid #e0e0e0;
+            border-radius: 20px;
+            color: #764ba2;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus { border-color: #764ba2; }
+
+        /* HUD: Racha y Record */
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            font-weight: bold;
+        }
+
+        .streak-tag { color: #fdcb6e; font-size: 1.2rem; }
+        .high-score { color: #636e72; }
+
+        /* Efecto feedback */
+        .correct { background: #d1fae5 !important; }
+        .wrong { background: #fee2e2 !important; animation: shake 0.4s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        canvas#fireworks {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="fireworks"></canvas>
+
+<div class="game-container">
+    <div class="header">
+        <h1>Math Master ⚡</h1>
+    </div>
+
+    <div class="controls">
+        <select id="op-select" onchange="initGame()">
+            <option value="sum">Suma (+)</option>
+            <option value="sub">Resta (-)</option>
+            <option value="mul">Multiplicación (×)</option>
+            <option value="div">División (÷)</option>
+        </select>
+        <select id="level-select" onchange="initGame()">
+            <option value="easy">Fácil (1 cifra)</option>
+            <option value="med">Medio (2 cifras)</option>
+            <option value="hard">Difícil (3 cifras)</option>
+        </select>
+    </div>
+
+    <div class="display-card" id="game-screen">
+        <div class="equation">
+            <span id="q-text">0 + 0</span>
+        </div>
+        <input type="number" id="user-input" placeholder=" " inputmode="numeric">
+        <button class="btn-action" style="margin-top: 20px; width: 80%;" onclick="checkAnswer()">COMPROBAR</button>
+    </div>
+
+    <div class="hud">
+        <div class="streak-tag">Racha: <span id="streak">0</span> 🔥</div>
+        <div class="high-score">Record: <span id="best">0</span></div>
+    </div>
+</div>
+
+<script>
+    let state = {
+        correct: 0,
+        streak: 0,
+        highScore: localStorage.getItem('math_high_score') || 0
+    };
+
+    const inputField = document.getElementById('user-input');
+    const gameScreen = document.getElementById('game-screen');
+    const fwCanvas = document.getElementById("fireworks");
+    const fwCtx = fwCanvas.getContext("2d");
+
+    document.getElementById('best').innerText = state.highScore;
+
+    function initGame() {
+        const op = document.getElementById('op-select').value;
+        const lv = document.getElementById('level-select').value;
+        generateProblem(op, lv);
+        inputField.focus();
+    }
+
+    function generateProblem(op, lv) {
+        let n1, n2, range;
+        
+        // Configuración de rangos según nivel
+        if (lv === 'easy') range = 9;
+        else if (lv === 'med') range = 90;
+        else range = 900;
+
+        let offset = lv === 'easy' ? 1 : 10;
+
+        n1 = Math.floor(Math.random() * range) + offset;
+        n2 = Math.floor(Math.random() * range) + offset;
+
+        let symbol = '+';
+        
+        switch(op) {
+            case 'sum':
+                state.correct = n1 + n2;
+                symbol = '+';
+                break;
+            case 'sub':
+                if (n1 < n2) [n1, n2] = [n2, n1]; // Evitar negativos para niños
+                state.correct = n1 - n2;
+                symbol = '-';
+                break;
+            case 'mul':
+                // Ajuste de dificultad para multiplicación
+                if(lv === 'hard') n2 = Math.floor(Math.random() * 20); 
+                state.correct = n1 * n2;
+                symbol = '×';
+                break;
+            case 'div':
+                // Asegurar división exacta
+                state.correct = n1;
+                n1 = n1 * n2; 
+                symbol = '÷';
+                break;
+        }
+
+        document.getElementById('q-text').innerText = `${n1} ${symbol} ${n2}`;
+        inputField.value = '';
+    }
+
+    function checkAnswer() {
+        const val = parseInt(inputField.value);
+        if (isNaN(val)) return;
+
+        if (val === state.correct) {
+            state.streak++;
+            gameScreen.classList.add('correct');
+            if (state.streak > state.highScore) {
+                state.highScore = state.streak;
+                localStorage.setItem('math_high_score', state.highScore);
+                document.getElementById('best').innerText = state.highScore;
+            }
+            if (state.streak % 5 === 0) startFireworks();
+        } else {
+            state.streak = 0;
+            gameScreen.classList.add('wrong');
+            // Feedback háptico visual (vibración lógica)
+            if (window.navigator.vibrate) window.navigator.vibrate(200);
+        }
+
+        document.getElementById('streak').innerText = state.streak;
+
+        setTimeout(() => {
+            gameScreen.classList.remove('correct', 'wrong');
+            initGame();
+        }, 600);
+    }
+
+    // Escuchar Enter en teclado móvil
+    inputField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkAnswer();
+    });
+
+    // --- Sistema de Partículas (Fuegos Artificiales) ---
+    function startFireworks() {
+        fwCanvas.width = window.innerWidth;
+        fwCanvas.height = window.innerHeight;
+        let particles = Array.from({length: 50}, () => ({
+            x: fwCanvas.width/2, y: fwCanvas.height/2,
+            vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+            c: `hsl(${Math.random()*360}, 70%, 50%)`, a: 1
+        }));
+        
+        function draw() {
+            fwCtx.clearRect(0,0,fwCanvas.width, fwCanvas.height);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.a -= 0.02;
+                fwCtx.fillStyle = p.c; fwCtx.globalAlpha = p.a;
+                fwCtx.beginPath(); fwCtx.arc(p.x, p.y, 3, 0, 7); fwCtx.fill();
+            });
+            if(particles[0].a > 0) requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    // Iniciar
+    initGame();
+</script>
+
+</body>
+</html>
