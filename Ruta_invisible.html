@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Ruta Invisible: Pro Evolution</title>
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --accent: #facc15;
+            --tile: #1e293b;
+            --path: #38bdf8;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        /* UI de Control Superior */
+        .header {
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #btn-reset {
+            background: #334155;
+            color: #94a3b8;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        /* Selector de Dificultad */
+        .diff-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn-diff {
+            background: #1e293b;
+            border: 2px solid #334155;
+            color: #64748b;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .btn-diff.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(250, 204, 21, 0.1);
+        }
+
+        /* Tablero */
+        #grid {
+            display: grid;
+            gap: 5px;
+            background: #1e293b;
+            padding: 10px;
+            border-radius: 15px;
+            border: 4px solid #334155;
+            width: 88vw;
+            max-width: 360px;
+            aspect-ratio: 1/1;
+        }
+
+        .tile {
+            background: var(--bg);
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        /* Colores de Estado */
+        .path-active { background: var(--path) !important; box-shadow: 0 0 15px var(--path); }
+        .correct { background: #22c55e !important; }
+        .wrong { background: #ef4444 !important; animation: shake 0.3s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        #status {
+            margin: 15px 0;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            height: 1.2rem;
+            text-align: center;
+        }
+
+        /* Botón Principal */
+        .btn-play {
+            padding: 16px 40px;
+            border-radius: 50px;
+            border: none;
+            background: var(--accent);
+            color: #000;
+            font-weight: 900;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #a18105;
+        }
+
+        .btn-play:active { transform: translateY(3px); box-shadow: 0 2px 0 #a18105; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button id="btn-reset" onclick="resetAll()">RESET TOTAL</button>
+        <div class="stats">
+            <span>PTS: <span id="score">0</span></span>
+            <span>BEST: <span id="best">0</span></span>
+        </div>
+    </div>
+
+    <h1>RUTA INVISIBLE</h1>
+
+    <div class="diff-nav">
+        <button class="btn-diff active" onclick="setMode(5, this)">5x5 NORMAL</button>
+        <button class="btn-diff" onclick="setMode(7, this)">7x7 SERPIENTE</button>
+    </div>
+
+    <div id="grid"></div>
+    <div id="status">Selecciona el nivel y empieza</div>
+
+    <div style="margin-top: 15px;">
+        <button id="btn-action" class="btn-play" onclick="initRound()">MOSTRAR RUTA</button>
+    </div>
+
+    <script>
+        let size = 5;
+        let path = [];
+        let step = 0;
+        let isWatching = false;
+        let score = 0;
+
+        const gridEl = document.getElementById('grid');
+        const statusEl = document.getElementById('status');
+        const scoreEl = document.getElementById('score');
+        const bestEl = document.getElementById('best');
+        const actionBtn = document.getElementById('btn-action');
+
+        bestEl.innerText = localStorage.getItem('path_master_v4') || 0;
+
+        function setMode(s, btn) {
+            if (isWatching) return;
+            size = s;
+            document.querySelectorAll('.btn-diff').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            score = 0;
+            scoreEl.innerText = 0;
+            createGrid();
+        }
+
+        function createGrid() {
+            gridEl.innerHTML = '';
+            gridEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            gridEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+            for (let i = 0; i < size * size; i++) {
+                const t = document.createElement('div');
+                t.className = 'tile';
+                t.onpointerdown = (e) => { e.preventDefault(); handleStep(i); };
+                gridEl.appendChild(t);
+            }
+        }
+
+        // Algoritmo de generación diferenciado
+        function generatePath() {
+            let target = (size * size) - 1;
+            let attempts = 0;
+
+            while (attempts < 1000) {
+                path = [0];
+                let curr = 0;
+                let visited = new Set([0]);
+                let stuck = false;
+
+                while (curr !== target) {
+                    let x = curr % size;
+                    let y = Math.floor(curr / size);
+                    let neighbors = [];
+
+                    if (size === 5) {
+                        // 5x5: Solo derecha y abajo (Lógica simple)
+                        if (x < size - 1) neighbors.push(curr + 1);
+                        if (y < size - 1) neighbors.push(curr + size);
+                    } else {
+                        // 7x7: Serpiente (Arriba, Abajo, Izquierda, Derecha)
+                        let potential = [];
+                        if (x < size - 1) potential.push(curr + 1);
+                        if (x > 0) potential.push(curr - 1);
+                        if (y < size - 1) potential.push(curr + size);
+                        if (y > 0) potential.push(curr - size);
+
+                        // Regla de NO CONTACTO: No puede tocar celdas ya usadas (salvo la anterior)
+                        neighbors = potential.filter(n => {
+                            if (visited.has(n)) return false;
+                            let nx = n % size;
+                            let ny = Math.floor(n / size);
+                            let contacts = 0;
+                            path.forEach(p => {
+                                if (Math.abs(nx - (p % size)) + Math.abs(ny - Math.floor(p / size)) === 1) contacts++;
+                            });
+                            return contacts <= 1;
+                        });
+                    }
+
+                    if (neighbors.length === 0) { stuck = true; break; }
+
+                    // Priorizamos acercarnos al final en 7x7 para que no sea imposible
+                    if (size === 7) {
+                        neighbors.sort((a, b) => {
+                            let distA = (size - 1 - (a % size)) + (size - 1 - Math.floor(a / size));
+                            let distB = (size - 1 - (b % size)) + (size - 1 - Math.floor(b / size));
+                            return (distA - distB) + (Math.random() - 0.5) * 2;
+                        });
+                    }
+
+                    curr = neighbors[Math.floor(Math.random() * (size === 5 ? neighbors.length : 1))];
+                    path.push(curr);
+                    visited.add(curr);
+                }
+
+                if (!stuck && path[path.length - 1] === target) {
+                    // Dificultad Progresiva: En 7x7, si el score es alto, exigimos rutas más largas
+                    if (size === 7 && path.length < 10 + Math.min(score / 5, 15)) {
+                        attempts++;
+                        continue;
+                    }
+                    return;
+                }
+                attempts++;
+            }
+        }
+
+        async function initRound() {
+            if (isWatching) return;
+            isWatching = true;
+            actionBtn.classList.add('hidden');
+            createGrid();
+            generatePath();
+
+            statusEl.innerText = "¡MEMORIZA LA RUTA!";
+            const tiles = document.querySelectorAll('.tile');
+            
+            // Dificultad Progresiva: Velocidad según Score
+            let speed = Math.max(80, 250 - (score * 3));
+            
+            for (let idx of path) {
+                tiles[idx].classList.add('path-active');
+                await new Promise(r => setTimeout(r, speed));
+            }
+
+            await new Promise(r => setTimeout(r, 1000));
+            tiles.forEach(t => t.classList.remove('path-active'));
+            statusEl.innerText = "TU TURNO... ¡LLEGA AL FINAL!";
+            isWatching = false;
+            step = 0;
+        }
+
+        function handleStep(idx) {
+            if (isWatching || !actionBtn.classList.contains('hidden')) return;
+
+            const tiles = document.querySelectorAll('.tile');
+            if (idx === path[step]) {
+                tiles[idx].classList.add('correct');
+                step++;
+                if (step === path.length) {
+                    score += (size === 5 ? 10 : 20); // Más puntos en serpiente
+                    scoreEl.innerText = score;
+                    saveBest();
+                    statusEl.innerText = "¡EXCELENTE!";
+                    actionBtn.innerText = "SIGUIENTE NIVEL";
+                    actionBtn.classList.remove('hidden');
+                }
+            } else {
+                tiles[idx].classList.add('wrong');
+                statusEl.innerText = "¡CAÍSTE!";
+                score = Math.max(0, score - 5);
+                scoreEl.innerText = score;
+                setTimeout(() => {
+                    tiles.forEach(t => t.classList.remove('correct', 'wrong'));
+                    step = 0;
+                }, 400);
+            }
+        }
+
+        function saveBest() {
+            let b = localStorage.getItem('path_master_v4') || 0;
+            if (score > b) {
+                localStorage.setItem('path_master_v4', score);
+                bestEl.innerText = score;
+            }
+        }
+
+        function resetAll() {
+            score = 0;
+            scoreEl.innerText = 0;
+            statusEl.innerText = "Reiniciado";
+            actionBtn.innerText = "MOSTRAR RUTA";
+            actionBtn.classList.remove('hidden');
+            createGrid();
+        }
+
+        createGrid();
+    </script>
+</body>
+</html>
