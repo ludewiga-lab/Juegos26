@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Simón Dice - Animales Mágicos</title>
+    <style>
+        :root {
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+        body {
+            background-color: #2c3e50;
+            color: white;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: var(--safe-top) 0 var(--safe-bottom) 0;
+            touch-action: none; /* Evita scroll y zoom accidental */
+            overflow: hidden;
+        }
+        h1 { margin: 10px 0; color: #f1c40f; text-shadow: 2px 2px #000; font-size: clamp(1.5rem, 5vw, 2.5rem); }
+        
+        #score-board { 
+            display: flex;
+            gap: 20px;
+            font-size: 1.2rem; 
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+        }
+
+        .difficulty-selector {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .diff-btn {
+            padding: 8px 15px;
+            border: 2px solid #f1c40f;
+            background: transparent;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .diff-btn.active {
+            background: #f1c40f;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .grid {
+            display: grid;
+            gap: 15px;
+            /* El grid se adapta según la dificultad */
+            grid-template-columns: repeat(2, 140px);
+            justify-content: center;
+        }
+
+        .grid.hard {
+            grid-template-columns: repeat(2, 130px);
+        }
+        
+        .tile {
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(3rem, 10vw, 4rem);
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.1s;
+            border: 5px solid rgba(0,0,0,0.2);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .tile:active { transform: scale(0.95); }
+        
+        /* Colores */
+        #lion { background-color: #e67e22; }
+        #frog { background-color: #2ecc71; }
+        #bird { background-color: #3498db; }
+        #cat  { background-color: #9b59b6; }
+        #dog  { background-color: #e74c3c; } /* Nuevo */
+        #monkey { background-color: #1abc9c; } /* Nuevo */
+
+        .light-up { opacity: 0.4; transform: scale(1.05); border-color: white; }
+        
+        #start-btn {
+            margin-top: 25px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: #f1c40f;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #2c3e50;
+            box-shadow: 0 4px #d4ac0d;
+            transition: 0.2s;
+        }
+        #start-btn:active { transform: translateY(4px); box-shadow: 0 0; }
+        #status { margin-top: 15px; font-weight: bold; height: 1.5rem; text-align: center; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <h1>🦁 Simón Dice 🐸</h1>
+    
+    <div id="score-board">
+        <div>Ronda: <span id="round">0</span></div>
+        <div>Record: <span id="high-score">0</span></div>
+    </div>
+
+    <div class="difficulty-selector" id="diff-container">
+        <button class="diff-btn active" onclick="setDifficulty(4, this)">Fácil (4)</button>
+        <button class="diff-btn" onclick="setDifficulty(6, this)">Difícil (6)</button>
+    </div>
+    
+    <div class="grid" id="game-grid">
+        <div class="tile" id="lion" onpointerdown="handleTileClick('lion')">🦁</div>
+        <div class="tile" id="frog" onpointerdown="handleTileClick('frog')">🐸</div>
+        <div class="tile" id="bird" onpointerdown="handleTileClick('bird')">🐦</div>
+        <div class="tile" id="cat" onpointerdown="handleTileClick('cat')">🐱</div>
+        <div class="tile hidden" id="dog" onpointerdown="handleTileClick('dog')">🐶</div>
+        <div class="tile hidden" id="monkey" onpointerdown="handleTileClick('monkey')">🐒</div>
+    </div>
+
+    <div id="status">¡Elige dificultad e inicia!</div>
+    <button id="start-btn" onclick="startGame()">¡EMPEZAR!</button>
+
+    <script>
+        let sequence = [];
+        let playerSequence = [];
+        let round = 0;
+        let canPlay = false;
+        let currentDifficulty = 4;
+        
+        const allTiles = ['lion', 'frog', 'bird', 'cat', 'dog', 'monkey'];
+        let activeTiles = ['lion', 'frog', 'bird', 'cat'];
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const frequencies = { 
+            lion: 261.6, frog: 329.6, bird: 392.0, 
+            cat: 523.3, dog: 587.3, monkey: 659.3 
+        };
+
+        // Cargar High Score inicial
+        document.getElementById('high-score').innerText = localStorage.getItem('simonHighScore') || 0;
+
+        function setDifficulty(num, btn) {
+            if (sequence.length > 0 && canPlay) return; // No cambiar a mitad de juego
+            
+            currentDifficulty = num;
+            activeTiles = allTiles.slice(0, num);
+            
+            // UI Update
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const grid = document.getElementById('game-grid');
+            if(num === 6) {
+                grid.classList.add('hard');
+                document.getElementById('dog').classList.remove('hidden');
+                document.getElementById('monkey').classList.remove('hidden');
+            } else {
+                grid.classList.remove('hard');
+                document.getElementById('dog').classList.add('hidden');
+                document.getElementById('monkey').classList.add('hidden');
+            }
+        }
+
+        function playSound(tileId) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.value = frequencies[tileId];
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        function lightUp(tileId) {
+            const el = document.getElementById(tileId);
+            el.classList.add('light-up');
+            playSound(tileId);
+            setTimeout(() => el.classList.remove('light-up'), 350);
+        }
+
+        function startGame() {
+            sequence = [];
+            round = 0;
+            document.getElementById('start-btn').classList.add('hidden');
+            document.getElementById('diff-container').style.pointerEvents = 'none';
+            document.getElementById('diff-container').style.opacity = '0.5';
+            nextRound();
+        }
+
+        function nextRound() {
+            playerSequence = [];
+            round++;
+            canPlay = false;
+            document.getElementById('round').innerText = round;
+            document.getElementById('status').innerText = "Simón observa...";
+            
+            sequence.push(activeTiles[Math.floor(Math.random() * activeTiles.length)]);
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                lightUp(sequence[i]);
+                i++;
+                if (i >= sequence.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        canPlay = true;
+                        document.getElementById('status').innerText = "¡Tu turno!";
+                    }, 300);
+                }
+            }, 700);
+        }
+
+        function handleTileClick(tileId) {
+            if (!canPlay) return;
+            
+            lightUp(tileId);
+            playerSequence.push(tileId);
+            
+            const currentStep = playerSequence.length - 1;
+            
+            if (playerSequence[currentStep] !== sequence[currentStep]) {
+                gameOver();
+                return;
+            }
+            
+            if (playerSequence.length === sequence.length) {
+                canPlay = false;
+                document.getElementById('status').innerText = "¡Excelente!";
+                updateHighScore();
+                setTimeout(nextRound, 1000);
+            }
+        }
+
+        function updateHighScore() {
+            const currentHigh = parseInt(localStorage.getItem('simonHighScore') || 0);
+            if (round > currentHigh) {
+                localStorage.setItem('simonHighScore', round);
+                document.getElementById('high-score').innerText = round;
+            }
+        }
+
+        function gameOver() {
+            document.getElementById('status').innerText = "¡Perdiste! Ronda alcanzada: " + round;
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "REINTENTAR";
+            btn.classList.remove('hidden');
+            document.getElementById('diff-container').style.pointerEvents = 'auto';
+            document.getElementById('diff-container').style.opacity = '1';
+            canPlay = false;
+            
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = 120;
+            osc.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+    </script>
+</body>
+</html>
