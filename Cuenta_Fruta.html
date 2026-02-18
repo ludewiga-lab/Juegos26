@@ -2,102 +2,171 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beast Challenge: El Contador Ajustable</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Beast Challenge: Control Edition</title>
     <style>
+        :root {
+            --primary: #facc15;
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.7);
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        * { box-sizing: border-box; font-family: 'Arial Black', sans-serif; }
+        
         body {
-            background-color: #0b0e14;
+            background-color: var(--bg);
+            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
             color: white;
-            font-family: 'Arial Black', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            justify-content: space-between;
+            height: 100dvh;
             margin: 0;
+            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
             overflow: hidden;
         }
 
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            flex-shrink: 0;
+        }
+
+        .score-container { text-align: right; line-height: 1.1; }
+        .score-label { font-size: 0.6rem; color: var(--primary); text-transform: uppercase; }
+        .score-value { font-size: 1.1rem; display: block; }
+
+        h1 { font-size: 1.1rem; margin: 0; color: var(--primary); }
+
+        /* STAGE */
         #stage {
-            width: 85vw;
-            height: 45vh;
-            background: #1e293b;
-            border: 4px solid #facc15;
+            width: 100%;
+            max-width: 500px;
+            height: 35vh;
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 3px solid var(--primary);
             border-radius: 20px;
             position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .emoji {
             position: absolute;
             font-size: 4rem;
             user-select: none;
-            transition: transform 0.1s linear;
+            pointer-events: none;
+        }
+
+        /* UI PANEL */
+        #ui-wrap {
+            width: 100%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         #config-panel {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             padding: 15px;
             border-radius: 15px;
-            margin-bottom: 20px;
             text-align: center;
-            width: 300px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        input[type=range] { width: 100%; cursor: pointer; }
+        input[type=range] { 
+            width: 100%; 
+            margin: 10px 0;
+            accent-color: var(--primary);
+        }
 
-        .btn {
-            padding: 12px 30px;
-            font-size: 1.2rem;
-            background: #facc15;
+        .btn-main {
+            padding: 14px;
+            font-size: 1.1rem;
+            background: var(--primary);
             color: #000;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 10px;
+            width: 100%;
+            box-shadow: 0 5px 0 #a1840d;
         }
 
-        #question-box {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
+        .btn-main:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #a1840d;
+        }
+
+        #question-box { display: none; text-align: center; }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
         }
 
         .answer-btn {
-            padding: 10px 20px;
-            font-size: 1.5rem;
-            margin: 5px;
-            cursor: pointer;
+            padding: 12px;
+            font-size: 1.3rem;
             background: #334155;
             color: white;
-            border: 2px solid #facc15;
+            border: 2px solid var(--primary);
             border-radius: 10px;
         }
 
-        #result { font-size: 2rem; margin-top: 15px; }
+        #result { 
+            font-size: 1.4rem; 
+            min-height: 4rem;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        #msg { color: #94a3b8; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <h1 style="color: #facc15;">🔢 EL CONTADOR: MODO CONTROL 🔢</h1>
-    
-    <div id="config-panel">
-        <label>Velocidad: <span id="speed-val">1.5</span>s</label><br>
-        <input type="range" id="speed-slider" min="0.5" max="4" step="0.5" value="1.5">
-        <button id="start-btn" class="btn" onclick="startChallenge()">LANZAR RETO</button>
+    <div class="game-header">
+        <h1>🔢 BEAST COUNT</h1>
+        <div style="display: flex; gap: 15px;">
+            <div class="score-container">
+                <span class="score-label">Puntos</span>
+                <span id="current-score" class="score-value">0</span>
+            </div>
+            <div class="score-container">
+                <span class="score-label">Récord</span>
+                <span id="best-score" class="score-value">0</span>
+            </div>
+        </div>
     </div>
-
+    
     <div id="stage">
         <div id="msg">Ajusta la velocidad y dale a empezar</div>
     </div>
 
-    <div id="question-box">
-        <h2 id="question-text"></h2>
-        <div id="options"></div>
+    <div id="ui-wrap">
+        <div id="config-panel">
+            <label>Velocidad: <span id="speed-val">1.5</span>s</label><br>
+            <input type="range" id="speed-slider" min="0.5" max="4" step="0.5" value="1.5">
+            <button class="btn-main" onclick="startChallenge()">LANZAR RETO</button>
+        </div>
+
+        <div id="question-box">
+            <h2 id="question-text" style="font-size: 1rem; margin-bottom: 10px;"></h2>
+            <div id="options" class="options-grid"></div>
+        </div>
     </div>
 
     <div id="result"></div>
@@ -106,10 +175,15 @@
         const emojiPool = ['🍎', '🍌', '🍇', '🍒', '🍓', '🍍'];
         const slider = document.getElementById('speed-slider');
         const speedVal = document.getElementById('speed-val');
+        const currentScoreEl = document.getElementById('current-score');
+        const bestScoreEl = document.getElementById('best-score');
         
         let counts = {};
         let targetEmoji = '';
+        let score = 0;
+        let highScore = localStorage.getItem('beast_hc') || 0;
 
+        bestScoreEl.innerText = highScore;
         slider.oninput = function() { speedVal.innerText = this.value; }
 
         function startChallenge() {
@@ -122,12 +196,11 @@
             document.getElementById('result').innerText = '';
             stage.innerHTML = '';
 
-            const totalItems = 10; // Límite estricto de 10
+            const totalItems = 10;
 
             for (let i = 0; i < totalItems; i++) {
                 const emoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
                 counts[emoji] = (counts[emoji] || 0) + 1;
-                
                 setTimeout(() => spawnEmoji(emoji, speed), i * (speed * 0.7));
             }
 
@@ -142,12 +215,11 @@
             el.style.top = Math.random() * 70 + 10 + '%';
             document.getElementById('stage').appendChild(el);
 
-            // Animación manual con JS para control total de velocidad
             let start = null;
             function step(timestamp) {
                 if (!start) start = timestamp;
                 let progress = (timestamp - start) / duration;
-                el.style.left = (progress * 120) - 10 + '%';
+                el.style.left = (progress * 130) - 15 + '%';
                 if (progress < 1) {
                     window.requestAnimationFrame(step);
                 } else {
@@ -159,6 +231,7 @@
 
         function askQuestion() {
             const keys = Object.keys(counts);
+            if (keys.length === 0) { startChallenge(); return; }
             targetEmoji = keys[Math.floor(Math.random() * keys.length)];
             
             document.getElementById('question-text').innerText = `¿Cuántos ${targetEmoji} pasaron?`;
@@ -167,8 +240,7 @@
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '';
             
-            // Crear botones de respuesta (0 al 10)
-            for (let i = 0; i <= 5; i++) { // Simplificado para que sea más fácil elegir
+            for (let i = 0; i <= 5; i++) {
                 const btn = document.createElement('button');
                 btn.className = 'answer-btn';
                 btn.innerText = i;
@@ -182,18 +254,28 @@
             const res = document.getElementById('result');
             
             if (val === correct) {
-                res.innerHTML = "✅ ¡EXCELENTE! <br> Eres muy rápido.";
+                score += 10;
+                res.innerHTML = "✅ ¡EXCELENTE!";
                 res.style.color = "#22c55e";
+                if(score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('beast_hc', highScore);
+                    bestScoreEl.innerText = highScore;
+                }
             } else {
-                res.innerHTML = `❌ ¡OH NO! <br> Había ${correct} ${targetEmoji}.`;
+                score = 0;
+                res.innerHTML = `❌ FALLASTE<br><span style="font-size:0.9rem">Había ${correct} ${targetEmoji}</span>`;
                 res.style.color = "#ef4444";
             }
 
+            currentScoreEl.innerText = score;
+
             setTimeout(() => {
                 document.getElementById('config-panel').style.display = 'block';
+                document.getElementById('question-box').style.display = 'none';
                 document.getElementById('result').innerText = '';
-                document.getElementById('stage').innerHTML = '¡Listo para otra ronda!';
-            }, 3000);
+                document.getElementById('stage').innerHTML = '¡Listo!';
+            }, 2500);
         }
     </script>
 </body>
