@@ -3,290 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Beast Games: Tug of War Pro</title>
+    <title>Beast Tug: Tablet & Mobile Pro</title>
     <style>
         :root {
             --beast-blue: #00a8ff;
             --beast-pink: #ff0055;
             --gold: #fbc531;
-            --pc-color: #95a5a6;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             margin: 0; padding: 0;
             font-family: 'Arial Black', sans-serif;
-            background: #111;
+            background: #000;
             height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            touch-action: none;
-            color: white;
+            touch-action: none; /* Crucial para tablets */
+        }
+
+        /* Contenedor que limita el ancho en tablets */
+        .game-viewport {
+            width: 100%;
+            max-width: 900px;
+            height: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: #1e272e;
+            position: relative;
         }
 
         #header {
-            padding: 15px;
+            padding: 10px;
             text-align: center;
             background: rgba(0,0,0,0.8);
             border-bottom: 3px solid var(--beast-blue);
-            flex-shrink: 0;
             z-index: 10;
         }
 
-        #score-board { color: var(--gold); font-size: clamp(0.8rem, 3vw, 1.1rem); }
+        #score-board { color: var(--gold); font-size: 1rem; }
 
-        /* Contenedor Adaptativo para Tablet */
-        .main-container {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 800px; /* Evita que en tablets se estire infinitamente */
-            margin: 0 auto;
-            position: relative;
-            background: #1e272e;
-        }
-
-        /* Escenario */
+        /* Escenario de la cuerda */
         .arena {
-            flex-grow: 1;
+            flex: 1;
+            position: relative;
+            background: linear-gradient(90deg, #0f1418 0%, #2f3640 50%, #0f1418 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            background: linear-gradient(90deg, #0f1418 0%, #2f3640 50%, #0f1418 100%);
             overflow: hidden;
         }
 
+        /* Líneas de meta */
+        .line {
+            position: absolute;
+            height: 70%;
+            width: 4px;
+            background: white;
+            opacity: 0.3;
+            z-index: 1;
+        }
+        .left-win { left: 15%; border-left: 8px solid var(--beast-pink); }
+        .right-win { right: 15%; border-right: 8px solid #4cd137; }
+
+        /* LA CUERDA: Mejorada para tablets */
         #rope {
             position: absolute;
-            width: 300%; /* Más largo para que nunca se vea el fin en tablets */
-            height: clamp(10px, 2vh, 18px);
-            background: repeating-linear-gradient(90deg, #7f8c8d, #bdc3c7 30px);
-            left: -100%;
-            transition: transform 0.1s ease-out;
+            width: 2000px; /* Ultra larga para que no se vea el fin */
+            height: 16px;
+            background: repeating-linear-gradient(90deg, #7f8c8d, #bdc3c7 20px);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.05s linear;
+            will-change: transform;
         }
 
         #marker {
-            width: clamp(30px, 8vw, 50px);
-            height: clamp(30px, 8vw, 50px);
+            width: 40px;
+            height: 40px;
             background: var(--beast-pink);
             border: 4px solid white;
             border-radius: 50%;
             box-shadow: 0 0 20px var(--beast-pink);
         }
 
-        .finish-line {
-            position: absolute; 
-            height: 60%; 
-            width: 6px;
-            background: rgba(255,255,255,0.2);
-            z-index: 2;
-        }
-        .left-line { left: 15%; border-left: 5px solid var(--beast-pink); }
-        .right-line { right: 15%; border-right: 5px solid #4cd137; }
-
-        /* Controles Optimizados */
-        .controls { 
-            display: none; 
-            height: 25vh; 
-            max-height: 200px; /* Limite para que en tablets no sea gigante */
-            flex-shrink: 0;
+        /* BOTONES */
+        .controls {
+            display: none;
+            height: 25dvh;
+            max-height: 180px;
         }
 
-        .tap-zone {
-            flex: 1; display: flex; align-items: center;
-            flex-direction: column;
-            justify-content: center; font-size: clamp(1.2rem, 5vw, 2rem);
-            -webkit-user-select: none;
+        .btn-tap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            font-weight: 900;
             cursor: pointer;
-            transition: brightness 0.1s;
+            user-select: none;
         }
-        .tap-zone:active { filter: brightness(1.3); }
+        #btn-l { background: #c23616; border-right: 2px solid #000; }
+        #btn-r { background: #44bd32; }
 
-        #btn-left { background: #c23616; border-right: 2px solid #000; }
-        #btn-right { background: #44bd32; }
-
-        /* Menú Dinámico */
+        /* OVERLAY */
         #overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            z-index: 100; text-align: center; padding: 20px;
+            z-index: 100; text-align: center;
         }
 
-        .btn-group { width: 100%; max-width: 400px; display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-menu {
-            margin: 10px 0; padding: clamp(12px, 3vh, 20px); width: 100%; max-width: 350px;
-            background: var(--gold); border: none;
-            border-radius: 15px; font-weight: bold; font-size: 1.1rem;
-            box-shadow: 0 5px 0 #b88e14;
+        .menu-btn {
+            padding: 15px 30px; margin: 10px; width: 80%; max-width: 300px;
+            background: var(--gold); border: none; border-radius: 12px;
+            font-weight: bold; font-size: 1.1rem;
         }
-        .btn-menu:active { transform: translateY(3px); box-shadow: 0 2px 0 #b88e14; }
-
-        .diff-btn { font-size: 0.8rem !important; background: #7f8c8d; box-shadow: 0 4px 0 #4d5657; }
-        .diff-active { background: var(--beast-blue) !important; box-shadow: 0 4px 0 #0077b3 !important; }
-
-        .confetti {
-            position: absolute; width: 8px; height: 8px; z-index: 101;
-            animation: fall 3s linear forwards;
-        }
-        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
     </style>
 </head>
 <body>
 
+<div class="game-viewport">
     <div id="header">
-        <div id="score-board">MÁXIMA FUERZA: <span id="high-score">0</span></div>
+        <div id="score-board">RÉCORD: <span id="high-score">0</span></div>
     </div>
 
-    <div class="main-container">
-        <div class="arena">
-            <div class="finish-line left-line"></div>
-            <div class="finish-line right-line"></div>
-            <div id="rope">
-                <div id="marker"></div>
-            </div>
+    <div class="arena">
+        <div class="line left-win"></div>
+        <div class="line right-win"></div>
+        <div id="rope">
+            <div id="marker"></div>
         </div>
+    </div>
 
-        <div id="controls" class="controls">
-            <div id="btn-left" class="tap-zone">TIRA</div>
-            <div id="btn-right" class="tap-zone">TIRA</div>
-        </div>
+    <div id="controls" class="controls">
+        <div id="btn-l" class="btn-tap">TIRA</div>
+        <div id="btn-r" class="btn-tap">TIRA</div>
     </div>
 
     <div id="overlay">
-        <h1 id="msg" style="font-size: 3rem; color: var(--beast-blue); margin-bottom: 10px;">BEAST TUG</h1>
-        
-        <p style="margin-bottom: 5px;">DIFICULTAD CPU:</p>
-        <div class="btn-group">
-            <button class="btn-menu diff-btn" onclick="setDiff(150, this)">FÁCIL</button>
-            <button class="btn-menu diff-btn diff-active" onclick="setDiff(100, this)">MEDIO</button>
-            <button class="btn-menu diff-btn" onclick="setDiff(65, this)">BESTIA</button>
-        </div>
-
-        <button class="btn-menu" onclick="init(1)" style="background: var(--beast-blue); color: white; box-shadow: 0 5px 0 #0077b3;">VS COMPUTADORA</button>
-        <button class="btn-menu" onclick="init(2)">DUELO 2 JUGADORES</button>
+        <h1 id="msg" style="color:var(--beast-blue)">BEAST TUG</h1>
+        <button class="menu-btn" onclick="init(1)" style="background:var(--beast-blue); color:white">1 JUGADOR (VS CPU)</button>
+        <button class="menu-btn" onclick="init(2)">2 JUGADORES (PVP)</button>
     </div>
+</div>
 
-    <script>
-        let ropePos = 50;
-        let gameActive = false;
-        let mode = 1;
-        let pcSpeed = 100;
-        let currentClicks = 0;
-        let highScore = localStorage.getItem('beastTugScore') || 0;
+<script>
+    let offset = 0; // 0 es el centro perfecto
+    let gameActive = false;
+    let mode = 1;
+    let highScore = localStorage.getItem('beastTugScore') || 0;
+    const rope = document.getElementById('rope');
+    const controls = document.getElementById('controls');
+    const overlay = document.getElementById('overlay');
+    const msg = document.getElementById('msg');
 
-        document.getElementById('high-score').innerText = highScore;
+    document.getElementById('high-score').innerText = highScore;
 
-        function setDiff(speed, btn) {
-            pcSpeed = speed;
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('diff-active'));
-            btn.classList.add('diff-active');
+    function init(m) {
+        mode = m;
+        offset = 0;
+        gameActive = true;
+        overlay.style.display = 'none';
+        controls.style.display = 'flex';
+        
+        if(mode === 1) {
+            document.getElementById('btn-r').style.opacity = "0.3";
+            document.getElementById('btn-r').innerText = "CPU";
+            runCPU();
+        } else {
+            document.getElementById('btn-r').style.opacity = "1";
+            document.getElementById('btn-r').innerText = "TIRA";
         }
+        updatePosition();
+    }
 
-        function init(m) {
-            mode = m;
-            ropePos = 50;
-            currentClicks = 0;
-            gameActive = true;
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('controls').style.display = 'flex';
-            
-            if(mode === 1) {
-                document.getElementById('btn-left').innerHTML = "<span>TÚ</span><small style='font-size:0.8rem'>¡TAP!</small>";
-                document.getElementById('btn-right').style.background = "#333";
-                document.getElementById('btn-right').innerHTML = "<span>CPU</span>";
-                startPC();
-            } else {
-                document.getElementById('btn-left').innerText = "ROJO";
-                document.getElementById('btn-right').innerText = "VERDE";
-                document.getElementById('btn-right').style.background = "#44bd32";
+    function runCPU() {
+        if(!gameActive || mode !== 1) return;
+        // La CPU tira cada 120ms
+        setTimeout(() => {
+            if(gameActive) {
+                offset += 8; // La fuerza de la CPU
+                updatePosition();
+                runCPU();
             }
-            updateRope();
+        }, 120);
+    }
+
+    function pull(side) {
+        if(!gameActive) return;
+        if(mode === 1 && side === 'r') return;
+
+        const strength = 15;
+        if(side === 'l') offset -= strength;
+        else offset += strength;
+        
+        updatePosition();
+    }
+
+    function updatePosition() {
+        rope.style.transform = `translateX(${-offset}px)`;
+
+        // Cálculo de límites basado en el ancho real de la pantalla
+        const limit = window.innerWidth * 0.35; 
+
+        if (offset <= -limit) endGame("¡VICTORIA!", true);
+        if (offset >= limit) endGame("DERROTA", false);
+    }
+
+    function endGame(text, win) {
+        gameActive = false;
+        overlay.style.display = 'flex';
+        msg.innerText = text;
+        if(win && mode === 1) {
+            // Lógica simple de score (puedes mejorarla)
+            highScore++; 
+            localStorage.setItem('beastTugScore', highScore);
+            document.getElementById('high-score').innerText = highScore;
         }
+    }
 
-        function startPC() {
-            if (!gameActive || mode !== 1) return;
-            
-            setTimeout(() => {
-                if(gameActive) {
-                    let rubberBand = ropePos < 40 ? 1.8 : 0; 
-                    ropePos += (2 + rubberBand); 
-                    updateRope();
-                    startPC();
-                }
-            }, pcSpeed);
-        }
+    // LISTENER MULTI-TOUCH (SOLUCIÓN TABLET)
+    const handleAction = (side, e) => {
+        e.preventDefault();
+        pull(side);
+    };
 
-        function handlePull(side) {
-            if (!gameActive) return;
-            if (mode === 1 && side === 'right') return;
+    const bl = document.getElementById('btn-l');
+    const br = document.getElementById('btn-r');
 
-            const pullStrength = 2.4;
-            if (side === 'left') {
-                ropePos -= pullStrength;
-                if(mode === 1) currentClicks++;
-            } else {
-                ropePos += pullStrength;
-            }
-            updateRope();
-        }
+    // Usamos pointerdown para máxima compatibilidad con Tablets (iPad/Android)
+    bl.addEventListener('pointerdown', (e) => handleAction('l', e));
+    br.addEventListener('pointerdown', (e) => handleAction('r', e));
 
-        function updateRope() {
-            const rope = document.getElementById('rope');
-            // Usamos transform para mejor rendimiento en tablets
-            const offset = (50 - ropePos);
-            rope.style.transform = `translateX(${offset}%)`;
+    // Ajustar el límite si el usuario gira la tablet
+    window.onresize = () => updatePosition();
 
-            if (ropePos <= 15) endGame("¡VICTORIA!", true);
-            if (ropePos >= 85) endGame("¡DERROTA!", false);
-        }
-
-        function endGame(msg, playerWon) {
-            gameActive = false;
-            document.getElementById('overlay').style.display = 'flex';
-            document.getElementById('msg').innerText = msg;
-            
-            if (mode === 1 && playerWon && currentClicks > highScore) {
-                highScore = currentClicks;
-                localStorage.setItem('beastTugScore', highScore);
-                document.getElementById('high-score').innerText = highScore;
-                document.getElementById('msg').innerText = "¡NUEVO RÉCORD!";
-                celebrate();
-            }
-        }
-
-        function celebrate() {
-            for (let i = 0; i < 50; i++) {
-                let c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random() * 100 + 'vw';
-                c.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                c.style.animationDuration = (Math.random() * 2 + 1) + 's';
-                document.body.appendChild(c);
-                setTimeout(() => c.remove(), 3000);
-            }
-        }
-
-        const bL = document.getElementById('btn-left');
-        const bR = document.getElementById('btn-right');
-
-        // Soporte unificado para Touch y Mouse sin fantasmas
-        const handleEvent = (side, e) => {
-            e.preventDefault();
-            handlePull(side);
-        };
-
-        bL.addEventListener('touchstart', (e) => handleEvent('left', e));
-        bR.addEventListener('touchstart', (e) => handleEvent('right', e));
-        bL.addEventListener('mousedown', (e) => { if(!('ontouchstart' in window)) handlePull('left'); });
-        bR.addEventListener('mousedown', (e) => { if(!('ontouchstart' in window)) handlePull('right'); });
-    </script>
+</script>
 </body>
 </html>
