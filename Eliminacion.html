@@ -2,44 +2,87 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>La Trampa de los 100: Versión Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>La Trampa de los 100: Edición Final</title>
     <style>
-        body { background-color: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .setup-screen { position: absolute; background: #1e293b; padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; z-index: 100; text-align: center; }
-        #grid { display: grid; grid-template-columns: repeat(10, 35px); gap: 4px; background: #1e293b; padding: 10px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .cell { width: 35px; height: 35px; background: #334155; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: 0.2s; color: #64748b; }
-        .p1-selected { background: #3b82f6 !important; color: white; box-shadow: 0 0 15px #3b82f6; font-weight: bold; transform: scale(1.1); }
-        .p2-selected { background: #ec4899 !important; color: white; box-shadow: 0 0 15px #ec4899; font-weight: bold; transform: scale(1.1); }
-        .eliminated { background: #991b1b !important; opacity: 0.1; pointer-events: none; }
-        .controls { margin-top: 20px; display: flex; gap: 10px; }
-        button { padding: 10px 20px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; background: #22c55e; color: white; }
+        :root {
+            --p1: #3b82f6; --p2: #ec4899; --p3: #f59e0b; --p4: #10b981;
+        }
+        body { 
+            background-color: #0f172a; color: #f1f5f9; 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100dvh; margin: 0; padding: 10px;
+            touch-action: manipulation;
+        }
+        .setup-screen { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #1e293b; padding: 25px; border-radius: 15px; 
+            border: 2px solid #38bdf8; z-index: 100; text-align: center; width: 90%; max-width: 400px;
+        }
+        #grid { 
+            display: grid; grid-template-columns: repeat(10, 1fr); 
+            gap: 3px; background: #1e293b; padding: 8px; 
+            border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%; max-width: 500px; aspect-ratio: 1/1;
+        }
+        .cell { 
+            background: #334155; border-radius: 4px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 10px; transition: 0.2s; color: #64748b;
+            user-select: none; position: relative;
+        }
+        
+        /* Estilos de Jugadores */
+        .p1-selected { background: var(--p1) !important; color: white; box-shadow: 0 0 10px var(--p1); font-weight: bold; z-index: 2; }
+        .p2-selected { background: var(--p2) !important; color: white; box-shadow: 0 0 10px var(--p2); font-weight: bold; z-index: 2; }
+        .p3-selected { background: var(--p3) !important; color: white; box-shadow: 0 0 10px var(--p3); font-weight: bold; z-index: 2; }
+        .p4-selected { background: var(--p4) !important; color: white; box-shadow: 0 0 10px var(--p4); font-weight: bold; z-index: 2; }
+        
+        /* Rastro de posición anterior (Color claro) */
+        .p1-ghost { background: rgba(59, 130, 246, 0.2) !important; border: 1px dashed var(--p1); }
+        .p2-ghost { background: rgba(236, 72, 153, 0.2) !important; border: 1px dashed var(--p2); }
+        .p3-ghost { background: rgba(245, 158, 11, 0.2) !important; border: 1px dashed var(--p3); }
+        .p4-ghost { background: rgba(16, 185, 129, 0.2) !important; border: 1px dashed var(--p4); }
+
+        .eliminated { background: #991b1b !important; opacity: 0.15; pointer-events: none; color: transparent !important; border: none !important; }
+        
+        .controls { margin-top: 15px; display: flex; gap: 8px; width: 100%; max-width: 500px; }
+        button { 
+            flex: 1; padding: 12px 5px; font-weight: bold; border: none; 
+            border-radius: 8px; cursor: pointer; background: #22c55e; color: white;
+        }
         button:disabled { background: #475569; opacity: 0.5; }
-        .active-turn { border: 2px solid yellow; transform: scale(1.2); }
+        #status { margin: 10px 0; min-height: 45px; text-align: center; color: #38bdf8; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
     <div id="setup" class="setup-screen">
         <h2>MODO DE JUEGO</h2>
-        <button onclick="initGame(1)">1 JUGADOR</button>
-        <button onclick="initGame(2)" style="background: #ec4899;">2 JUGADORES</button>
+        <button style="width:100%; margin-bottom:10px;" onclick="initGame(1)">1 JUGADOR</button>
+        <button style="width:100%; margin-bottom:10px; background:var(--p2)" onclick="initGame(2)">2 JUGADORES</button>
+        <button style="width:100%; margin-bottom:10px; background:var(--p3)" onclick="initGame(3)">3 JUGADORES</button>
+        <button style="width:100%; margin-bottom:10px; background:var(--p4)" onclick="initGame(4)">4 JUGADORES</button>
     </div>
 
-    <h1 id="title" style="display:none; color: #38bdf8;">TRAMPA DE LOS 100</h1>
-    <div id="status" style="margin-bottom: 15px; text-align: center;"></div>
+    <h1 id="title" style="display:none; font-size: 1.2rem; margin: 5px 0;">TRAMPA DE LOS 100</h1>
+    <div id="status"></div>
 
     <div id="grid" style="display:none;"></div>
 
     <div class="controls" id="game-controls" style="display:none;">
-        <button id="actionBtn" onclick="processRound()" disabled>INICIAR ELIMINACIÓN (10)</button>
-        <button onclick="location.reload()" style="background: #64748b;">REINICIAR</button>
+        <button id="actionBtn" onclick="processRound()" disabled>INICIAR JUEGO</button>
+        <button onclick="location.reload()" style="background: #64748b; flex: 0.4;">RESET</button>
     </div>
 
     <script>
         let numPlayers = 0;
         let players = {
-            1: { pos: null, alive: true, class: 'p1-selected', label: 'P1' },
-            2: { pos: null, alive: true, class: 'p2-selected', label: 'P2' }
+            1: { pos: null, lastPos: null, alive: true, class: 'p1-selected', ghost: 'p1-ghost', label: 'P1' },
+            2: { pos: null, lastPos: null, alive: true, class: 'p2-selected', ghost: 'p2-ghost', label: 'P2' },
+            3: { pos: null, lastPos: null, alive: true, class: 'p3-selected', ghost: 'p3-ghost', label: 'P3' },
+            4: { pos: null, lastPos: null, alive: true, class: 'p4-selected', ghost: 'p4-ghost', label: 'P4' }
         };
         let currentPlayerToSet = 1;
         let isMovingMode = false;
@@ -63,51 +106,59 @@
                 grid.appendChild(cell);
                 cells.push(cell);
             }
-            updateStatus(`Jugador 1: Elije tu posición`);
+            updateStatus(`Jugador 1: Elige posición inicial`);
         }
 
         function handleCellClick(index) {
             if (cells[index].classList.contains('eliminated')) return;
 
-            // FASE INICIAL DE POSICIONAMIENTO
             if (currentPlayerToSet > 0) {
                 setPlayerPos(currentPlayerToSet, index);
-                if (numPlayers === 1 || currentPlayerToSet === 2) {
+                if (currentPlayerToSet >= numPlayers) {
                     currentPlayerToSet = 0;
                     isMovingMode = true;
-                    updateStatus("¡Posiciones listas! Inicia la ronda o cámbiate.");
+                    updateStatus("¡Posiciones listas! Haz clic en 'Iniciar Ronda 1'");
                     document.getElementById('actionBtn').disabled = false;
+                    document.getElementById('actionBtn').innerText = "INICIAR RONDA 1";
                 } else {
-                    currentPlayerToSet = 2;
-                    updateStatus("Jugador 2: Elije tu posición");
+                    currentPlayerToSet++;
+                    updateStatus(`Jugador ${currentPlayerToSet}: Elige tu posición`);
                 }
                 return;
             }
 
-            // FASE DE MOVIMIENTO (Entre rondas)
             if (isMovingMode) {
-                // Si haces clic en una celda donde ya hay un jugador, lo seleccionas para mover
-                if (index === players[1].pos && players[1].alive) {
-                    playerToMove = 1;
-                    updateStatus("Moviendo Jugador 1... elije nuevo cuadro.");
-                } else if (index === players[2].pos && players[2].alive && numPlayers === 2) {
-                    playerToMove = 2;
-                    updateStatus("Moviendo Jugador 2... elije nuevo cuadro.");
-                } else if (playerToMove) {
-                    // Mover al jugador seleccionado al nuevo cuadro vacío
-                    if (index === players[1].pos || index === players[2].pos) return;
+                for (let p = 1; p <= numPlayers; p++) {
+                    if (index === players[p].pos && players[p].alive) {
+                        playerToMove = p;
+                        updateStatus(`Moviendo ${players[p].label}... elige nuevo cuadro.`);
+                        return;
+                    }
+                }
+                if (playerToMove) {
+                    for (let p = 1; p <= numPlayers; p++) {
+                        if (index === players[p].pos && players[p].alive) return;
+                    }
                     setPlayerPos(playerToMove, index);
                     playerToMove = null;
-                    updateStatus("Posición actualizada. ¿Listo?");
+                    updateStatus("Posición actualizada. ¿Mover otro o continuar?");
                 }
             }
         }
 
         function setPlayerPos(pNum, index) {
+            // Limpiar fantasmas viejos de este jugador
+            cells.forEach(c => c.classList.remove(players[pNum].ghost));
+            
             if (players[pNum].pos !== null) {
-                cells[players[pNum].pos].classList.remove(players[pNum].class);
-                cells[players[pNum].pos].innerText = players[pNum].pos + 1;
+                const oldPos = players[pNum].pos;
+                players[pNum].lastPos = oldPos;
+                cells[oldPos].classList.remove(players[pNum].class);
+                cells[oldPos].innerText = oldPos + 1;
+                // Marcar el rastro
+                cells[oldPos].classList.add(players[pNum].ghost);
             }
+            
             players[pNum].pos = index;
             cells[index].classList.add(players[pNum].class);
             cells[index].innerText = players[pNum].label;
@@ -115,47 +166,41 @@
 
         async function processRound() {
             isMovingMode = false;
+            playerToMove = null;
             document.getElementById('actionBtn').disabled = true;
-            updateStatus("Eliminando 10 cuadros...");
+            updateStatus(`⚠️ Ronda ${round}: Eliminando 10 cuadros...`);
 
             let available = [];
             cells.forEach((c, i) => { if (!c.classList.contains('eliminated')) available.push(i); });
             let toEliminate = available.sort(() => Math.random() - 0.5).slice(0, 10);
 
             for (let idx of toEliminate) {
-                await new Promise(r => setTimeout(r, 200));
+                await new Promise(r => setTimeout(r, 150));
                 cells[idx].classList.add('eliminated');
-                if (idx === players[1].pos) players[1].alive = false;
-                if (idx === players[2].pos) players[2].alive = false;
+                for (let p = 1; p <= numPlayers; p++) {
+                    if (idx === players[p].pos) players[p].alive = false;
+                }
             }
-
             checkGameState();
         }
 
         function checkGameState() {
-            let msg = "";
-            if (numPlayers === 1) {
-                if (!players[1].alive) msg = "¡ELIMINADO! Game Over.";
-                else msg = "¡Sobreviviste! Haz clic en tu cuadro para moverte o continúa.";
-            } else {
-                if (!players[1].alive && !players[2].alive) msg = "¡AMBOS ELIMINADOS! Empate.";
-                else if (!players[1].alive) msg = "¡P1 ELIMINADO! P2 sigue solo.";
-                else if (!players[2].alive) msg = "¡P2 ELIMINADO! P1 sigue solo.";
-                else msg = "¡Ambos vivos! Hagan clic en su color para moverse.";
+            let winners = [];
+            for (let p = 1; p <= numPlayers; p++) {
+                if (players[p].alive) winners.push(players[p].label);
             }
 
-            if (players[1].alive || (numPlayers === 2 && players[2].alive)) {
-                round++;
-                if (round > 10) {
-                    updateStatus("🏆 ¡FIN DEL JUEGO! Han ganado.");
-                } else {
-                    updateStatus(msg);
-                    isMovingMode = true;
-                    document.getElementById('actionBtn').disabled = false;
-                    document.getElementById('actionBtn').innerText = `RONDA ${round} (Iniciar)`;
-                }
+            if (winners.length === 0) {
+                updateStatus("💀 ¡NADIE SOBREVIVIÓ! La trampa ganó.");
+            } else if (round >= 9) { // FINAL DEL JUEGO: Quedan 10 cuadros
+                updateStatus(`🏆 ¡JUEGO TERMINADO!<br>Sobrevivientes: ${winners.join(", ")}`);
+                document.getElementById('actionBtn').style.display = 'none';
             } else {
-                updateStatus(msg);
+                round++;
+                updateStatus(`¡Sobreviven ${winners.length}! Pueden moverse antes de la Ronda ${round}.`);
+                isMovingMode = true;
+                document.getElementById('actionBtn').disabled = false;
+                document.getElementById('actionBtn').innerText = `INICIAR RONDA ${round}`;
             }
         }
 
