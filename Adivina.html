@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Emoji Reveal Final</title>
+    <style>
+        :root {
+            --primary: #6366f1; --accent: #10b981; --show: #d946ef;
+            --bg: #020617; --surface: #1e293b; --text: #f8fafc;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body {
+            margin: 0; padding: 0; background-color: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden;
+            height: 100vh; display: flex; flex-direction: column; align-items: center;
+        }
+        #game-container {
+            width: 100%; max-width: 450px; height: 100%;
+            /* Padding extra para evitar la barra de Android */
+            padding: env(safe-area-inset-top) 15px calc(env(safe-area-inset-bottom) + 40px);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        #status { text-align: center; font-weight: 800; font-size: 1.1rem; color: var(--primary); padding: 10px 0; }
+
+        #view-port {
+            position: relative; width: 100%; aspect-ratio: 1/1;
+            background: #000; border-radius: 12px; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
+        }
+
+        #emoji-layer { font-size: 18rem; transition: opacity 0.2s; opacity: 0; }
+        
+        #grid-overlay {
+            position: absolute; inset: 0; display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            z-index: 10;
+        }
+        .pixel { background: #1e293b; border: 0.1px solid rgba(0,0,0,0.3); transition: opacity 0.3s; }
+        .pixel.off { opacity: 0; pointer-events: none; }
+
+        .difficulty-selector {
+            display: flex; background: var(--surface); border-radius: 12px;
+            padding: 4px; gap: 4px; margin-bottom: 5px;
+        }
+        .diff-btn {
+            flex: 1; border: none; background: transparent; color: #94a3b8;
+            padding: 8px; border-radius: 8px; font-weight: bold; font-size: 0.7rem;
+        }
+        .diff-btn.active { background: var(--primary); color: white; }
+
+        /* NUEVO LAYOUT DE BOTONES */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr; /* Izquierda y Derecha */
+            gap: 10px;
+            width: 100%;
+        }
+
+        .left-col { display: flex; }
+        .right-col { display: flex; flex-direction: column; gap: 10px; }
+
+        .btn {
+            border: none; border-radius: 14px; font-weight: 900;
+            color: white; cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            text-align: center;
+        }
+        .btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .btn-show-all { background: var(--show); width: 100%; font-size: 1rem; }
+        .btn-reveal { background: var(--primary); padding: 18px; font-size: 1rem; }
+        .btn-next { background: var(--accent); padding: 14px; font-size: 0.8rem; }
+        
+        #answer-reveal {
+            text-align: center; font-size: 1.1rem; font-weight: bold;
+            height: 1.5rem; color: #94a3b8; margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="status">ADIVINA EL EMOJI</div>
+
+    <div id="view-port">
+        <div id="emoji-layer"></div>
+        <div id="grid-overlay"></div>
+    </div>
+
+    <div id="answer-reveal"></div>
+
+    <div class="difficulty-selector">
+        <button class="diff-btn" onclick="setDiff(1, this)">DIFÍCIL (1)</button>
+        <button class="diff-btn active" onclick="setDiff(6, this)">NORMAL (6)</button>
+        <button class="diff-btn" onclick="setDiff(15, this)">FÁCIL (15)</button>
+    </div>
+
+    <div class="controls-grid">
+        <div class="left-col">
+            <button class="btn btn-show-all" onclick="showEverything()">MOSTRAR<br>TODO 👀</button>
+        </div>
+        
+        <div class="right-col">
+            <button class="btn btn-reveal" onclick="revealPixels()">DESCUBRIR 🔍</button>
+            <button class="btn btn-next" onclick="nextEmoji()">SIGUIENTE ⏩</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const emojiLayer = document.getElementById('emoji-layer');
+    const grid = document.getElementById('grid-overlay');
+    const answerTxt = document.getElementById('answer-reveal');
+    
+    let pixels = [];
+    let currentName = "";
+    let revealCount = 6;
+    
+    const emojis = [
+        {e:"🍕",n:"PIZZA"},{e:"🍔",n:"HAMBURGUESA"},{e:"🌮",n:"TACO"},{e:"🍣",n:"SUSHI"},{e:"🍦",n:"HELADO"},
+        {e:"🍩",n:"DONA"},{e:"🍎",n:"MANZANA"},{e:"🍌",n:"PLÁTANO"},{e:"🍉",n:"SANDÍA"},{e:"🍟",n:"PATATAS"},
+        {e:"🍿",n:"PALOMITAS"},{e:"🌭",n:"PERRITO"},{e:"🍗",n:"POLLO"},{e:"🥨",n:"PRETZEL"},{e:"🧀",n:"QUESO"},
+        {e:"🍓",n:"FRESA"},{e:"🥑",n:"AGUACATE"},{e:"🥦",n:"BRÓCOLI"},{e:"🍍",n:"PIÑA"},{e:"🎂",n:"TARTA"},
+        {e:"⚽",n:"FÚTBOL"},{e:"🏀",n:"BASKET"},{e:"🎾",n:"TENIS"},{e:"🥊",n:"BOXEO"},{e:"🛹",n:"SKATE"},
+        {e:"🚲",n:"BICI"},{e:"🚗",n:"COCHE"},{e:"🚀",n:"COHETE"},{e:"🚁",n:"HELICÓPTERO"},{e:"🛸",n:"OVNI"},
+        {e:"✈️",n:"AVIÓN"},{e:"🚜",n:"TRACTOR"},{e:"🚢",n:"BARCO"},{e:"🚒",n:"BOMBEROS"},{e:"🚑",n:"AMBULANCIA"},
+        {e:"🦁",n:"LEÓN"},{e:"🐘",n:"ELEFANTE"},{e:"🐼",n:"PANDA"},{e:"🦖",n:"DINOSAURIO"},{e:"🐙",n:"PULPO"},
+        {e:"🦀",n:"CANGREJO"},{e:"🦋",n:"MARIPOSA"},{e:"🐢",n:"TORTUGA"},{e:"🐒",n:"MONO"},{e:"🐸",n:"RANA"},
+        {e:"🦄",n:"UNICORNIO"},{e:"🐳",n:"BALLENA"},{e:"🐧",n:"PINGÜINO"},{e:"🦉",n:"BÚHO"},{e:"🐝",n:"ABEJA"},
+        {e:"🎸",n:"GUITARRA"},{e:"🎹",n:"PIANO"},{e:"🎷",n:"SAXO"},{e:"🥁",n:"TAMBOR"},{e:"🎨",n:"PINTURA"},
+        {e:"🎮",n:"MANDO"},{e:"🎯",n:"DIANA"},{e:"🎲",n:"DADO"},{e:"🧩",n:"PUZZLE"},{e:"📸",n:"CÁMARA"},
+        {e:"💻",n:"LAPTOP"},{e:"📱",n:"MÓVIL"},{e:"⏰",n:"RELOJ"},{e:"💡",n:"BOMBILLA"},{e:"🔑",n:"LLAVE"},
+        {e:"💎",n:"DIAMANTE"},{e:"🕶️",n:"GAFAS"},{e:"👑",n:"CORONA"},{e:"🎒",n:"MOCHILA"},{e:"⛱️",n:"SOMBRILLA"},
+        {e:"🌵",n:"CACTUS"},{e:"🌻",n:"GIRASOL"},{e:"🌴",n:"PALMERA"},{e:"🌋",n:"VOLCÁN"},{e:"🌈",n:"ARCOÍRIS"},
+        {e:"⛈️",n:"TORMENTA"},{e:"❄️",n:"NIEVE"},{e:"🔥",n:"FUEGO"},{e:"🌙",n:"LUNA"},{e:"🌍",n:"TIERRA"},
+        {e:"🏠",n:"CASA"},{e:"🏰",n:"CASTILLO"},{e:"🏥",n:"HOSPITAL"},{e:"⛺",n:"TIENDA"},{e:"🎡",n:"NORIA"},
+        {e:"🤖",n:"ROBOT"},{e:"👻",n:"FANTASMA"},{e:"👽",n:"ALIEN"},{e:"🤡",n:"PAYASO"},{e:"🎃",n:"CALABAZA"},
+        {e:"🎅",n:"PAPÁ NOEL"},{e:"🧜",n:"SIRENA"},{e:"🧛",n:"VAMPIRO"},{e:"🧟",n:"ZOMBIE"},{e:"🦸",n:"HÉROE"},
+        {e:"🎁",n:"REGALO"},{e:"🎈",n:"GLOBO"},{e:"🕯️",n:"VELA"},{e:"🔭",n:"TELESCOPIO"},{e:"💰",n:"DINERO"}
+    ];
+
+    function createGrid() {
+        grid.innerHTML = '';
+        pixels = [];
+        for (let i = 0; i < 100; i++) {
+            const div = document.createElement('div');
+            div.className = 'pixel';
+            grid.appendChild(div);
+            pixels.push(div);
+        }
+    }
+
+    function setDiff(val, btn) {
+        revealCount = val;
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function nextEmoji() {
+        emojiLayer.style.opacity = "0";
+        answerTxt.innerText = "";
+        pixels.forEach(p => p.classList.remove('off'));
+        
+        setTimeout(() => {
+            const random = emojis[Math.floor(Math.random() * emojis.length)];
+            emojiLayer.innerText = random.e;
+            currentName = random.n;
+            emojiLayer.style.opacity = "1";
+        }, 300);
+    }
+
+    function revealPixels() {
+        const hiddens = pixels.filter(p => !p.classList.contains('off'));
+        if(hiddens.length === 0) return;
+        for (let i = 0; i < revealCount; i++) {
+            if (hiddens.length > 0) {
+                const idx = Math.floor(Math.random() * hiddens.length);
+                hiddens[idx].classList.add('off');
+                hiddens.splice(idx, 1);
+            }
+        }
+    }
+
+    function showEverything() {
+        pixels.forEach(p => p.classList.add('off'));
+        answerTxt.innerText = "¡ES " + currentName + "!";
+    }
+
+    createGrid();
+    nextEmoji();
+</script>
+</body>
+</html>
