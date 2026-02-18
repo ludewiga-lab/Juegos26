@@ -2,21 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mastermind Pro Enterprise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mastermind Pro Fixed</title>
     <style>
         :root {
             --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8;
-            --danger: #f43f5e; --success: #10b981; --border: #334155;
+            --danger: #f43f5e; --border: #334155;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
+            font-family: sans-serif;
             background: var(--bg); color: #f8fafc;
-            margin: 0; display: flex; flex-direction: column; align-items: center;
-            height: 100dvh; overflow: hidden;
+            margin: 0; padding: 0;
+            height: 100vh; height: 100dvh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
         }
 
         /* Pantalla de Inicio */
@@ -26,124 +28,94 @@
             align-items: center; justify-content: center; padding: 20px;
         }
 
-        .hero-title { font-size: clamp(1.5rem, 8vw, 2.2rem); font-weight: 800; color: var(--accent); margin-bottom: 5px; }
-        .hero-subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 0.9rem; text-align: center; }
-
-        .lvl-grid { width: 100%; max-width: 350px; display: grid; gap: 12px; }
         .lvl-card {
             background: var(--panel); border: 1px solid var(--border);
-            padding: clamp(15px, 4vh, 22px); border-radius: 16px; cursor: pointer;
-            transition: transform 0.1s;
+            padding: 20px; border-radius: 12px; cursor: pointer;
+            margin-bottom: 10px; width: 100%; max-width: 300px;
         }
-        .lvl-card:active { transform: scale(0.97); background: #26334d; }
-        .lvl-card strong { display: block; font-size: 1.1rem; }
-        .lvl-card span { font-size: 0.85rem; color: #94a3b8; }
-        .best-label { font-size: 0.75rem; color: var(--accent); font-weight: 700; margin-top: 8px; }
 
-        /* Pantalla de Juego */
+        /* Estructura Principal del Juego */
         #game-screen { 
-            display: none; flex-direction: column; 
-            height: 100%; width: 100%; max-width: 600px; 
-            position: relative;
+            display: none; 
+            flex-direction: column; 
+            height: 100%; 
+            width: 100%;
         }
 
         header { 
-            padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
-        }
-
-        /* Tablero con Scroll Invertido */
-        #board { 
-            flex: 1; padding: 15px; display: flex; flex-direction: column-reverse; 
-            gap: 10px; overflow-y: auto; background: rgba(15, 23, 42, 0.3);
-            scrollbar-width: none;
-        }
-        #board::-webkit-scrollbar { display: none; }
-
-        .row { 
-            display: flex; align-items: center; justify-content: space-between; 
-            background: var(--panel); padding: 10px 15px; border-radius: 14px;
-            border: 1px solid var(--border); animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .pegs { display: flex; gap: 6px; }
-        .peg { 
-            width: clamp(22px, 6vw, 28px); height: clamp(22px, 6vw, 28px); 
-            border-radius: 50%; background: #334155; border: 2px solid rgba(0,0,0,0.3); 
-        }
-
-        .hints { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); /* Ajustado para soportar hasta 5 pegs */
-            gap: 4px; 
-            margin-left: 10px;
-        }
-        .hint { width: 10px; height: 10px; border-radius: 50%; background: #0f172a; }
-        .hint.red { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-        .hint.white { background: #fff; box-shadow: 0 0 8px #fff; }
-
-        /* Controles Inferiores */
-        #controls { 
-            background: var(--panel); 
-            padding: 15px 20px calc(15px + env(safe-area-inset-bottom)); 
-            border-top: 1px solid var(--border);
-            border-radius: 24px 24px 0 0;
+            height: 50px;
+            padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
             flex-shrink: 0;
         }
 
-        .current-guess { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; min-height: 32px; }
-        .color-picker { display: flex; justify-content: center; gap: clamp(8px, 3vw, 15px); margin-bottom: 20px; }
-        
-        .btn-color { 
-            width: clamp(40px, 11vw, 50px); height: clamp(40px, 11vw, 50px); 
-            border-radius: 14px; border: 2px solid rgba(255,255,255,0.1); 
-            transition: all 0.2s;
+        /* EL TABLERO: Ahora es elástico y nunca tapa nada */
+        #board { 
+            flex: 1; /* Ocupa todo el espacio disponible */
+            overflow-y: auto; 
+            padding: 10px;
+            display: flex;
+            flex-direction: column; /* Cambiado a normal para mejor control de scroll */
+            gap: 8px;
+            background: #0b1120;
         }
-        .btn-color:active { transform: translateY(4px); }
-        .btn-color:disabled { opacity: 0.1; transform: scale(0.8); }
 
-        .action-btns { display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; }
-        .btn-act { 
-            padding: 15px; border: none; border-radius: 12px; 
-            font-weight: 700; font-size: 0.9rem; text-transform: uppercase;
+        .row { 
+            display: flex; align-items: center; justify-content: space-between; 
+            background: var(--panel); padding: 8px 12px; border-radius: 10px;
+            border: 1px solid var(--border); flex-shrink: 0;
         }
-        #del-btn { background: #334155; color: #cbd5e1; }
-        #check-btn { background: var(--accent); color: var(--bg); }
-        #check-btn:disabled { background: #475569; color: #94a3b8; }
+
+        .pegs { display: flex; gap: 5px; }
+        .peg { width: 24px; height: 24px; border-radius: 50%; background: #334155; border: 1px solid rgba(0,0,0,0.5); }
+
+        .hints { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+        .hint { width: 8px; height: 8px; border-radius: 50%; background: #000; }
+        .hint.red { background: var(--danger); }
+        .hint.white { background: #fff; }
+
+        /* CONTROLES: Fijos en la parte inferior */
+        #controls { 
+            background: var(--panel); 
+            padding: 15px;
+            border-top: 2px solid var(--accent);
+            flex-shrink: 0; /* Prohibido encogerse */
+        }
+
+        .current-guess { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .color-picker { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        
+        .btn-color { width: 45px; height: 45px; border-radius: 10px; border: none; }
+        .btn-color:disabled { opacity: 0.1; }
+
+        .action-btns { display: flex; gap: 10px; }
+        .btn-act { flex: 1; padding: 15px; border: none; border-radius: 10px; font-weight: bold; }
+        #del-btn { background: #475569; color: white; }
+        #check-btn { background: var(--accent); color: #000; }
     </style>
 </head>
 <body>
 
 <div id="home-screen">
-    <div class="hero-title">Mastermind Pro</div>
-    <div class="hero-subtitle">Módulos de optimización lógica</div>
-    
-    <div class="lvl-grid">
-        <div class="lvl-card" onclick="startGame(3)">
-            <strong>Nivel Inicial</strong>
-            <span>3 Unidades · Sin repetición</span>
-            <div class="best-label" id="score-3">Record: --</div>
-        </div>
-        <div class="lvl-card" onclick="startGame(4)">
-            <strong>Nivel Avanzado</strong>
-            <span>4 Unidades · Sin repetición</span>
-            <div class="best-label" id="score-4">Record: --</div>
-        </div>
-        <div class="lvl-card" onclick="startGame(5)">
-            <strong>Nivel Experto</strong>
-            <span>5 Unidades · Sin repetición</span>
-            <div class="best-label" id="score-5">Record: --</div>
-        </div>
+    <h1 style="color:var(--accent)">Mastermind Pro</h1>
+    <div class="lvl-card" onclick="startGame(3)">
+        <strong>Nivel Inicial</strong><br><small>3 Colores</small>
+        <div id="score-3" style="font-size:10px; color:var(--accent)">Record: --</div>
+    </div>
+    <div class="lvl-card" onclick="startGame(4)">
+        <strong>Nivel Avanzado</strong><br><small>4 Colores</small>
+        <div id="score-4" style="font-size:10px; color:var(--accent)">Record: --</div>
+    </div>
+    <div class="lvl-card" onclick="startGame(5)">
+        <strong>Nivel Experto</strong><br><small>5 Colores</small>
+        <div id="score-5" style="font-size:10px; color:var(--accent)">Record: --</div>
     </div>
 </div>
 
 <div id="game-screen">
     <header>
-        <div id="status-text" style="font-weight:700; font-size:0.75rem; color:var(--accent)">
-            INTENTO <span id="att-num">1</span>/10
-        </div>
-        <button onclick="backToHome()" style="background:none; border:none; color:#94a3b8; font-size:0.75rem; font-weight:600;">ABANDONAR</button>
+        <span id="att-num" style="font-size:12px">INTENTO 1/10</span>
+        <button onclick="backToHome()" style="background:none; border:none; color:#94a3b8;">SALIR</button>
     </header>
 
     <div id="board"></div>
@@ -152,38 +124,21 @@
         <div class="current-guess" id="guess-display"></div>
         <div class="color-picker" id="picker"></div>
         <div class="action-btns">
-            <button id="del-btn" class="btn-act" onclick="deleteLast()">Borrar</button>
-            <button id="check-btn" class="btn-act" onclick="submitGuess()">Comprobar</button>
+            <button id="del-btn" class="btn-act" onclick="deleteLast()">BORRAR</button>
+            <button id="check-btn" class="btn-act" onclick="submitGuess()">LISTO</button>
         </div>
     </div>
 </div>
 
 <script>
-    let secret = [];
-    let currentGuess = [];
-    let size = 4;
-    let attempts = 0;
+    let secret = [], currentGuess = [], size = 4, attempts = 0;
     const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308', '#a855f7', '#f97316'];
     
-    function loadScores() {
-        [3, 4, 5].forEach(s => {
-            const score = localStorage.getItem('mm_pro_score_' + s);
-            document.getElementById('score-' + s).innerText = score ? `RECORD: ${score} INTENTOS` : "RECORD: --";
-        });
-    }
-
     function startGame(s) {
-        size = s;
-        attempts = 0;
-        currentGuess = [];
-        
-        // Generar secreto SIN REPETICIÓN
+        size = s; attempts = 0; currentGuess = [];
         let available = [...colors];
         secret = [];
-        for(let i=0; i<size; i++) {
-            let idx = Math.floor(Math.random() * available.length);
-            secret.push(available.splice(idx, 1)[0]);
-        }
+        for(let i=0; i<size; i++) secret.push(available.splice(Math.floor(Math.random()*available.length), 1)[0]);
 
         document.getElementById('home-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
@@ -199,10 +154,8 @@
             const b = document.createElement('button');
             b.className = 'btn-color';
             b.style.background = c;
-            b.id = 'color-' + c.replace('#','');
-            // Usar pointerdown para respuesta instantánea en tablets
-            b.onpointerdown = (e) => {
-                e.preventDefault();
+            b.id = 'c-' + c.replace('#','');
+            b.onclick = () => {
                 if(currentGuess.length < size && !currentGuess.includes(c)) {
                     currentGuess.push(c);
                     updateUI();
@@ -212,10 +165,7 @@
         });
     }
 
-    function deleteLast() {
-        currentGuess.pop();
-        updateUI();
-    }
+    function deleteLast() { currentGuess.pop(); updateUI(); }
 
     function updateUI() {
         const container = document.getElementById('guess-display');
@@ -226,38 +176,21 @@
             if(currentGuess[i]) peg.style.background = currentGuess[i];
             container.appendChild(peg);
         }
-
         colors.forEach(c => {
-            const btn = document.getElementById('color-' + c.replace('#',''));
+            const btn = document.getElementById('c-' + c.replace('#',''));
             if(btn) btn.disabled = currentGuess.includes(c);
         });
-
-        document.getElementById('att-num').innerText = attempts + 1;
-        document.getElementById('check-btn').disabled = currentGuess.length < size;
+        document.getElementById('att-num').innerText = `INTENTO ${attempts + 1}/10`;
     }
 
     function submitGuess() {
         if(currentGuess.length < size) return;
-        
         attempts++;
         const feedback = getFeedback(currentGuess, secret);
-        addHistoryRow(currentGuess, feedback);
-
-        if(feedback.red === size) {
-            setTimeout(() => {
-                alert(`¡OBJETIVO LOGRADO!\nCódigo descifrado en ${attempts} intentos.`);
-                saveScore(size, attempts);
-                backToHome();
-            }, 100);
-        } else if(attempts >= 10) {
-            setTimeout(() => {
-                alert("SISTEMA BLOQUEADO\nNo has logrado descifrar el código.");
-                backToHome();
-            }, 100);
-        } else {
-            currentGuess = [];
-            updateUI();
-        }
+        addRow(currentGuess, feedback);
+        if(feedback.red === size) { alert("¡GANASTE!"); backToHome(); }
+        else if(attempts >= 10) { alert("PERDISTE. El código era otro."); backToHome(); }
+        else { currentGuess = []; updateUI(); }
     }
 
     function getFeedback(guess, sec) {
@@ -269,36 +202,25 @@
         return { red, white };
     }
 
-    function addHistoryRow(guess, feedback) {
+    function addRow(guess, fb) {
         const row = document.createElement('div');
         row.className = 'row';
         let html = '<div class="pegs">';
         guess.forEach(c => html += `<div class="peg" style="background:${c}"></div>`);
         html += '</div><div class="hints">';
-        for(let i=0; i<feedback.red; i++) html += '<div class="hint red"></div>';
-        for(let i=0; i<feedback.white; i++) html += '<div class="hint white"></div>';
+        for(let i=0; i<fb.red; i++) html += '<div class="hint red"></div>';
+        for(let i=0; i<fb.white; i++) html += '<div class="hint white"></div>';
         html += '</div>';
         row.innerHTML = html;
-        const board = document.getElementById('board');
-        board.appendChild(row);
-        // Scroll automático hacia abajo para ver el último intento
-        board.scrollTo({ top: board.scrollHeight, behavior: 'smooth' });
-    }
-
-    function saveScore(s, val) {
-        const prev = localStorage.getItem('mm_pro_score_' + s);
-        if(!prev || val < parseInt(prev)) {
-            localStorage.setItem('mm_pro_score_' + s, val);
-        }
+        const b = document.getElementById('board');
+        b.appendChild(row);
+        b.scrollTop = b.scrollHeight; // Auto-scroll al final
     }
 
     function backToHome() {
         document.getElementById('home-screen').style.display = 'flex';
         document.getElementById('game-screen').style.display = 'none';
-        loadScores();
     }
-
-    loadScores();
 </script>
 </body>
 </html>
