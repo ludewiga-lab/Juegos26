@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Beast Games: Tug of War Pro</title>
     <style>
         :root {
@@ -15,8 +15,8 @@
         body {
             margin: 0; padding: 0;
             font-family: 'Arial Black', sans-serif;
-            background: #1e272e;
-            height: 100vh;
+            background: #111;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -25,13 +25,27 @@
         }
 
         #header {
-            padding: 10px;
+            padding: 15px;
             text-align: center;
-            background: rgba(0,0,0,0.5);
-            border-bottom: 2px solid var(--beast-blue);
+            background: rgba(0,0,0,0.8);
+            border-bottom: 3px solid var(--beast-blue);
+            flex-shrink: 0;
+            z-index: 10;
         }
 
-        #score-board { color: var(--gold); font-size: 0.9rem; }
+        #score-board { color: var(--gold); font-size: clamp(0.8rem, 3vw, 1.1rem); }
+
+        /* Contenedor Adaptativo para Tablet */
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 800px; /* Evita que en tablets se estire infinitamente */
+            margin: 0 auto;
+            position: relative;
+            background: #1e272e;
+        }
 
         /* Escenario */
         .arena {
@@ -41,66 +55,85 @@
             justify-content: center;
             position: relative;
             background: linear-gradient(90deg, #0f1418 0%, #2f3640 50%, #0f1418 100%);
+            overflow: hidden;
         }
 
         #rope {
             position: absolute;
-            width: 200%;
-            height: 12px;
-            background: repeating-linear-gradient(90deg, #7f8c8d, #bdc3c7 20px);
-            left: -50%;
-            transition: left 0.1s ease-out;
+            width: 300%; /* Más largo para que nunca se vea el fin en tablets */
+            height: clamp(10px, 2vh, 18px);
+            background: repeating-linear-gradient(90deg, #7f8c8d, #bdc3c7 30px);
+            left: -100%;
+            transition: transform 0.1s ease-out;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
         #marker {
-            width: 35px; height: 35px;
+            width: clamp(30px, 8vw, 50px);
+            height: clamp(30px, 8vw, 50px);
             background: var(--beast-pink);
-            border: 3px solid white;
+            border: 4px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 15px var(--beast-pink);
+            box-shadow: 0 0 20px var(--beast-pink);
         }
 
         .finish-line {
-            position: absolute; height: 80%; width: 5px;
-            background: rgba(255,255,255,0.3);
+            position: absolute; 
+            height: 60%; 
+            width: 6px;
+            background: rgba(255,255,255,0.2);
+            z-index: 2;
         }
         .left-line { left: 15%; border-left: 5px solid var(--beast-pink); }
         .right-line { right: 15%; border-right: 5px solid #4cd137; }
 
-        /* Controles */
-        .controls { display: none; height: 30vh; }
+        /* Controles Optimizados */
+        .controls { 
+            display: none; 
+            height: 25vh; 
+            max-height: 200px; /* Limite para que en tablets no sea gigante */
+            flex-shrink: 0;
+        }
+
         .tap-zone {
             flex: 1; display: flex; align-items: center;
-            justify-content: center; font-size: 1.5rem;
+            flex-direction: column;
+            justify-content: center; font-size: clamp(1.2rem, 5vw, 2rem);
             -webkit-user-select: none;
+            cursor: pointer;
+            transition: brightness 0.1s;
         }
+        .tap-zone:active { filter: brightness(1.3); }
+
         #btn-left { background: #c23616; border-right: 2px solid #000; }
         #btn-right { background: #44bd32; }
 
         /* Menú Dinámico */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.9);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 100; text-align: center; padding: 20px;
         }
 
-        .btn-group { width: 100%; max-width: 300px; margin-bottom: 20px; }
+        .btn-group { width: 100%; max-width: 400px; display: flex; gap: 10px; margin-bottom: 20px; }
         .btn-menu {
-            margin: 5px; padding: 15px; width: 100%;
+            margin: 10px 0; padding: clamp(12px, 3vh, 20px); width: 100%; max-width: 350px;
             background: var(--gold); border: none;
-            border-radius: 10px; font-weight: bold; font-size: 1rem;
+            border-radius: 15px; font-weight: bold; font-size: 1.1rem;
+            box-shadow: 0 5px 0 #b88e14;
         }
+        .btn-menu:active { transform: translateY(3px); box-shadow: 0 2px 0 #b88e14; }
 
-        .diff-btn { width: 30% !important; font-size: 0.8rem !important; background: #7f8c8d; }
-        .diff-active { background: var(--beast-blue) !important; transform: scale(1.1); }
+        .diff-btn { font-size: 0.8rem !important; background: #7f8c8d; box-shadow: 0 4px 0 #4d5657; }
+        .diff-active { background: var(--beast-blue) !important; box-shadow: 0 4px 0 #0077b3 !important; }
 
         .confetti {
-            position: absolute; width: 8px; height: 8px;
+            position: absolute; width: 8px; height: 8px; z-index: 101;
             animation: fall 3s linear forwards;
         }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
@@ -112,38 +145,40 @@
         <div id="score-board">MÁXIMA FUERZA: <span id="high-score">0</span></div>
     </div>
 
-    <div class="arena">
-        <div class="finish-line left-line"></div>
-        <div class="finish-line right-line"></div>
-        <div id="rope">
-            <div id="marker"></div>
+    <div class="main-container">
+        <div class="arena">
+            <div class="finish-line left-line"></div>
+            <div class="finish-line right-line"></div>
+            <div id="rope">
+                <div id="marker"></div>
+            </div>
         </div>
-    </div>
 
-    <div id="controls" class="controls">
-        <div id="btn-left" class="tap-zone">TIRA</div>
-        <div id="btn-right" class="tap-zone">TIRA</div>
+        <div id="controls" class="controls">
+            <div id="btn-left" class="tap-zone">TIRA</div>
+            <div id="btn-right" class="tap-zone">TIRA</div>
+        </div>
     </div>
 
     <div id="overlay">
-        <h1 id="msg">BEAST TUG</h1>
+        <h1 id="msg" style="font-size: 3rem; color: var(--beast-blue); margin-bottom: 10px;">BEAST TUG</h1>
         
-        <p>MODO 1 JUGADOR (Dificultad):</p>
+        <p style="margin-bottom: 5px;">DIFICULTAD CPU:</p>
         <div class="btn-group">
             <button class="btn-menu diff-btn" onclick="setDiff(150, this)">FÁCIL</button>
             <button class="btn-menu diff-btn diff-active" onclick="setDiff(100, this)">MEDIO</button>
-            <button class="btn-menu diff-btn" onclick="setDiff(60, this)">BESTIA</button>
+            <button class="btn-menu diff-btn" onclick="setDiff(65, this)">BESTIA</button>
         </div>
 
-        <button class="btn-menu" onclick="init(1)" style="background: var(--beast-blue); color: white;">VS PC</button>
-        <button class="btn-menu" onclick="init(2)">2 JUGADORES (PVP)</button>
+        <button class="btn-menu" onclick="init(1)" style="background: var(--beast-blue); color: white; box-shadow: 0 5px 0 #0077b3;">VS COMPUTADORA</button>
+        <button class="btn-menu" onclick="init(2)">DUELO 2 JUGADORES</button>
     </div>
 
     <script>
         let ropePos = 50;
         let gameActive = false;
         let mode = 1;
-        let pcSpeed = 100; // Default Medio
+        let pcSpeed = 100;
         let currentClicks = 0;
         let highScore = localStorage.getItem('beastTugScore') || 0;
 
@@ -164,9 +199,9 @@
             document.getElementById('controls').style.display = 'flex';
             
             if(mode === 1) {
-                document.getElementById('btn-left').innerText = "TÚ";
-                document.getElementById('btn-right').style.background = "#555";
-                document.getElementById('btn-right').innerText = "CPU";
+                document.getElementById('btn-left').innerHTML = "<span>TÚ</span><small style='font-size:0.8rem'>¡TAP!</small>";
+                document.getElementById('btn-right').style.background = "#333";
+                document.getElementById('btn-right').innerHTML = "<span>CPU</span>";
                 startPC();
             } else {
                 document.getElementById('btn-left').innerText = "ROJO";
@@ -181,9 +216,8 @@
             
             setTimeout(() => {
                 if(gameActive) {
-                    // El PC tira más fuerte si vas ganando (auto-equilibrio)
-                    let boost = ropePos < 40 ? 1.5 : 0;
-                    ropePos += (2 + boost); 
+                    let rubberBand = ropePos < 40 ? 1.8 : 0; 
+                    ropePos += (2 + rubberBand); 
                     updateRope();
                     startPC();
                 }
@@ -192,20 +226,23 @@
 
         function handlePull(side) {
             if (!gameActive) return;
-            if (mode === 1 && side === 'right') return; // Bloquear botón PC
+            if (mode === 1 && side === 'right') return;
 
+            const pullStrength = 2.4;
             if (side === 'left') {
-                ropePos -= 2.2;
+                ropePos -= pullStrength;
                 if(mode === 1) currentClicks++;
             } else {
-                ropePos += 2.2;
+                ropePos += pullStrength;
             }
             updateRope();
         }
 
         function updateRope() {
             const rope = document.getElementById('rope');
-            rope.style.left = `calc(${-50 + (50 - ropePos)}%)`;
+            // Usamos transform para mejor rendimiento en tablets
+            const offset = (50 - ropePos);
+            rope.style.transform = `translateX(${offset}%)`;
 
             if (ropePos <= 15) endGame("¡VICTORIA!", true);
             if (ropePos >= 85) endGame("¡DERROTA!", false);
@@ -226,7 +263,7 @@
         }
 
         function celebrate() {
-            for (let i = 0; i < 40; i++) {
+            for (let i = 0; i < 50; i++) {
                 let c = document.createElement('div');
                 c.className = 'confetti';
                 c.style.left = Math.random() * 100 + 'vw';
@@ -240,10 +277,16 @@
         const bL = document.getElementById('btn-left');
         const bR = document.getElementById('btn-right');
 
-        bL.addEventListener('touchstart', (e) => { e.preventDefault(); handlePull('left'); });
-        bR.addEventListener('touchstart', (e) => { e.preventDefault(); handlePull('right'); });
-        bL.addEventListener('mousedown', () => handlePull('left'));
-        bR.addEventListener('mousedown', () => handlePull('right'));
+        // Soporte unificado para Touch y Mouse sin fantasmas
+        const handleEvent = (side, e) => {
+            e.preventDefault();
+            handlePull(side);
+        };
+
+        bL.addEventListener('touchstart', (e) => handleEvent('left', e));
+        bR.addEventListener('touchstart', (e) => handleEvent('right', e));
+        bL.addEventListener('mousedown', (e) => { if(!('ontouchstart' in window)) handlePull('left'); });
+        bR.addEventListener('mousedown', (e) => { if(!('ontouchstart' in window)) handlePull('right'); });
     </script>
 </body>
 </html>
