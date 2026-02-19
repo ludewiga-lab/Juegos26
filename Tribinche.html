@@ -15,53 +15,53 @@
             --p4: #ffd740;
             --dot: #444;
             --line-ghost: rgba(255,255,255,0.05);
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            /* Safe areas adaptativas */
+            --safe-top: env(safe-area-inset-top, 10px);
+            --safe-bottom: env(safe-area-inset-bottom, 10px);
         }
 
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            touch-action: none;
         }
         
         body {
             margin: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 100dvh;
+            height: 100dvh;
             overflow: hidden;
-            touch-action: none; /* Previene scroll y zoom nativo */
         }
 
-        /* --- CONTENEDOR PRINCIPAL RESPONSIVO --- */
         .main-container {
-            width: 95vw;
+            width: 100%;
             max-width: 500px;
-            aspect-ratio: 1/1; /* Mantiene forma cuadrada */
+            height: 100%;
             display: flex;
             flex-direction: column;
-            padding-top: var(--safe-top);
-            padding-bottom: var(--safe-bottom);
+            padding: var(--safe-top) 15px var(--safe-bottom) 15px;
         }
 
+        /* --- PANTALLA INICIAL --- */
         #setup-screen {
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
             height: 100%;
             gap: 2rem;
         }
 
         h1 { 
             font-weight: 800; 
-            font-size: clamp(1.5rem, 8vw, 2.5rem);
-            letter-spacing: -1px;
+            font-size: clamp(2rem, 10vw, 3rem);
+            margin: 0;
             background: linear-gradient(45deg, var(--p1), var(--p2));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -70,75 +70,100 @@
         .player-options {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 15px;
+            width: 100%;
         }
 
         .opt-btn {
             background: var(--card);
-            border: 1px solid #333;
-            border-radius: 16px;
-            padding: 20px 10px;
+            border: 2px solid #333;
+            border-radius: 20px;
+            padding: 25px 10px;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
             transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .opt-btn:active { 
-            transform: scale(0.92); 
-            background: #252525;
+            transform: scale(0.95); 
             border-color: var(--p2);
+            background: #252525;
         }
 
-        /* --- ESTADO DE JUEGO --- */
+        /* --- PANTALLA DE JUEGO --- */
         #game-screen {
             display: none;
             flex-direction: column;
             height: 100%;
+            justify-content: space-between;
         }
 
         .header {
+            padding: 10px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
         }
 
         #turn-indicator {
-            padding: 6px 14px;
-            border-radius: 12px;
-            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-weight: 800;
             font-size: 0.8rem;
             text-transform: uppercase;
-            transition: all 0.4s ease;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        .scores { display: flex; gap: 8px; }
+        .scores { 
+            display: flex; 
+            gap: 5px; 
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
         .score-pill {
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 0.8rem;
             background: var(--card);
-            border-bottom: 3px solid transparent;
+            border-left: 4px solid transparent;
+            min-width: 60px;
+            text-align: center;
         }
 
-        /* --- TABLERO FLUIDO --- */
+        /* --- TABLERO AJUSTADO --- */
+        #board-wrapper {
+            position: relative;
+            width: 100%;
+            /* Calculamos el tamaño máximo para que no desborde verticalmente */
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         #board-container {
             position: relative;
-            flex-grow: 1;
             background: var(--card);
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            margin-bottom: 10px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
             overflow: hidden;
-            /* El tamaño se calcula dinámicamente en JS */
+            /* El tamaño real se inyecta por JS para ser cuadrado perfecto */
         }
 
         .dot {
             position: absolute;
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
             background: var(--dot);
             border-radius: 50%;
             z-index: 10;
@@ -150,15 +175,14 @@
             background: var(--line-ghost);
             border-radius: 10px;
             z-index: 5;
-            transition: all 0.3s ease;
+            transition: background 0.3s, box-shadow 0.3s;
         }
 
-        /* Áreas de colisión táctil mejoradas */
         .line.active { pointer-events: none; }
-        .line.p1 { background: var(--p1); box-shadow: 0 0 12px var(--p1); }
-        .line.p2 { background: var(--p2); box-shadow: 0 0 12px var(--p2); }
-        .line.p3 { background: var(--p3); box-shadow: 0 0 12px var(--p3); }
-        .line.p4 { background: var(--p4); box-shadow: 0 0 12px var(--p4); }
+        .line.p1 { background: var(--p1); box-shadow: 0 0 15px var(--p1); }
+        .line.p2 { background: var(--p2); box-shadow: 0 0 15px var(--p2); }
+        .line.p3 { background: var(--p3); box-shadow: 0 0 15px var(--p3); }
+        .line.p4 { background: var(--p4); box-shadow: 0 0 15px var(--p4); }
 
         .box {
             position: absolute;
@@ -168,21 +192,24 @@
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 1.5rem;
-            border-radius: 8px;
-            transform: scale(0.8);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 4px;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .box.claimed { opacity: 0.25; transform: scale(0.95); }
+        .box.claimed { opacity: 0.3; transform: scale(0.9); }
+
+        .footer {
+            padding: 10px 0;
+            text-align: center;
+        }
 
         .reset-btn {
-            background: none;
+            background: rgba(255,255,255,0.05);
             border: none;
-            color: #666;
-            font-size: 0.8rem;
-            padding: 10px;
-            text-decoration: underline;
+            color: #888;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -191,26 +218,33 @@
     <main class="main-container">
         <section id="setup-screen">
             <div>
-                <h1>DOTS & BOXES</h1>
-                <p style="color: #666; margin-top: -10px;">PRO EDITION</p>
+                <h1>DOTS BOXES</h1>
+                <p style="color: #666; letter-spacing: 4px; margin-top: 5px;">EDICIÓN PREMIUM</p>
             </div>
             <div class="player-options">
                 <button class="opt-btn" onpointerdown="startGame(2)">2</button>
                 <button class="opt-btn" onpointerdown="startGame(3)">3</button>
                 <button class="opt-btn" onpointerdown="startGame(4)">4</button>
             </div>
-            <div id="high-score-display" style="font-size: 0.8rem; color: #444;"></div>
+            <div id="high-score-display"></div>
         </section>
 
         <section id="game-screen">
             <div class="header">
-                <div id="turn-indicator">Turno P1</div>
+                <div class="top-bar">
+                    <div id="turn-indicator">CARGANDO...</div>
+                    <div id="score-best" style="font-size: 0.7rem; color: #555;"></div>
+                </div>
                 <div class="scores" id="scores-container"></div>
             </div>
 
-            <div id="board-container"></div>
+            <div id="board-wrapper">
+                <div id="board-container"></div>
+            </div>
 
-            <button class="reset-btn" onpointerdown="location.reload()">Abandonar Partida</button>
+            <div class="footer">
+                <button class="reset-btn" onpointerdown="location.reload()">ABANDONAR</button>
+            </div>
         </section>
     </main>
 
@@ -220,35 +254,43 @@
     let scores = [0, 0, 0, 0, 0];
     const playerColors = ['', 'var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
     
-    const GRID_SIZE = 5; // 5x5 puntos = 4x4 cuadros
+    const GRID_SIZE = 5; 
     let cellSize = 0;
 
-    // Cargar High Score de localStorage
     window.onload = () => {
         const hs = localStorage.getItem('dots-boxes-hs') || 0;
-        document.getElementById('high-score-display').innerText = `RÉCORD EN SESIÓN: ${hs} CAJAS`;
+        document.getElementById('high-score-display').innerText = `MEJOR PUNTUACIÓN: ${hs}`;
+        document.getElementById('score-best').innerText = `RÉCORD: ${hs}`;
     };
 
     function startGame(n) {
         players = n;
         document.getElementById('setup-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
-        initBoard();
+        
+        // Timeout para asegurar que el DOM ha calculado el espacio disponible
+        setTimeout(initBoard, 50);
         updateUI();
     }
 
     function initBoard() {
+        const wrapper = document.getElementById('board-wrapper');
         const container = document.getElementById('board-container');
-        const rect = container.getBoundingClientRect();
         
-        // Cálculo dinámico basado en el ancho real del dispositivo
-        const padding = 40;
-        cellSize = (rect.width - padding * 2) / (GRID_SIZE - 1);
+        // Lógica Mobile-First: El tablero debe ser cuadrado y caber tanto en ancho como en alto
+        const availableW = wrapper.clientWidth;
+        const availableH = wrapper.clientHeight;
+        const side = Math.min(availableW, availableH);
+        
+        container.style.width = `${side}px`;
+        container.style.height = `${side}px`;
 
-        // Limpiar contenedor
+        const padding = side * 0.1; // 10% de margen interno
+        cellSize = (side - padding * 2) / (GRID_SIZE - 1);
+
         container.innerHTML = '';
 
-        // 1. Generar Cuadros (Fondo)
+        // 1. Cajas
         for (let r = 0; r < GRID_SIZE - 1; r++) {
             for (let c = 0; c < GRID_SIZE - 1; c++) {
                 const box = document.createElement('div');
@@ -258,25 +300,21 @@
                 box.style.top = `${padding + r * cellSize}px`;
                 box.style.width = `${cellSize}px`;
                 box.style.height = `${cellSize}px`;
+                box.style.fontSize = `${cellSize * 0.4}px`;
                 container.appendChild(box);
             }
         }
 
-        // 2. Generar Líneas (Capa interactiva)
-        // Horizontales
+        // 2. Líneas
+        const touchArea = 16; 
         for (let r = 0; r < GRID_SIZE; r++) {
-            for (let c = 0; c < GRID_SIZE - 1; c++) {
-                createLine(r, c, 'h', container, padding);
-            }
+            for (let c = 0; c < GRID_SIZE - 1; c++) createLine(r, c, 'h', container, padding, touchArea);
         }
-        // Verticales
         for (let r = 0; r < GRID_SIZE - 1; r++) {
-            for (let c = 0; c < GRID_SIZE; c++) {
-                createLine(r, c, 'v', container, padding);
-            }
+            for (let c = 0; c < GRID_SIZE; c++) createLine(r, c, 'v', container, padding, touchArea);
         }
 
-        // 3. Generar Puntos (Estética)
+        // 3. Puntos
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
                 const dot = document.createElement('div');
@@ -288,29 +326,23 @@
         }
     }
 
-    function createLine(r, c, type, container, padding) {
+    function createLine(r, c, type, container, padding, touch) {
         const line = document.createElement('div');
         line.className = 'line';
-        line.dataset.r = r;
-        line.dataset.c = c;
-        line.dataset.type = type;
-
-        const thickness = 14; // Área táctil generosa para dedos
-        const visualThickness = 4;
+        line.dataset.r = r; line.dataset.c = c; line.dataset.type = type;
 
         if (type === 'h') {
-            line.style.width = `${cellSize - 10}px`;
-            line.style.height = `${thickness}px`;
-            line.style.left = `${padding + c * cellSize + 5}px`;
-            line.style.top = `${padding + r * cellSize - thickness/2}px`;
+            line.style.width = `${cellSize - 12}px`;
+            line.style.height = `${touch}px`;
+            line.style.left = `${padding + c * cellSize + 6}px`;
+            line.style.top = `${padding + r * cellSize - touch/2}px`;
         } else {
-            line.style.width = `${thickness}px`;
-            line.style.height = `${cellSize - 10}px`;
-            line.style.left = `${padding + c * cellSize - thickness/2}px`;
-            line.style.top = `${padding + r * cellSize + 5}px`;
+            line.style.width = `${touch}px`;
+            line.style.height = `${cellSize - 12}px`;
+            line.style.left = `${padding + c * cellSize - touch/2}px`;
+            line.style.top = `${padding + r * cellSize + 6}px`;
         }
 
-        // Pointerdown para respuesta inmediata sin lag de 300ms
         line.onpointerdown = (e) => {
             e.preventDefault();
             handleMove(line);
@@ -320,11 +352,8 @@
 
     function handleMove(el) {
         if (el.classList.contains('active')) return;
-
         el.classList.add('active', `p${currentPlayer}`);
-        
         const scored = checkBoxes(el);
-
         if (!scored) {
             currentPlayer = (currentPlayer % players) + 1;
         } else {
@@ -346,10 +375,8 @@
 
         const claim = (br, bc) => {
             if (br < 0 || br >= GRID_SIZE - 1 || bc < 0 || bc >= GRID_SIZE - 1) return;
-            
             if (isLineSet(br, bc, 'h') && isLineSet(br+1, bc, 'h') && 
                 isLineSet(br, bc, 'v') && isLineSet(br, bc+1, 'v')) {
-                
                 const box = document.getElementById(`box-${br}-${bc}`);
                 if (!box.classList.contains('claimed')) {
                     box.classList.add('claimed');
@@ -361,13 +388,8 @@
             }
         };
 
-        if (type === 'h') {
-            claim(r, c);
-            claim(r - 1, c);
-        } else {
-            claim(r, c);
-            claim(r, c - 1);
-        }
+        if (type === 'h') { claim(r, c); claim(r - 1, c); } 
+        else { claim(r, c); claim(r, c - 1); }
         return scoredAny;
     }
 
@@ -375,14 +397,14 @@
         const indicator = document.getElementById('turn-indicator');
         indicator.innerText = `Turno Jugador ${currentPlayer}`;
         indicator.style.backgroundColor = playerColors[currentPlayer];
-        indicator.style.color = currentPlayer === 4 ? '#000' : '#fff';
+        indicator.style.color = (currentPlayer === 4 || currentPlayer === 3) ? '#000' : '#fff';
 
         const sc = document.getElementById('scores-container');
         sc.innerHTML = '';
         for (let i = 1; i <= players; i++) {
             const pill = document.createElement('div');
             pill.className = 'score-pill';
-            pill.style.borderBottomColor = playerColors[i];
+            pill.style.borderLeftColor = playerColors[i];
             pill.innerText = `P${i}: ${scores[i]}`;
             sc.appendChild(pill);
         }
@@ -395,14 +417,9 @@
         if (currentTotal === totalPossible) {
             const maxScore = Math.max(...scores);
             const winner = scores.indexOf(maxScore);
-            
-            // Persistencia de High Score
-            const sessionHS = localStorage.getItem('dots-boxes-hs') || 0;
-            if (maxScore > sessionHS) localStorage.setItem('dots-boxes-hs', maxScore);
-
-            setTimeout(() => {
-                alert(`¡FIN DEL JUEGO! Ganador: Jugador ${winner} con ${maxScore} puntos.`);
-            }, 500);
+            const hs = localStorage.getItem('dots-boxes-hs') || 0;
+            if (maxScore > hs) localStorage.setItem('dots-boxes-hs', maxScore);
+            setTimeout(() => alert(`¡PARTIDA FINALIZADA!\nGanador: Jugador ${winner} (${maxScore} puntos)`), 300);
         }
     }
 </script>
