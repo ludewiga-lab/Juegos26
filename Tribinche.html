@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dots & Boxes Pro - Mobile First</title>
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --card: #1a1a1a;
+            --text: #ffffff;
+            --p1: #ff5252;
+            --p2: #448aff;
+            --p3: #69f0ae;
+            --p4: #ffd740;
+            --dot: #444;
+            --line-ghost: rgba(255,255,255,0.05);
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100dvh;
+            overflow: hidden;
+            touch-action: none; /* Previene scroll y zoom nativo */
+        }
+
+        /* --- CONTENEDOR PRINCIPAL RESPONSIVO --- */
+        .main-container {
+            width: 95vw;
+            max-width: 500px;
+            aspect-ratio: 1/1; /* Mantiene forma cuadrada */
+            display: flex;
+            flex-direction: column;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+
+        #setup-screen {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            gap: 2rem;
+        }
+
+        h1 { 
+            font-weight: 800; 
+            font-size: clamp(1.5rem, 8vw, 2.5rem);
+            letter-spacing: -1px;
+            background: linear-gradient(45deg, var(--p1), var(--p2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .player-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .opt-btn {
+            background: var(--card);
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 20px 10px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .opt-btn:active { 
+            transform: scale(0.92); 
+            background: #252525;
+            border-color: var(--p2);
+        }
+
+        /* --- ESTADO DE JUEGO --- */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        #turn-indicator {
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            transition: all 0.4s ease;
+        }
+
+        .scores { display: flex; gap: 8px; }
+        .score-pill {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            background: var(--card);
+            border-bottom: 3px solid transparent;
+        }
+
+        /* --- TABLERO FLUIDO --- */
+        #board-container {
+            position: relative;
+            flex-grow: 1;
+            background: var(--card);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            margin-bottom: 10px;
+            overflow: hidden;
+            /* El tamaño se calcula dinámicamente en JS */
+        }
+
+        .dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--dot);
+            border-radius: 50%;
+            z-index: 10;
+            transform: translate(-50%, -50%);
+        }
+
+        .line {
+            position: absolute;
+            background: var(--line-ghost);
+            border-radius: 10px;
+            z-index: 5;
+            transition: all 0.3s ease;
+        }
+
+        /* Áreas de colisión táctil mejoradas */
+        .line.active { pointer-events: none; }
+        .line.p1 { background: var(--p1); box-shadow: 0 0 12px var(--p1); }
+        .line.p2 { background: var(--p2); box-shadow: 0 0 12px var(--p2); }
+        .line.p3 { background: var(--p3); box-shadow: 0 0 12px var(--p3); }
+        .line.p4 { background: var(--p4); box-shadow: 0 0 12px var(--p4); }
+
+        .box {
+            position: absolute;
+            z-index: 1;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.5rem;
+            border-radius: 8px;
+            transform: scale(0.8);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .box.claimed { opacity: 0.25; transform: scale(0.95); }
+
+        .reset-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 0.8rem;
+            padding: 10px;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="main-container">
+        <section id="setup-screen">
+            <div>
+                <h1>DOTS & BOXES</h1>
+                <p style="color: #666; margin-top: -10px;">PRO EDITION</p>
+            </div>
+            <div class="player-options">
+                <button class="opt-btn" onpointerdown="startGame(2)">2</button>
+                <button class="opt-btn" onpointerdown="startGame(3)">3</button>
+                <button class="opt-btn" onpointerdown="startGame(4)">4</button>
+            </div>
+            <div id="high-score-display" style="font-size: 0.8rem; color: #444;"></div>
+        </section>
+
+        <section id="game-screen">
+            <div class="header">
+                <div id="turn-indicator">Turno P1</div>
+                <div class="scores" id="scores-container"></div>
+            </div>
+
+            <div id="board-container"></div>
+
+            <button class="reset-btn" onpointerdown="location.reload()">Abandonar Partida</button>
+        </section>
+    </main>
+
+<script>
+    let players = 2;
+    let currentPlayer = 1;
+    let scores = [0, 0, 0, 0, 0];
+    const playerColors = ['', 'var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
+    
+    const GRID_SIZE = 5; // 5x5 puntos = 4x4 cuadros
+    let cellSize = 0;
+
+    // Cargar High Score de localStorage
+    window.onload = () => {
+        const hs = localStorage.getItem('dots-boxes-hs') || 0;
+        document.getElementById('high-score-display').innerText = `RÉCORD EN SESIÓN: ${hs} CAJAS`;
+    };
+
+    function startGame(n) {
+        players = n;
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        initBoard();
+        updateUI();
+    }
+
+    function initBoard() {
+        const container = document.getElementById('board-container');
+        const rect = container.getBoundingClientRect();
+        
+        // Cálculo dinámico basado en el ancho real del dispositivo
+        const padding = 40;
+        cellSize = (rect.width - padding * 2) / (GRID_SIZE - 1);
+
+        // Limpiar contenedor
+        container.innerHTML = '';
+
+        // 1. Generar Cuadros (Fondo)
+        for (let r = 0; r < GRID_SIZE - 1; r++) {
+            for (let c = 0; c < GRID_SIZE - 1; c++) {
+                const box = document.createElement('div');
+                box.id = `box-${r}-${c}`;
+                box.className = 'box';
+                box.style.left = `${padding + c * cellSize}px`;
+                box.style.top = `${padding + r * cellSize}px`;
+                box.style.width = `${cellSize}px`;
+                box.style.height = `${cellSize}px`;
+                container.appendChild(box);
+            }
+        }
+
+        // 2. Generar Líneas (Capa interactiva)
+        // Horizontales
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE - 1; c++) {
+                createLine(r, c, 'h', container, padding);
+            }
+        }
+        // Verticales
+        for (let r = 0; r < GRID_SIZE - 1; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                createLine(r, c, 'v', container, padding);
+            }
+        }
+
+        // 3. Generar Puntos (Estética)
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.style.left = `${padding + c * cellSize}px`;
+                dot.style.top = `${padding + r * cellSize}px`;
+                container.appendChild(dot);
+            }
+        }
+    }
+
+    function createLine(r, c, type, container, padding) {
+        const line = document.createElement('div');
+        line.className = 'line';
+        line.dataset.r = r;
+        line.dataset.c = c;
+        line.dataset.type = type;
+
+        const thickness = 14; // Área táctil generosa para dedos
+        const visualThickness = 4;
+
+        if (type === 'h') {
+            line.style.width = `${cellSize - 10}px`;
+            line.style.height = `${thickness}px`;
+            line.style.left = `${padding + c * cellSize + 5}px`;
+            line.style.top = `${padding + r * cellSize - thickness/2}px`;
+        } else {
+            line.style.width = `${thickness}px`;
+            line.style.height = `${cellSize - 10}px`;
+            line.style.left = `${padding + c * cellSize - thickness/2}px`;
+            line.style.top = `${padding + r * cellSize + 5}px`;
+        }
+
+        // Pointerdown para respuesta inmediata sin lag de 300ms
+        line.onpointerdown = (e) => {
+            e.preventDefault();
+            handleMove(line);
+        };
+        container.appendChild(line);
+    }
+
+    function handleMove(el) {
+        if (el.classList.contains('active')) return;
+
+        el.classList.add('active', `p${currentPlayer}`);
+        
+        const scored = checkBoxes(el);
+
+        if (!scored) {
+            currentPlayer = (currentPlayer % players) + 1;
+        } else {
+            checkGameOver();
+        }
+        updateUI();
+    }
+
+    function checkBoxes(line) {
+        const r = parseInt(line.dataset.r);
+        const c = parseInt(line.dataset.c);
+        const type = line.dataset.type;
+        let scoredAny = false;
+
+        const isLineSet = (row, col, t) => {
+            const l = document.querySelector(`.line[data-r="${row}"][data-c="${col}"][data-type="${t}"]`);
+            return l && l.classList.contains('active');
+        };
+
+        const claim = (br, bc) => {
+            if (br < 0 || br >= GRID_SIZE - 1 || bc < 0 || bc >= GRID_SIZE - 1) return;
+            
+            if (isLineSet(br, bc, 'h') && isLineSet(br+1, bc, 'h') && 
+                isLineSet(br, bc, 'v') && isLineSet(br, bc+1, 'v')) {
+                
+                const box = document.getElementById(`box-${br}-${bc}`);
+                if (!box.classList.contains('claimed')) {
+                    box.classList.add('claimed');
+                    box.style.backgroundColor = playerColors[currentPlayer];
+                    box.innerText = 'P' + currentPlayer;
+                    scores[currentPlayer]++;
+                    scoredAny = true;
+                }
+            }
+        };
+
+        if (type === 'h') {
+            claim(r, c);
+            claim(r - 1, c);
+        } else {
+            claim(r, c);
+            claim(r, c - 1);
+        }
+        return scoredAny;
+    }
+
+    function updateUI() {
+        const indicator = document.getElementById('turn-indicator');
+        indicator.innerText = `Turno Jugador ${currentPlayer}`;
+        indicator.style.backgroundColor = playerColors[currentPlayer];
+        indicator.style.color = currentPlayer === 4 ? '#000' : '#fff';
+
+        const sc = document.getElementById('scores-container');
+        sc.innerHTML = '';
+        for (let i = 1; i <= players; i++) {
+            const pill = document.createElement('div');
+            pill.className = 'score-pill';
+            pill.style.borderBottomColor = playerColors[i];
+            pill.innerText = `P${i}: ${scores[i]}`;
+            sc.appendChild(pill);
+        }
+    }
+
+    function checkGameOver() {
+        const totalPossible = (GRID_SIZE - 1) * (GRID_SIZE - 1);
+        const currentTotal = scores.reduce((a, b) => a + b, 0);
+
+        if (currentTotal === totalPossible) {
+            const maxScore = Math.max(...scores);
+            const winner = scores.indexOf(maxScore);
+            
+            // Persistencia de High Score
+            const sessionHS = localStorage.getItem('dots-boxes-hs') || 0;
+            if (maxScore > sessionHS) localStorage.setItem('dots-boxes-hs', maxScore);
+
+            setTimeout(() => {
+                alert(`¡FIN DEL JUEGO! Ganador: Jugador ${winner} con ${maxScore} puntos.`);
+            }, 500);
+        }
+    }
+</script>
+</body>
+</html>
