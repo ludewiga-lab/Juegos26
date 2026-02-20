@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BeatMaker Pro Master</title>
+    <style>
+        :root {
+            --bg: #08080a;
+            --panel: #121217;
+            --pad-red: #ff3c3c;
+            --pad-blue: #3c95ff;
+            --pad-green: #3cff85;
+            --pad-yellow: #ffcf3c;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            font-family: 'Inter', system-ui, sans-serif;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Consola Principal --- */
+        #daw-container {
+            flex: 1;
+            width: 100vw;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: calc(var(--safe-top) + 10px) 15px calc(var(--safe-bottom) + 10px) 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Mixer & Screen */
+        .top-section {
+            background: var(--panel);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #222;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .display {
+            background: #000;
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+
+        .bpm-label { font-size: 10px; color: #666; letter-spacing: 2px; }
+        .bpm-value { font-family: monospace; font-size: 24px; color: var(--pad-green); text-shadow: 0 0 10px var(--pad-green); }
+
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #filter-knob {
+            width: 50px; height: 50px;
+            background: radial-gradient(circle, #444 0%, #111 100%);
+            border-radius: 50%;
+            border: 2px solid #333;
+            position: relative;
+            transition: transform 0.1s;
+        }
+
+        #filter-knob::after {
+            content: ''; position: absolute; top: 5px; left: 50%; width: 3px; height: 15px;
+            background: var(--pad-blue); transform: translateX(-50%); border-radius: 2px;
+        }
+
+        /* 16 Pad Grid */
+        .pad-matrix {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .pad {
+            background: #1a1a20;
+            border-radius: 8px;
+            border-bottom: 4px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.3);
+            transition: 0.05s;
+        }
+
+        /* Colores por tipo de sonido */
+        .p-low { border-top: 2px solid var(--pad-red); }
+        .p-perc { border-top: 2px solid var(--pad-blue); }
+        .p-lead { border-top: 2px solid var(--pad-green); }
+        .p-fx { border-top: 2px solid var(--pad-yellow); }
+
+        .pad.active {
+            transform: translateY(2px);
+            border-bottom-width: 0px;
+            filter: brightness(1.5);
+            box-shadow: 0 0 15px currentColor;
+            color: white;
+        }
+
+        /* Footer Controls */
+        footer {
+            display: flex;
+            gap: 10px;
+            height: 60px;
+        }
+
+        .btn-main {
+            flex: 1; border: none; border-radius: 12px;
+            font-weight: bold; color: white; letter-spacing: 1px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .play-btn { background: #222; border: 1px solid #333; }
+        .play-btn.on { background: var(--pad-green); color: black; box-shadow: 0 0 20px var(--pad-green); }
+
+    </style>
+</head>
+<body>
+
+    <div id="daw-container">
+        <section class="top-section">
+            <div class="display">
+                <div class="bpm-label">ENGINE STATUS</div>
+                <div id="status" class="bpm-value">READY</div>
+                <div style="font-size: 9px; margin-top: 5px; color: #444;">128 BPM MASTER</div>
+            </div>
+            <div class="knob-container">
+                <div id="filter-knob"></div>
+                <span style="font-size: 9px; margin-top: 5px; color: #666;">DJ FILTER CUTOFF</span>
+            </div>
+        </section>
+
+        <div class="pad-matrix" id="matrix">
+            </div>
+
+        <footer>
+            <button id="master-play" class="btn-main play-btn">ACTIVATE BEAT</button>
+        </footer>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const masterFilter = audioCtx.createBiquadFilter();
+        masterFilter.type = 'lowpass';
+        masterFilter.frequency.value = 20000;
+        masterFilter.connect(audioCtx.destination);
+
+        const statusDisplay = document.getElementById('status');
+        let isBeatRunning = false;
+        let beatInterval;
+
+        // Configuración de Sonidos Pro
+        const sounds = [
+            { id: 'KICK_DEEP', type: 'low', freq: 60 }, { id: 'KICK_SUB', type: 'low', freq: 45 },
+            { id: 'BASS_STAB', type: 'low', freq: 80 }, { id: 'SUB_DROP', type: 'low', freq: 40 },
+            { id: 'SNARE', type: 'perc', freq: 200 }, { id: 'RIMSHOT', type: 'perc', freq: 400 },
+            { id: 'HIHAT_C', type: 'perc', freq: 8000 }, { id: 'HIHAT_O', type: 'perc', freq: 7000 },
+            { id: 'CHORD_A', type: 'lead', freq: 440 }, { id: 'CHORD_B', type: 'lead', freq: 523 },
+            { id: 'LEAD_HI', type: 'lead', freq: 880 }, { id: 'RIFF', type: 'lead', freq: 330 },
+            { id: 'NOISE_X', type: 'fx', freq: 1000 }, { id: 'SWEEP', type: 'fx', freq: 2000 },
+            { id: 'ZAP', type: 'fx', freq: 1500 }, { id: 'GLITCH', type: 'fx', freq: 3000 }
+        ];
+
+        // Crear Pads
+        const matrix = document.getElementById('matrix');
+        sounds.forEach((s, i) => {
+            const p = document.createElement('div');
+            p.className = `pad p-${s.type}`;
+            p.innerHTML = `<span>${s.id}</span>`;
+            p.style.color = `var(--pad-${s.type === 'low' ? 'red' : s.type === 'perc' ? 'blue' : s.type === 'lead' ? 'green' : 'yellow'})`;
+            
+            p.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                playEngine(s, i);
+                p.classList.add('active');
+                if (navigator.vibrate) navigator.vibrate(10);
+            });
+            p.addEventListener('pointerup', () => p.classList.remove('active'));
+            matrix.appendChild(p);
+        });
+
+        // Motor de Audio Profesional
+        function playEngine(sound, index) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            statusDisplay.textContent = sound.id;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(masterFilter);
+
+            if (sound.type === 'low') {
+                osc.frequency.setValueAtTime(sound.freq, now);
+                osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
+                gain.gain.setValueAtTime(1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            } else if (sound.type === 'perc') {
+                if (sound.id.includes('HIHAT')) {
+                    playNoise(sound.id === 'HIHAT_O' ? 0.4 : 0.05);
+                    return;
+                }
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(sound.freq, now);
+                gain.gain.setValueAtTime(0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(sound.freq, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+            }
+
+            osc.start();
+            osc.stop(now + 1);
+        }
+
+        function playNoise(dur) {
+            const bufferSize = audioCtx.sampleRate * dur;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+            noise.connect(g); g.connect(masterFilter);
+            noise.start();
+        }
+
+        // Lógica del Filtro DJ (Tocar y arrastrar en el knob)
+        const knob = document.getElementById('filter-knob');
+        let isRotating = false;
+        knob.addEventListener('pointermove', (e) => {
+            if (e.buttons > 0) {
+                let rect = knob.getBoundingClientRect();
+                let x = e.clientX - (rect.left + rect.width / 2);
+                let y = e.clientY - (rect.top + rect.height / 2);
+                let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
+                knob.style.transform = `rotate(${angle}deg)`;
+                
+                // Mapeo de ángulo a frecuencia (de 200Hz a 20000Hz)
+                let freq = Math.max(200, Math.min(20000, (angle + 180) * 60));
+                masterFilter.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            }
+        });
+
+        // Loop de fondo profesional
+        const playBtn = document.getElementById('master-play');
+        playBtn.addEventListener('click', () => {
+            isBeatRunning = !isBeatRunning;
+            if (isBeatRunning) {
+                playBtn.classList.add('on');
+                playBtn.textContent = "STOP BEAT";
+                startSequencer();
+            } else {
+                playBtn.classList.remove('on');
+                playBtn.textContent = "ACTIVATE BEAT";
+                clearInterval(beatInterval);
+                statusDisplay.textContent = "IDLE";
+            }
+        });
+
+        function startSequencer() {
+            let step = 0;
+            beatInterval = setInterval(() => {
+                const now = audioCtx.currentTime;
+                // Kick en cada 1
+                if (step % 4 === 0) {
+                    playEngine(sounds[0], 0);
+                    statusDisplay.textContent = "BEAT_1";
+                }
+                // Hihat en los contratiempos
+                if (step % 2 === 1) playNoise(0.02);
+                
+                step = (step + 1) % 16;
+            }, 125); // 120 BPM aprox
+        }
+
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    </script>
+</body>
+</html>
