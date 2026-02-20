@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pro Drum Studio V3</title>
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --surface: #1a1a1e;
+            --accent: #3498db;
+            --gold: #f1c40f;
+            --red: #e74c3c;
+            --text: #ffffff;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; touch-action: none;
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        #app-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 480px;
+            padding: calc(var(--safe-top) + 15px) 15px calc(var(--safe-bottom) + 15px) 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        header h1 {
+            font-size: 12px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: #666;
+        }
+
+        /* Grid Principal */
+        .drum-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        /* Estilo de los Pads */
+        .pad {
+            background: linear-gradient(145deg, #232329, #1a1a1e);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.05s ease;
+            box-shadow: 0 4px 0 #000;
+        }
+
+        .pad svg {
+            width: 45%;
+            height: auto;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+        }
+
+        .pad span {
+            font-size: 9px;
+            margin-top: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            opacity: 0.5;
+        }
+
+        /* Colores de Categoría */
+        .c-gold { color: var(--gold); }
+        .c-blue { color: var(--accent); }
+        .c-red { color: var(--red); }
+
+        /* Comportamiento al Tocar */
+        .pad.active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #000;
+            background: #2a2a32;
+            filter: brightness(1.3);
+        }
+
+        .pad.active svg {
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        /* Área Especial: Bombo */
+        .kick-area {
+            grid-column: span 3;
+            background: linear-gradient(145deg, #2a2a30, #151518);
+        }
+
+        .kick-area svg { width: 60px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <header><h1>Drum Engine Professional</h1></header>
+
+        <div class="drum-grid">
+            <div class="pad c-gold" data-sound="crash">
+                <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M5.5 5.5l13 13m0-13l-13 13"/></svg>
+                <span>CRASH</span>
+            </div>
+            <div class="pad c-gold" data-sound="ride">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/></svg>
+                <span>RIDE</span>
+            </div>
+            <div class="pad c-gold" data-sound="hh-open">
+                <svg viewBox="0 0 24 24"><path d="M2 15c0-4 4-7 10-7s10 3 10 7M2 17c0-1 4-2 10-2s10 1 10 2"/></svg>
+                <span>HH OPEN</span>
+            </div>
+
+            <div class="pad c-blue" data-sound="tom1">
+                <svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="8" rx="2"/><path d="M4 10h16M4 14h16"/></svg>
+                <span>TOM HIGH</span>
+            </div>
+            <div class="pad c-blue" data-sound="tom2">
+                <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M3 10h18M3 14h18"/></svg>
+                <span>TOM MID</span>
+            </div>
+            <div class="pad c-gold" data-sound="hh-closed">
+                <svg viewBox="0 0 24 24"><path d="M2 12c0-2 4-4 10-4s10 2 10 4M2 13c0-1 4-2 10-2s10 1 10 2"/></svg>
+                <span>HH CLOSED</span>
+            </div>
+
+            <div class="pad c-blue" data-sound="snare" style="grid-column: span 2">
+                <svg viewBox="0 0 24 24" style="width: 30%"><rect x="2" y="9" width="20" height="6" rx="1"/><path d="M2 11h20M2 13h20M4 9v6M20 9v6"/></svg>
+                <span>SNARE DRUM</span>
+            </div>
+            <div class="pad c-blue" data-sound="tom3">
+                <svg viewBox="0 0 24 24"><rect x="5" y="6" width="14" height="12" rx="2"/><path d="M5 9h14M5 15h14"/></svg>
+                <span>FLOOR TOM</span>
+            </div>
+
+            <div class="pad kick-area c-red" data-sound="kick">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><path d="M12 8v8M8 12h8"/></svg>
+                <span>BASS DRUM</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Motor de sonido avanzado (Síntesis)
+        const engine = {
+            kick: (now) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(0.001, now + 0.5);
+                gain.gain.setValueAtTime(1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(now + 0.5);
+            },
+            snare: (now) => {
+                const noise = audioCtx.createBufferSource();
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for(let i=0; i<buffer.length; i++) data[i] = Math.random() * 2 - 1;
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass'; filter.frequency.value = 1200;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                noise.start();
+                // Golpe seco (cuerpo)
+                const osc = audioCtx.createOscillator();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(180, now);
+                const g = audioCtx.createGain(); g.gain.setValueAtTime(0.5, now);
+                g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(); osc.stop(now + 0.1);
+            },
+            cymbal: (now, type) => {
+                const dur = type === 'crash' ? 1.5 : (type === 'hh-open' ? 0.7 : 0.1);
+                const noise = audioCtx.createBufferSource();
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for(let i=0; i<buffer.length; i++) data[i] = Math.random() * 2 - 1;
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass'; filter.frequency.value = 7000;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(type === 'crash' ? 0.3 : 0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + dur);
+                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                noise.start();
+            },
+            tom: (now, freq) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.exponentialRampToValueAtTime(freq/2, now + 0.4);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(now + 0.4);
+            }
+        };
+
+        // Event Listeners
+        document.querySelectorAll('.pad').forEach(pad => {
+            pad.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+                const s = pad.dataset.sound;
+                
+                pad.classList.add('active');
+                if (navigator.vibrate) navigator.vibrate(15);
+
+                if (s === 'kick') engine.kick(now);
+                else if (s === 'snare') engine.snare(now);
+                else if (s.includes('hh') || s === 'crash' || s === 'ride') engine.cymbal(now, s);
+                else if (s === 'tom1') engine.tom(now, 220);
+                else if (s === 'tom2') engine.tom(now, 160);
+                else if (s === 'tom3') engine.tom(now, 110);
+            });
+
+            pad.addEventListener('pointerup', () => pad.classList.remove('active'));
+            pad.addEventListener('pointerleave', () => pad.classList.remove('active'));
+        });
+
+        // Bloqueo total de gestos del sistema para evitar cierres accidentales
+        document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    </script>
+</body>
+</html>
