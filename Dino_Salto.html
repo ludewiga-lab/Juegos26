@@ -10,13 +10,14 @@
             --sky: #87CEEB;
             --ground: #795548;
             --accent: #f1c40f;
-            --ui-bg: rgba(255, 255, 255, 0.15);
+            --ui-bg: rgba(255, 255, 255, 0.2);
         }
 
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent;
             touch-action: none; 
+            user-select: none;
         }
 
         body, html {
@@ -38,6 +39,7 @@
             flex-direction: column;
             background: var(--sky);
             position: relative;
+            overflow: hidden;
         }
 
         #header {
@@ -78,28 +80,31 @@
             background: var(--ui-bg);
             padding: 8px;
             border-radius: 30px;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 10;
         }
 
         .char-option {
-            width: 40px; height: 40px;
+            width: 42px; height: 42px;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px;
             border-radius: 50%;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(255,255,255,0.1);
         }
         .char-option.active {
             background: var(--accent);
             transform: scale(1.2);
-            box-shadow: 0 0 10px white;
+            box-shadow: 0 0 15px white;
         }
 
         #game-container {
             flex: 1;
             width: 100%;
             position: relative;
+            cursor: pointer;
         }
 
         canvas {
@@ -108,41 +113,18 @@
             height: 100%;
         }
 
-        #jump-area {
-            height: 25%;
-            background: rgba(0,0,0,0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-top: 4px solid rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 20;
-        }
-
-        #jump-btn {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #f1c40f, #e67e22);
-            border: none;
-            box-shadow: 0 8px 0 #b7950b, 0 15px 30px rgba(0,0,0,0.3);
-            font-size: 40px;
-            color: white;
-            display: flex;
-            align-items: center; justify-content: center;
-            transition: transform 0.1s;
-        }
-        #jump-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 4px 0 #b7950b, 0 10px 20px rgba(0,0,0,0.3);
-        }
-
         #instructions {
             position: absolute;
-            bottom: 10px;
-            font-size: 12px;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
             color: #5d4037;
-            font-weight: 700;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -167,11 +149,7 @@
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-    </div>
-
-    <div id="jump-area">
-        <button id="jump-btn">🦘</button>
-        <div id="instructions">MANTÉN PARA SALTAR MÁS ALTO</div>
+        <div id="instructions">Pulsa en cualquier parte para saltar</div>
     </div>
 </div>
 
@@ -207,10 +185,10 @@
 
         draw() {
             ctx.save();
+            ctx.globalAlpha = 1.0; 
             ctx.font = '50px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            // Girar al personaje para que mire a la derecha
             ctx.translate(this.x + this.width / 2, this.y);
             ctx.scale(-1, 1); 
             ctx.fillText(this.emoji, 0, 0);
@@ -269,19 +247,21 @@
     function spawnBird() {
         birds.push({
             x: W + 50,
-            y: Math.random() * 150 + 100,
-            speed: gameSpeed + 1.2,
+            y: Math.random() * 100 + 100, 
+            speed: gameSpeed + 1.5,
             emoji: '🐦',
-            dropTimer: Math.floor(Math.random() * 40 + 30)
+            hasDropped: false,
+            dropX: Math.random() * (W * 0.3) + (W * 0.4) 
         });
     }
 
+    // FUNCIÓN DE COLISIÓN AJUSTADA: Ahora es más permisiva
     function checkCollision(ox, oy, ow, oh) {
-        // Caja de colisión ajustada del jugador
-        const px = player.x + 10;
-        const py = player.y - player.height + 10;
-        const pw = player.width - 20;
-        const ph = player.height - 15;
+        // Reducimos drásticamente la caja del jugador para que deba tocar "de verdad"
+        const px = player.x + 18; // Más margen lateral
+        const py = player.y - player.height + 22; // Más margen superior
+        const pw = player.width - 36; // Hitbox muy estrecha
+        const ph = player.height - 30; // Hitbox más baja
 
         return px < ox + ow &&
                px + pw > ox &&
@@ -290,15 +270,18 @@
     }
 
     function updateEntities() {
-        // Nubes
+        // NUBES
+        ctx.save();
+        ctx.globalAlpha = 0.4;
         clouds.forEach((c, i) => {
-            c.x -= c.speed;
-            ctx.globalAlpha = 0.5;
             ctx.font = `${c.size}px Arial`;
+            c.x -= c.speed;
             ctx.fillText('☁️', c.x, c.y);
-            ctx.globalAlpha = 1;
             if (c.x < -100) clouds.splice(i, 1);
         });
+        ctx.restore();
+
+        ctx.globalAlpha = 1.0;
 
         // Pájaros
         birds.forEach((b, i) => {
@@ -306,28 +289,39 @@
             ctx.font = '35px Arial';
             ctx.fillText(b.emoji, b.x, b.y);
             
-            b.dropTimer--;
-            if (b.dropTimer === 0) {
-                drops.push({ x: b.x, y: b.y, speedY: 5 });
+            if (!b.hasDropped && b.x < b.dropX) {
+                drops.push({ 
+                    x: b.x, 
+                    y: b.y, 
+                    speedY: 6,
+                    isOnGround: false
+                });
+                b.hasDropped = true;
             }
-            if (b.x < -50) birds.splice(i, 1);
+            if (b.x < -100) birds.splice(i, 1);
         });
 
         // Cacas (Drops)
         drops.forEach((d, i) => {
-            if (d.y < groundY) {
+            if (!d.isOnGround) {
                 d.y += d.speedY;
+                if (d.y >= groundY) {
+                    d.y = groundY;
+                    d.isOnGround = true;
+                }
             } else {
-                d.y = groundY;
                 d.x -= gameSpeed;
             }
+            
             ctx.font = '30px Arial';
             ctx.fillText('💩', d.x, d.y);
 
-            if (checkCollision(d.x - 10, d.y - 25, 20, 20)) {
+            // Colisión con la caca (Hitbox reducida para justicia)
+            if (checkCollision(d.x - 8, d.y - 15, 16, 15)) {
                 gameOver();
             }
-            if (d.x < -50) drops.splice(i, 1);
+            
+            if (d.x < -100) drops.splice(i, 1);
         });
 
         // Obstáculos
@@ -336,7 +330,8 @@
             ctx.font = '40px Arial';
             ctx.fillText(o.emoji, o.x, o.y);
 
-            if (checkCollision(o.x - 15, o.y - 35, 30, 35)) {
+            // Colisión con obstáculos (Hitbox reducida para justicia)
+            if (checkCollision(o.x - 10, o.y - 25, 20, 25)) {
                 gameOver();
             }
 
@@ -344,28 +339,34 @@
                 o.passed = true;
                 score++;
                 scoreEl.innerText = `Puntos: ${score}`;
-                if (score % 7 === 0) gameSpeed += 0.25;
+                if (score > 0 && score % 10 === 0) gameSpeed += 0.3;
             }
 
-            if (o.x < -50) obstacles.splice(i, 1);
+            if (o.x < -100) obstacles.splice(i, 1);
         });
     }
 
     function drawGround() {
+        ctx.save();
+        ctx.globalAlpha = 1.0;
         ctx.fillStyle = '#795548';
         ctx.fillRect(0, groundY, W, H - groundY);
         ctx.fillStyle = '#4caf50';
         ctx.fillRect(0, groundY, W, 8);
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        ctx.fillRect(0, groundY + 8, W, 4);
+        ctx.restore();
     }
 
     function animate() {
         if (isGameOver) return;
         frame++;
+        
         ctx.clearRect(0, 0, W, H);
 
-        if (frame % 150 === 0) spawnCloud();
-        if (frame % 100 === 0) spawnObstacle();
-        if (frame % 250 === 0) spawnBird();
+        if (frame % 160 === 0) spawnCloud();
+        if (frame % 120 === 0) spawnObstacle();
+        if (frame % 320 === 0) spawnBird();
 
         drawGround();
         updateEntities();
@@ -375,79 +376,83 @@
     }
 
     function gameOver() {
+        if (isGameOver) return;
         isGameOver = true;
+        isJumping = false;
+        
         if (score > highScore) {
             highScore = score;
             hiEl.innerText = `🏆 ${highScore}`;
         }
 
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.save();
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(0, 0, W, H);
         
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.font = 'bold 32px Nunito';
+        ctx.font = 'bold 36px Nunito';
         ctx.fillText('¡GAME OVER!', W/2, H/2 - 20);
-        ctx.font = '20px Nunito';
-        ctx.fillText('¡Cuidado con la 💩!', W/2, H/2 + 20);
+        ctx.font = '22px Nunito';
+        ctx.fillText('¡Cuidado con la 💩!', W/2, H/2 + 25);
         ctx.font = '16px Nunito';
-        ctx.fillText('Toca para reintentar', W/2, H/2 + 55);
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillText('Pulsa en la pantalla para reintentar', W/2, H/2 + 65);
+        ctx.restore();
     }
 
     function reset() {
         score = 0;
         gameSpeed = 4.5;
         isGameOver = false;
+        isJumping = false;
         obstacles = [];
         clouds = [];
         birds = [];
         drops = [];
         player.y = groundY;
         player.dy = 0;
+        player.grounded = true;
         scoreEl.innerText = 'Puntos: 0';
         animate();
     }
 
-    const jumpBtn = document.getElementById('jump-btn');
+    const gameArea = document.getElementById('app');
 
     function handleInputStart(e) {
-        if (e) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-        }
+        if (e.target.closest('#selector')) return;
+        if (e.cancelable) e.preventDefault();
+        
         if (isGameOver) {
             reset();
             return;
         }
+        
         isJumping = true;
         player.jump();
     }
 
     function handleInputEnd(e) {
-        if (e) e.preventDefault();
+        if (e && e.cancelable) e.preventDefault();
         isJumping = false;
     }
 
-    jumpBtn.addEventListener('mousedown', handleInputStart);
+    gameArea.addEventListener('mousedown', handleInputStart);
     window.addEventListener('mouseup', handleInputEnd);
-    jumpBtn.addEventListener('touchstart', handleInputStart, { passive: false });
-    jumpBtn.addEventListener('touchend', handleInputEnd, { passive: false });
-    canvas.addEventListener('touchstart', handleInputStart, { passive: false });
-    canvas.addEventListener('touchend', handleInputEnd, { passive: false });
-
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' || e.code === 'ArrowUp') handleInputStart();
-    });
-    window.addEventListener('keyup', (e) => {
-        if (e.code === 'Space' || e.code === 'ArrowUp') handleInputEnd();
-    });
+    gameArea.addEventListener('touchstart', handleInputStart, { passive: false });
+    gameArea.addEventListener('touchend', handleInputEnd, { passive: false });
+    gameArea.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
     document.querySelectorAll('.char-option').forEach(opt => {
-        opt.addEventListener('click', () => {
+        const selectChar = (e) => {
+            e.stopPropagation();
             document.querySelectorAll('.char-option').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
             player.emoji = opt.dataset.emoji;
-        });
+        };
+        opt.addEventListener('mousedown', selectChar);
+        opt.addEventListener('touchstart', selectChar, { passive: false });
     });
 
     reset();
