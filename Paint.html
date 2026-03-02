@@ -1,746 +1,520 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>🎨 Pintura Mágica</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>🎨 Pintura Mágica Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --bg-deep: #0f172a;
+            --bg-panel: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --border: rgba(255, 255, 255, 0.1);
+            --font-main: 'Fredoka', sans-serif;
+        }
 
-:root {
-    --safe-top: env(safe-area-inset-top,  0px);
-    --safe-bot: env(safe-area-inset-bottom, 0px);
-    --panel:   #1e1340;
-    --panel2:  #2a1a58;
-    --border:  rgba(255,255,255,0.10);
-    --font:    'Fredoka', sans-serif;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
 
-html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    background: var(--panel);
-    font-family: var(--font);
-    -webkit-tap-highlight-color: transparent;
-    user-select: none; -webkit-user-select: none;
-}
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-deep);
+            font-family: var(--font-main);
+            position: fixed; /* Evita rebote en iOS */
+        }
 
-/* ── APP SHELL ─────────────────────────────────────────── */
-#app {
-    display: flex; flex-direction: column;
-    width: 100vw; height: 100dvh; height: 100vh;
-}
+        #app {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100dvh; /* Dynamic viewport height */
+        }
 
-/* ── TOP BAR ───────────────────────────────────────────── */
-#topbar {
-    flex-shrink: 0;
-    padding-top: var(--safe-top);
-    background: var(--panel);
-    border-bottom: 2px solid var(--border);
-    display: flex; align-items: center;
-    padding-left: 8px; padding-right: 8px;
-    gap: 5px;
-    height: calc(50px + var(--safe-top));
-    z-index: 20;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.5);
-}
+        /* --- CABECERA --- */
+        header {
+            flex-shrink: 0;
+            padding-top: var(--safe-top);
+            background: var(--bg-panel);
+            height: calc(56px + var(--safe-top));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-left: 16px;
+            padding-right: 16px;
+            border-bottom: 1px solid var(--border);
+            z-index: 50;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
 
-.app-title {
-    font-size: 1.05rem; font-weight: 700; color: #fff;
-    flex: 1; display: flex; align-items: center; gap: 5px;
-    white-space: nowrap;
-}
+        .logo {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-#color-preview {
-    width: 32px; height: 32px; border-radius: 50%;
-    border: 2.5px solid rgba(255,255,255,0.35);
-    flex-shrink: 0; cursor: pointer;
-    transition: box-shadow 0.2s;
-}
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
 
-.top-btn {
-    width: 38px; height: 38px; border-radius: 10px; border: none;
-    background: var(--panel2); color: #fff; font-size: 1.15rem;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; flex-shrink: 0;
-    transition: transform 0.12s, background 0.12s;
-    touch-action: manipulation;
-}
-.top-btn:active { transform: scale(0.86); background: rgba(255,255,255,0.18); }
+        .btn-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
 
-/* ── CANVAS ────────────────────────────────────────────── */
-#canvas-wrap {
-    flex: 1; position: relative; overflow: hidden;
-    background: #fff; touch-action: none;
-}
-#main-canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%; display: block;
-    touch-action: none;
-}
-.sparkle {
-    position: absolute; pointer-events: none; font-size: 1rem;
-    animation: sp 0.65s ease forwards; z-index: 10;
-}
-@keyframes sp {
-    0%   { transform: scale(0) rotate(0deg);   opacity: 1; }
-    60%  { transform: scale(1.2) rotate(180deg); opacity: 1; }
-    100% { transform: scale(0) rotate(360deg) translateY(-28px); opacity: 0; }
-}
-#cursor-ring {
-    position: absolute; border-radius: 50%;
-    border: 2px solid rgba(0,0,0,0.45);
-    pointer-events: none; transform: translate(-50%,-50%);
-    z-index: 15; display: none;
-}
+        .btn-circle:active {
+            transform: scale(0.9);
+            background: var(--accent);
+        }
 
-/* ── BOTTOM PANEL ──────────────────────────────────────── */
-#bottom-panel {
-    flex-shrink: 0;
-    background: var(--panel);
-    border-top: 2px solid var(--border);
-    padding-bottom: var(--safe-bot);
-    z-index: 20;
-    box-shadow: 0 -3px 16px rgba(0,0,0,0.5);
-}
+        /* --- LIENZO --- */
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+            touch-action: none; /* Crucial para evitar scroll mientras se dibuja */
+        }
 
-/* ── STAMPS SUB-ROW (hidden by default) ─────────────────── */
-#stamps-row {
-    display: none;
-    padding: 5px 8px 2px;
-    gap: 5px; overflow-x: auto; scrollbar-width: none;
-}
-#stamps-row::-webkit-scrollbar { display: none; }
-#stamps-row.visible { display: flex; }
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: auto;
+        }
 
-.stamp-btn {
-    font-size: 1.5rem; min-width: 40px; height: 40px;
-    border-radius: 10px; border: 2px solid transparent;
-    background: var(--panel2);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; flex-shrink: 0;
-    transition: transform 0.12s;
-    touch-action: manipulation;
-}
-.stamp-btn:active  { transform: scale(0.82); }
-.stamp-btn.active  { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.12); }
+        /* --- PANEL DE CONTROL --- */
+        #controls {
+            flex-shrink: 0;
+            background: var(--bg-panel);
+            padding-bottom: var(--safe-bottom);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 50;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+        }
 
-/* ── COLOR ROW ─────────────────────────────────────────── */
-#color-row {
-    display: flex; align-items: center;
-    padding: 6px 8px 4px; gap: 5px;
-    overflow-x: auto; scrollbar-width: none;
-}
-#color-row::-webkit-scrollbar { display: none; }
+        /* Filas horizontales con scroll */
+        .scroll-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            gap: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .scroll-row::-webkit-scrollbar { display: none; }
 
-.color-swatch {
-    width: 28px; height: 28px; min-width: 28px;
-    border-radius: 50%; cursor: pointer;
-    border: 2.5px solid transparent;
-    transition: transform 0.12s, border-color 0.12s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
-    touch-action: manipulation;
-}
-.color-swatch:active { transform: scale(0.82); }
-.color-swatch.active {
-    border-color: #fff; transform: scale(1.18);
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.25), 0 3px 8px rgba(0,0,0,0.5);
-}
+        /* Herramientas */
+        .tool-card {
+            min-width: 56px;
+            height: 64px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .tool-card.active {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--accent);
+        }
+        .tool-card span:first-child { font-size: 1.4rem; }
+        .tool-card span:last-child { font-size: 0.65rem; font-weight: 600; opacity: 0.6; }
+        .tool-card.active span:last-child { opacity: 1; color: var(--accent); }
 
-#custom-color-btn {
-    width: 28px; height: 28px; min-width: 28px; border-radius: 50%;
-    background: conic-gradient(red,yellow,lime,cyan,blue,magenta,red);
-    border: 2.5px solid rgba(255,255,255,0.4);
-    cursor: pointer; flex-shrink: 0;
-    position: relative; overflow: hidden;
-    transition: transform 0.12s;
-    touch-action: manipulation;
-}
-#custom-color-btn:active { transform: scale(0.82); }
-#custom-color-btn::after {
-    content: '+'; position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; font-weight: 700; color: #fff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
-}
-#color-input { display: none; }
+        /* Colores */
+        .color-dot {
+            min-width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: 0.2s;
+            position: relative;
+        }
+        .color-dot.active {
+            transform: scale(1.2);
+            border-color: white;
+            box-shadow: 0 0 10px rgba(255,255,255,0.4);
+        }
 
-/* ── TOOL ROW ──────────────────────────────────────────── */
-#tool-row {
-    display: flex; align-items: center;
-    padding: 3px 8px 6px; gap: 4px;
-    overflow-x: auto; scrollbar-width: none;
-}
-#tool-row::-webkit-scrollbar { display: none; }
+        .custom-color-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
 
-/* Size widget — inside tool row */
-#size-widget {
-    display: flex; align-items: center; gap: 5px;
-    background: var(--panel2); border-radius: 12px;
-    padding: 5px 8px; flex-shrink: 0;
-    touch-action: auto; /* allow touch slider */
-}
-#size-dot {
-    border-radius: 50%; background: #fff; flex-shrink: 0;
-    transition: width 0.1s, height 0.1s;
-}
-#size-slider {
-    -webkit-appearance: none; appearance: none;
-    width: 64px; height: 4px; border-radius: 4px;
-    background: rgba(255,255,255,0.25); outline: none;
-    touch-action: auto; cursor: pointer;
-}
-#size-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px; height: 22px; border-radius: 50%;
-    background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-#size-slider::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: #fff; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
+        /* Slider de tamaño */
+        .size-bar {
+            display: flex;
+            align-items: center;
+            padding: 0 20px 8px;
+            gap: 12px;
+        }
+        input[type=range] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--text);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
 
-.vdiv {
-    width: 2px; height: 34px; border-radius: 2px;
-    background: var(--border); flex-shrink: 0; margin: 0 1px;
-}
-
-.tool-btn {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    min-width: 48px; height: 48px;
-    border-radius: 12px; border: 2px solid transparent;
-    background: var(--panel2); color: #fff;
-    cursor: pointer; gap: 1px; padding: 3px 5px; flex-shrink: 0;
-    transition: all 0.13s; touch-action: manipulation;
-}
-.tool-icon { font-size: 1.3rem; line-height: 1; }
-.tool-name { font-size: 0.5rem; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.02em; }
-.tool-btn:active { transform: scale(0.86); }
-.tool-btn.active {
-    background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.07));
-    border-color: rgba(255,255,255,0.5);
-    box-shadow: 0 0 12px rgba(255,255,255,0.12);
-}
-.tool-btn.active .tool-name { color: #fff; }
-
-/* ── CONFIRM OVERLAY (replaces confirm()) ───────────────── */
-#confirm-overlay {
-    display: none; position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
-    align-items: center; justify-content: center;
-}
-#confirm-overlay.show { display: flex; }
-#confirm-box {
-    background: #1e1340; border: 2px solid rgba(255,255,255,0.15);
-    border-radius: 20px; padding: 28px 32px; text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-    animation: pop-in 0.2s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes pop-in {
-    from { transform: scale(0.7); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
-}
-#confirm-box .cicon  { font-size: 2.4rem; margin-bottom: 8px; }
-#confirm-box p       { color: #fff; font-size: 1rem; font-weight: 600; margin-bottom: 18px; }
-#confirm-box .cbns   { display: flex; gap: 10px; justify-content: center; }
-.c-btn {
-    padding: 10px 24px; border-radius: 10px; border: none;
-    font-family: var(--font); font-size: 0.9rem; font-weight: 700;
-    cursor: pointer; transition: transform 0.12s;
-    touch-action: manipulation;
-}
-.c-btn:active { transform: scale(0.9); }
-.c-btn.yes { background: #ef4444; color: #fff; }
-.c-btn.no  { background: rgba(255,255,255,0.12); color: #fff; }
-
-/* ── TOAST ─────────────────────────────────────────────── */
-#toast {
-    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.82); color: #fff;
-    padding: 7px 18px; border-radius: 50px;
-    font-size: 0.82rem; font-weight: 600; z-index: 300;
-    opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
-}
-#toast.show { opacity: 1; }
-
-/* ── LARGE SCREEN ──────────────────────────────────────── */
-@media (min-width: 600px) {
-    .color-swatch { width: 32px; height: 32px; min-width: 32px; }
-    .tool-btn { min-width: 54px; height: 54px; }
-    .tool-icon { font-size: 1.45rem; }
-    .tool-name { font-size: 0.55rem; }
-    #size-slider { width: 80px; }
-}
-</style>
+        /* Mensajes Toast */
+        #toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
+            z-index: 100;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
 </head>
 <body>
+
 <div id="app">
+    <header>
+        <div class="logo"><span>🎨</span> Pintura Pro</div>
+        <div class="header-actions">
+            <button class="btn-circle" id="undo-btn">↩️</button>
+            <button class="btn-circle" id="clear-btn">🗑️</button>
+            <button class="btn-circle" id="save-btn">💾</button>
+        </div>
+    </header>
 
-    <!-- TOP BAR -->
-    <div id="topbar">
-        <div class="app-title">🎨 Pintura Mágica</div>
-        <div id="color-preview" onclick="document.getElementById('color-input').click()" title="Color actual"></div>
-        <button class="top-btn" id="btn-undo"  title="Deshacer">↩️</button>
-        <button class="top-btn" id="btn-redo"  title="Rehacer">↪️</button>
-        <button class="top-btn" id="btn-clear" title="Limpiar">🗑️</button>
-        <button class="top-btn" id="btn-save"  title="Guardar">💾</button>
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
     </div>
 
-    <!-- CANVAS -->
-    <div id="canvas-wrap">
-        <canvas id="main-canvas"></canvas>
-        <div id="cursor-ring"></div>
-    </div>
-
-    <!-- BOTTOM PANEL -->
-    <div id="bottom-panel">
-        <!-- Stamps sub-row -->
-        <div id="stamps-row"></div>
-
-        <!-- Colors -->
-        <div id="color-row">
-            <div id="custom-color-btn" title="Más colores"></div>
-            <input type="color" id="color-input">
+    <div id="controls">
+        <div class="scroll-row" id="tool-row">
+            <!-- Herramientas generadas por JS -->
         </div>
 
-        <!-- Tools + Size -->
-        <div id="tool-row"></div>
-    </div>
-</div>
+        <div class="size-bar">
+            <span style="font-size: 0.8rem; color: #fff; opacity: 0.5;">Tamaño</span>
+            <input type="range" id="size-slider" min="2" max="60" value="15">
+        </div>
 
-<!-- Confirm dialog -->
-<div id="confirm-overlay">
-    <div id="confirm-box">
-        <div class="cicon">🗑️</div>
-        <p>¿Borrar todo el dibujo?</p>
-        <div class="cbns">
-            <button class="c-btn yes" id="confirm-yes">Sí, borrar</button>
-            <button class="c-btn no"  id="confirm-no">Cancelar</button>
+        <div class="scroll-row" id="color-row">
+            <div class="color-dot" style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);">
+                <input type="color" class="custom-color-input" id="custom-color">
+            </div>
+            <!-- Colores generados por JS -->
         </div>
     </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast">¡Guardado en galería!</div>
 
 <script>
-// ── DATA ───────────────────────────────────────────────────────
-const COLORS = [
-    '#000000','#6b7280','#ffffff',
-    '#ef4444','#f97316','#fbbf24','#84cc16',
-    '#22c55e','#06b6d4','#3b82f6','#8b5cf6',
-    '#ec4899','#7c3aed','#0ea5e9','#a3e635','#fde68a',
-];
+    /**
+     * CONFIGURACIÓN Y ESTADO
+     */
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { desynchronized: true });
+    const container = document.getElementById('canvas-container');
+    
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let currentTool = 'brush';
+    let currentColor = '#ef4444';
+    let currentSize = 15;
+    let history = [];
 
-const STAMPS = ['🌟','❤️','🦋','🐱','🐶','🦄','🌈','🍕',
-                '🍦','🎈','🎉','🔥','🚀','🌙','⭐','🌸',
-                '🐸','🎵','💎','🌺'];
+    const TOOLS = [
+        { id: 'brush', icon: '🖌️', name: 'Pincel' },
+        { id: 'marker', icon: '🖊️', name: 'Marcador' },
+        { id: 'spray', icon: '💨', name: 'Spray' },
+        { id: 'rainbow', icon: '🌈', name: 'Magia' },
+        { id: 'eraser', icon: '🧹', name: 'Borrador' }
+    ];
 
-const TOOLS = [
-    { id:'brush',   icon:'🖌️',  name:'Pincel'  },
-    { id:'pen',     icon:'✏️',  name:'Lápiz'   },
-    { id:'marker',  icon:'🖊️',  name:'Marcad.' },
-    { id:'spray',   icon:'💨',  name:'Spray'   },
-    { id:'rainbow', icon:'🌈',  name:'Arcoíris'},
-    { id:'glitter', icon:'✨',  name:'Brillos' },
-    { id:'fill',    icon:'🪣',  name:'Relleno' },
-    { id:'stamp',   icon:'🌟',  name:'Sellos'  },
-    { id:'eraser',  icon:'🧹',  name:'Borrador'},
-];
+    const COLORS = [
+        '#ef4444', '#f97316', '#eab308', '#22c55e', 
+        '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', 
+        '#ffffff', '#64748b', '#000000'
+    ];
 
-// ── STATE ──────────────────────────────────────────────────────
-let currentColor = '#ef4444';
-let currentTool  = 'brush';
-let currentSize  = 14;
-let currentStamp = '🌟';
-let painting     = false;
-let lastX = 0, lastY = 0;
-let undoStack = [], redoStack = [];
-let hue = 0;
+    /**
+     * INICIALIZACIÓN
+     */
+    function init() {
+        resize();
+        renderTools();
+        renderColors();
+        setupEventListeners();
+        
+        // Cargar High Score o estado previo si existiera (UX Premium)
+        const saved = localStorage.getItem('magic_paint_last');
+        if (saved) {
+            const img = new Image();
+            img.onload = () => ctx.drawImage(img, 0, 0);
+            img.src = saved;
+        }
 
-// ── CANVAS ─────────────────────────────────────────────────────
-const wrap   = document.getElementById('canvas-wrap');
-const canvas = document.getElementById('main-canvas');
-const ctx    = canvas.getContext('2d');
-
-function initCanvas() {
-    canvas.width  = wrap.offsetWidth;
-    canvas.height = wrap.offsetHeight;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    saveUndo();
-}
-
-let _resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(() => {
-        const tmp = canvas.toDataURL();
-        canvas.width  = wrap.offsetWidth;
-        canvas.height = wrap.offsetHeight;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = tmp;
-    }, 180);
-});
-
-// ── UNDO / REDO ────────────────────────────────────────────────
-function saveUndo() {
-    undoStack.push(canvas.toDataURL());
-    if (undoStack.length > 25) undoStack.shift();
-    redoStack = [];
-}
-function restoreState(url) {
-    const img = new Image();
-    img.onload = () => {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-    };
-    img.src = url;
-}
-function undo() {
-    if (undoStack.length <= 1) return showToast('¡No hay más pasos! 🤷');
-    redoStack.push(undoStack.pop());
-    restoreState(undoStack[undoStack.length - 1]);
-}
-function redo() {
-    if (!redoStack.length) return showToast('¡Nada que rehacer!');
-    const s = redoStack.pop();
-    undoStack.push(s);
-    restoreState(s);
-}
-
-// ── CURSOR RING ────────────────────────────────────────────────
-const ring = document.getElementById('cursor-ring');
-function updateRing(cx, cy) {
-    if (currentTool === 'fill' || currentTool === 'stamp') { ring.style.display = 'none'; return; }
-    const sz = currentTool === 'eraser' ? currentSize * 3.5 : currentSize * 2;
-    ring.style.display = 'block';
-    ring.style.width   = sz + 'px';
-    ring.style.height  = sz + 'px';
-    ring.style.left    = cx + 'px';
-    ring.style.top     = cy + 'px';
-    ring.style.borderColor = currentTool === 'eraser' ? 'rgba(239,68,68,0.7)' : currentColor;
-}
-
-// ── DRAWING ────────────────────────────────────────────────────
-function getColor() {
-    if (currentTool === 'eraser')  return '#ffffff';
-    if (currentTool === 'rainbow') { hue = (hue + 3) % 360; return `hsl(${hue},100%,55%)`; }
-    return currentColor;
-}
-function getLineW() {
-    if (currentTool === 'pen')    return Math.max(2, currentSize * 0.6);
-    if (currentTool === 'marker') return currentSize * 2.2;
-    if (currentTool === 'eraser') return currentSize * 3.5;
-    return currentSize;
-}
-function drawLine(x0, y0, x1, y1) {
-    ctx.save();
-    ctx.lineCap  = 'round';
-    ctx.lineJoin = 'round';
-    const col = getColor();
-    if (currentTool === 'marker')  ctx.globalAlpha = 0.55;
-    else if (currentTool === 'brush' || currentTool === 'rainbow') {
-        ctx.globalAlpha = 0.88;
-        ctx.shadowColor = col; ctx.shadowBlur = currentSize * 0.35;
-    } else ctx.globalAlpha = 1;
-    ctx.strokeStyle = col;
-    ctx.lineWidth   = getLineW();
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.restore();
-}
-function drawSpray(x, y) {
-    ctx.save(); ctx.fillStyle = currentColor; ctx.globalAlpha = 0.1;
-    const r = currentSize * 2;
-    for (let i = 0; i < 28; i++) {
-        const a = Math.random() * Math.PI * 2, d = Math.random() * r;
-        ctx.beginPath(); ctx.arc(x + d*Math.cos(a), y + d*Math.sin(a), Math.random()*1.5+0.3, 0, Math.PI*2); ctx.fill();
+        saveToHistory();
     }
-    ctx.restore();
-}
-function drawGlitter(x, y) {
-    const chars = ['✦','·','*','✧','◦'];
-    for (let i = 0; i < 5; i++) {
-        const sp = currentSize * 2.5;
-        const px = x + (Math.random()-.5)*sp, py = y + (Math.random()-.5)*sp;
-        ctx.save();
-        ctx.font = `bold ${4+Math.random()*currentSize}px serif`;
-        ctx.fillStyle = `hsl(${Math.random()*360},100%,65%)`;
-        ctx.globalAlpha = 0.65 + Math.random()*0.35;
-        ctx.fillText(chars[Math.floor(Math.random()*chars.length)], px, py);
-        ctx.restore();
+
+    // Ajustar canvas a densidad de pantalla (Retina Fix)
+    function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = container.getBoundingClientRect();
+        
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        
+        ctx.scale(dpr, dpr);
+        
+        // Fondo blanco inicial
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, rect.width, rect.height);
     }
-    if (Math.random() < 0.2) addSparkle(x, y);
-}
-function addSparkle(x, y) {
-    const el = document.createElement('div');
-    el.className = 'sparkle';
-    el.textContent = ['✨','⭐','💫','🌟'][Math.floor(Math.random()*4)];
-    el.style.left = (x-16)+'px'; el.style.top = (y-16)+'px';
-    wrap.appendChild(el);
-    setTimeout(() => el.remove(), 700);
-}
-function drawStamp(x, y) {
-    const sz = Math.max(22, currentSize * 3);
-    ctx.save();
-    ctx.font = `${sz}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(currentStamp, x, y);
-    ctx.restore();
-    addSparkle(x, y);
-}
 
-// ── FLOOD FILL ─────────────────────────────────────────────────
-function hexToRgb(hex) {
-    return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
-}
-function colorMatch(d, pos, tgt, tol=32) {
-    return Math.abs(d[pos]-tgt[0])<tol && Math.abs(d[pos+1]-tgt[1])<tol && Math.abs(d[pos+2]-tgt[2])<tol;
-}
-function floodFill(sx, sy, fillHex) {
-    const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const d  = id.data, w = canvas.width, h = canvas.height;
-    const si = (Math.floor(sy)*w + Math.floor(sx))*4;
-    const tgt  = [d[si], d[si+1], d[si+2]];
-    const fill = hexToRgb(fillHex);
-    if (colorMatch(d, si, fill, 5)) return;
-    const stack = [Math.floor(sx) + Math.floor(sy)*w];
-    const vis   = new Uint8Array(w*h);
-    while (stack.length) {
-        const idx = stack.pop();
-        if (vis[idx]) continue; vis[idx] = 1;
-        const pos = idx*4;
-        if (!colorMatch(d, pos, tgt)) continue;
-        d[pos]=fill[0]; d[pos+1]=fill[1]; d[pos+2]=fill[2]; d[pos+3]=255;
-        const px=idx%w, py=Math.floor(idx/w);
-        if (px>0)   stack.push(idx-1);
-        if (px<w-1) stack.push(idx+1);
-        if (py>0)   stack.push(idx-w);
-        if (py<h-1) stack.push(idx+w);
-    }
-    ctx.putImageData(id, 0, 0);
-}
-
-// ── POINTER EVENTS ─────────────────────────────────────────────
-function getPos(e) {
-    const rect  = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const src   = e.touches ? e.touches[0] : e;
-    return {
-        x:  (src.clientX - rect.left) * scaleX,
-        y:  (src.clientY - rect.top)  * scaleY,
-        cx: src.clientX - rect.left,
-        cy: src.clientY - rect.top,
-    };
-}
-
-canvas.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    const {x, y, cx, cy} = getPos(e);
-    if (currentTool === 'fill')  { saveUndo(); floodFill(x, y, currentColor); addSparkle(cx, cy); return; }
-    if (currentTool === 'stamp') { saveUndo(); drawStamp(x, y); return; }
-    painting = true; lastX = x; lastY = y;
-    saveUndo();
-    if      (currentTool === 'spray')   drawSpray(x, y);
-    else if (currentTool === 'glitter') drawGlitter(x, y);
-    else                                 drawLine(x, y, x+0.1, y+0.1);
-    updateRing(cx, cy);
-}, { passive: false });
-
-canvas.addEventListener('pointermove', e => {
-    e.preventDefault();
-    const {x, y, cx, cy} = getPos(e);
-    updateRing(cx, cy);
-    if (!painting) return;
-    if      (currentTool === 'spray')   drawSpray(x, y);
-    else if (currentTool === 'glitter') drawGlitter(x, y);
-    else                                 drawLine(lastX, lastY, x, y);
-    lastX = x; lastY = y;
-}, { passive: false });
-
-const stopP = () => { painting = false; };
-canvas.addEventListener('pointerup',     stopP);
-canvas.addEventListener('pointercancel', stopP);
-canvas.addEventListener('pointerleave', () => { painting = false; ring.style.display = 'none'; });
-
-// Block page scroll only on canvas, NOT on bottom panel
-wrap.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-document.addEventListener('contextmenu', e => e.preventDefault());
-
-// ── UI BUILDER: COLORS ─────────────────────────────────────────
-function buildColors() {
-    const row    = document.getElementById('color-row');
-    const custom = document.getElementById('custom-color-btn');
-    COLORS.forEach(c => {
-        const d = document.createElement('div');
-        d.className = 'color-swatch';
-        d.style.background = c;
-        if (c === currentColor) d.classList.add('active');
-        d.addEventListener('pointerdown', () => selectColor(c, d));
-        row.insertBefore(d, custom);
-    });
-
-    document.getElementById('custom-color-btn').addEventListener('pointerdown', () => {
-        document.getElementById('color-input').click();
-    });
-    document.getElementById('color-input').addEventListener('input', e => {
-        selectColor(e.target.value, null);
-    });
-}
-
-function selectColor(c, el) {
-    currentColor = c;
-    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-    if (el) el.classList.add('active');
-    syncColorUI();
-    if (currentTool === 'eraser') selectTool('brush');
-}
-
-function syncColorUI() {
-    const p = document.getElementById('color-preview');
-    p.style.background = currentColor;
-    p.style.boxShadow  = `0 0 10px ${currentColor}99`;
-    // dot in size widget
-    const dot = document.getElementById('size-dot');
-    if (dot) { dot.style.background = currentColor; dot.style.boxShadow = `0 0 5px ${currentColor}`; }
-}
-
-// ── UI BUILDER: TOOLS + SIZE ───────────────────────────────────
-function buildTools() {
-    const row = document.getElementById('tool-row');
-
-    // Size widget
-    const sw = document.createElement('div');
-    sw.id = 'size-widget';
-    sw.innerHTML = `<div id="size-dot"></div><input type="range" id="size-slider" min="2" max="40" value="${currentSize}">`;
-    row.appendChild(sw);
-
-    // Divider
-    const dv = document.createElement('div'); dv.className = 'vdiv'; row.appendChild(dv);
-
-    // Tool buttons
-    TOOLS.forEach(t => {
-        const btn = document.createElement('div');
-        btn.className = 'tool-btn' + (t.id === currentTool ? ' active' : '');
-        btn.id = `tool-${t.id}`;
-        btn.innerHTML = `<div class="tool-icon">${t.icon}</div><div class="tool-name">${t.name}</div>`;
-        btn.addEventListener('pointerdown', () => selectTool(t.id));
-        row.appendChild(btn);
-    });
-
-    // Slider – must NOT preventDefault so touch works
-    const slider = document.getElementById('size-slider');
-    slider.addEventListener('input', e => {
-        currentSize = parseInt(e.target.value);
-        updateSizeDot();
-    });
-    // Stop pointer events from bubbling to canvas
-    slider.addEventListener('pointerdown', e => e.stopPropagation());
-
-    updateSizeDot();
-}
-
-function updateSizeDot() {
-    const dot = document.getElementById('size-dot');
-    if (!dot) return;
-    const sz = Math.max(5, Math.min(currentSize, 28));
-    dot.style.width  = sz + 'px';
-    dot.style.height = sz + 'px';
-    dot.style.background = currentColor;
-    dot.style.boxShadow  = `0 0 5px ${currentColor}`;
-}
-
-function selectTool(id) {
-    currentTool = id;
-    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-    const btn = document.getElementById(`tool-${id}`);
-    if (btn) btn.classList.add('active');
-
-    const sr = document.getElementById('stamps-row');
-    sr.classList.toggle('visible', id === 'stamp');
-    canvas.style.cursor = id === 'fill' ? 'cell' : id === 'stamp' ? 'copy' : 'crosshair';
-    updateSizeDot();
-}
-
-// ── UI BUILDER: STAMPS ─────────────────────────────────────────
-function buildStamps() {
-    const row = document.getElementById('stamps-row');
-    STAMPS.forEach(s => {
-        const btn = document.createElement('div');
-        btn.className = 'stamp-btn' + (s === currentStamp ? ' active' : '');
-        btn.textContent = s;
-        btn.addEventListener('pointerdown', () => {
-            currentStamp = s;
-            document.querySelectorAll('.stamp-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const icon = document.querySelector('#tool-stamp .tool-icon');
-            if (icon) icon.textContent = s;
+    /**
+     * RENDERIZADO DE UI
+     */
+    function renderTools() {
+        const row = document.getElementById('tool-row');
+        TOOLS.forEach(tool => {
+            const div = document.createElement('div');
+            div.className = `tool-card ${tool.id === currentTool ? 'active' : ''}`;
+            div.innerHTML = `<span>${tool.icon}</span><span>${tool.name}</span>`;
+            div.onclick = () => {
+                currentTool = tool.id;
+                document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('active'));
+                div.classList.add('active');
+            };
+            row.appendChild(div);
         });
-        row.appendChild(btn);
-    });
-}
+    }
 
-// ── TOP BUTTONS ────────────────────────────────────────────────
-document.getElementById('btn-undo').addEventListener('click', undo);
-document.getElementById('btn-redo').addEventListener('click', redo);
+    function renderColors() {
+        const row = document.getElementById('color-row');
+        COLORS.forEach(color => {
+            const div = document.createElement('div');
+            div.className = `color-dot ${color === currentColor ? 'active' : ''}`;
+            div.style.backgroundColor = color;
+            div.onclick = () => {
+                currentColor = color;
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                div.classList.add('active');
+                if(currentTool === 'eraser') {
+                    // Si elige color, vuelve al pincel automáticamente
+                    document.querySelector('.tool-card[data-id="brush"]')?.click();
+                }
+            };
+            row.appendChild(div);
+        });
+    }
 
-// Custom confirm dialog — no browser confirm()
-document.getElementById('btn-clear').addEventListener('click', () => {
-    document.getElementById('confirm-overlay').classList.add('show');
-});
-document.getElementById('confirm-yes').addEventListener('click', () => {
-    document.getElementById('confirm-overlay').classList.remove('show');
-    saveUndo();
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    showToast('¡Lienzo limpio! 🌟');
-});
-document.getElementById('confirm-no').addEventListener('click', () => {
-    document.getElementById('confirm-overlay').classList.remove('show');
-});
-// Tap outside = cancel
-document.getElementById('confirm-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('confirm-overlay'))
-        document.getElementById('confirm-overlay').classList.remove('show');
-});
+    /**
+     * LÓGICA DE DIBUJO
+     */
+    function setupEventListeners() {
+        // Pointer events para soporte universal táctil/ratón
+        canvas.addEventListener('pointerdown', startDrawing);
+        canvas.addEventListener('pointermove', draw);
+        canvas.addEventListener('pointerup', stopDrawing);
+        canvas.addEventListener('pointercancel', stopDrawing);
 
-document.getElementById('btn-save').addEventListener('click', () => {
-    const a = document.createElement('a');
-    a.download = `pintura-${Date.now()}.png`;
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-    showToast('¡Guardado! 💾');
-});
+        document.getElementById('size-slider').oninput = (e) => currentSize = e.target.value;
+        document.getElementById('custom-color').oninput = (e) => {
+            currentColor = e.target.value;
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        };
 
-// ── TOAST ──────────────────────────────────────────────────────
-let _toastT;
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(_toastT);
-    _toastT = setTimeout(() => t.classList.remove('show'), 2000);
-}
+        // Acciones superiores
+        document.getElementById('clear-btn').onclick = () => {
+            if(confirm('¿Borrar todo el dibujo?')) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                saveToHistory();
+            }
+        };
 
-// ── INIT ───────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-    initCanvas();
-    buildColors();
-    buildTools();
-    buildStamps();
-    syncColorUI();
-    showToast('¡A pintar! 🎨');
-});
+        document.getElementById('undo-btn').onclick = undo;
+        document.getElementById('save-btn').onclick = saveImage;
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const pos = getMousePos(e);
+        lastX = pos.x;
+        lastY = pos.y;
+        
+        // Efecto inicial para el Spray
+        if(currentTool === 'spray') drawSpray(pos.x, pos.y);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const pos = getMousePos(e);
+
+        ctx.lineWidth = currentSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (currentTool === 'brush') {
+            ctx.strokeStyle = currentColor;
+            ctx.globalAlpha = 1;
+            drawLine(lastX, lastY, pos.x, pos.y);
+        } 
+        else if (currentTool === 'marker') {
+            ctx.strokeStyle = currentColor;
+            ctx.globalAlpha = 0.2; // Transparencia de marcador
+            drawLine(lastX, lastY, pos.x, pos.y);
+        }
+        else if (currentTool === 'eraser') {
+            ctx.strokeStyle = '#ffffff';
+            ctx.globalAlpha = 1;
+            ctx.lineWidth = currentSize * 2;
+            drawLine(lastX, lastY, pos.x, pos.y);
+        }
+        else if (currentTool === 'rainbow') {
+            ctx.strokeStyle = `hsl(${Date.now() % 360}, 80%, 60%)`;
+            ctx.globalAlpha = 1;
+            drawLine(lastX, lastY, pos.x, pos.y);
+        }
+        else if (currentTool === 'spray') {
+            drawSpray(pos.x, pos.y);
+        }
+
+        lastX = pos.x;
+        lastY = pos.y;
+    }
+
+    function drawLine(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function drawSpray(x, y) {
+        ctx.fillStyle = currentColor;
+        ctx.globalAlpha = 0.5;
+        for (let i = 0; i < 20; i++) {
+            const offsetX = (Math.random() - 0.5) * currentSize * 2;
+            const offsetY = (Math.random() - 0.5) * currentSize * 2;
+            ctx.fillRect(x + offsetX, y + offsetY, 1, 1);
+        }
+    }
+
+    function stopDrawing() {
+        if(isDrawing) {
+            isDrawing = false;
+            saveToHistory();
+            // Guardar localmente para persistencia
+            localStorage.setItem('magic_paint_last', canvas.toDataURL());
+        }
+    }
+
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    /**
+     * HISTORIAL Y GUARDADO
+     */
+    function saveToHistory() {
+        if (history.length > 20) history.shift();
+        history.push(canvas.toDataURL());
+    }
+
+    function undo() {
+        if (history.length > 1) {
+            history.pop();
+            const lastState = history[history.length - 1];
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+            };
+            img.src = lastState;
+        }
+    }
+
+    function saveImage() {
+        const link = document.createElement('a');
+        link.download = `mi-obra-${Date.now()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+        showToast("¡Imagen guardada! 💾");
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // Iniciar
+    window.onload = init;
+    // Evitar scroll accidental en mobile
+    window.addEventListener('touchmove', (e) => {
+        if (isDrawing) e.preventDefault();
+    }, { passive: false });
+
 </script>
 </body>
 </html>
