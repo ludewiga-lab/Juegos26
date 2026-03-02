@@ -25,7 +25,7 @@
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             overflow: hidden;
-            background: #1a1a2e;
+            background: #1a1a2e; /* Fondo oscuro exterior */
             font-family: 'Nunito', sans-serif;
             display: flex;
             justify-content: center;
@@ -33,13 +33,15 @@
         }
 
         #app {
-            width: 100%; height: 100%;
-            max-width: 500px;
+            width: 100%; 
+            height: 100%;
+            max-width: 500px; /* Limita el ancho en PC, pero en móvil será el 100% */
             display: flex;
             flex-direction: column;
             background: linear-gradient(to bottom, #87CEEB, #b0e2f5);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
         #header {
@@ -54,6 +56,7 @@
             font-family: 'Fredoka One', cursive;
             color: white; font-size: 24px;
             text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            text-transform: uppercase;
         }
 
         #score-board {
@@ -64,40 +67,55 @@
 
         #star-timer {
             position: absolute;
-            bottom: 80px; left: 50%;
+            bottom: 100px; left: 50%;
             transform: translateX(-50%);
-            background: rgba(241, 196, 15, 0.8);
+            background: rgba(241, 196, 15, 0.9);
             color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 900;
             display: none;
-            box-shadow: 0 0 15px #f1c40f;
+            box-shadow: 0 0 20px #f1c40f;
             z-index: 20;
+            border: 2px solid white;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
         }
 
         #selector {
             position: absolute; top: 90px; left: 50%;
             transform: translateX(-50%);
             display: flex; gap: 8px;
-            background: var(--ui-bg); padding: 6px;
-            border-radius: 30px; backdrop-filter: blur(8px);
+            background: var(--ui-bg); padding: 8px;
+            border-radius: 40px; backdrop-filter: blur(10px);
             z-index: 10;
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         .char-option {
-            width: 38px; height: 38px;
+            width: 42px; height: 42px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 20px; border-radius: 50%;
-            cursor: pointer; transition: 0.2s;
-            background: rgba(255,255,255,0.1);
+            font-size: 24px; border-radius: 50%;
+            cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(255,255,255,0.15);
         }
         .char-option.active {
-            background: var(--accent); transform: scale(1.15);
-            box-shadow: 0 0 10px white;
+            background: var(--accent); 
+            transform: scale(1.2);
+            box-shadow: 0 0 15px white;
         }
 
-        canvas { display: block; width: 100%; height: 100%; }
+        canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%;
+            touch-action: none;
+        }
     </style>
 </head>
 <body>
@@ -111,7 +129,7 @@
         </div>
     </div>
 
-    <div id="star-timer">MODO ESTRELLA</div>
+    <div id="star-timer">✨ MODO ESTRELLA ✨</div>
 
     <div id="selector">
         <div class="char-option active" data-emoji="🦖">🦖</div>
@@ -130,11 +148,24 @@
     const scoreEl = document.getElementById('scoreDisplay');
     const hiEl = document.getElementById('highScoreDisplay');
     const starTimerEl = document.getElementById('star-timer');
+    const appContainer = document.getElementById('app');
     
-    const W = 400;
-    const H = 600;
-    canvas.width = W;
-    canvas.height = H;
+    // Dimensiones lógicas fijas para el juego
+    const LOGICAL_W = 400;
+    const LOGICAL_H = 600;
+
+    function resize() {
+        const rect = appContainer.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Helper para escalar coordenadas
+    function getScale() {
+        return canvas.width / LOGICAL_W;
+    }
 
     let score = 0, highScore = 0;
     let baseSpeed = 3.8;
@@ -144,34 +175,39 @@
     let lastTime = 0;
     let frameCount = 0;
     
-    const groundY = H - 60;
+    const groundY = LOGICAL_H - 60;
     const blockSize = 40;
 
     const player = {
-        x: 80,
+        x: 60,
         y: groundY - 40,
-        width: 34,
-        height: 34,
+        width: 36,
+        height: 36,
         dy: 0,
         gravity: 0.75,
-        jumpForce: -11.5, 
+        jumpForce: -12, 
         emoji: '🦖',
         grounded: false,
         isInvincible: false,
         invincibleTime: 0,
 
         draw() {
+            const scale = getScale();
             ctx.save();
-            ctx.font = '45px Arial';
+            ctx.font = `${48 * scale}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            ctx.translate(this.x + this.width / 2, this.y + this.height);
+            
+            // Posicionamiento escalado
+            const drawX = (this.x + this.width / 2) * scale;
+            const drawY = (this.y + this.height) * scale;
+
+            ctx.translate(drawX, drawY);
             ctx.scale(-1, 1); 
 
-            // Animación de estrella (cambio de color/brillo)
             if (this.isInvincible) {
                 const hue = (Date.now() / 2) % 360;
-                ctx.shadowBlur = 20;
+                ctx.shadowBlur = 25 * scale;
                 ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
                 ctx.filter = `hue-rotate(${hue}deg) brightness(1.5)`;
             }
@@ -187,7 +223,6 @@
             this.dy += g * dt;
             this.y += this.dy * dt;
 
-            // Manejo de invencibilidad
             if (this.isInvincible) {
                 this.invincibleTime -= dt * 16.66;
                 if (this.invincibleTime <= 0) {
@@ -197,27 +232,21 @@
                 }
             }
 
-            if (this.y > H + 50) gameOver(); 
+            if (this.y > LOGICAL_H + 50) gameOver(); 
             this.draw();
         }
     };
 
     let platforms = [];
     let obstacles = [];
-    let items = []; // Para las estrellas
+    let items = []; 
     let clouds = [];
     let birds = [];
     let drops = [];
 
     function initMap() {
-        platforms = [];
-        obstacles = [];
-        items = [];
-        birds = [];
-        drops = [];
-        baseSpeed = 3.8;
-        gameSpeed = baseSpeed;
-        // Suelo inicial extendido y seguro
+        platforms = []; obstacles = []; items = []; birds = []; drops = [];
+        baseSpeed = 3.8; gameSpeed = baseSpeed;
         for(let i=0; i<15; i++) {
             platforms.push({ x: i * blockSize, y: groundY, type: 'grass' });
         }
@@ -226,213 +255,143 @@
     function spawnMapElement() {
         const lastP = platforms[platforms.length - 1];
         const nextX = lastP ? lastP.x + blockSize : 0;
-        
         const rand = Math.random();
         
-        // Generación de huecos
-        if (rand < 0.12 && score > 5) {
-            // Un hueco (gap) de 3 bloques
-            // No añadimos nada en groundY
-            
-            // Posibilidad de plataforma flotante larga sobre el vacío
+        if (rand < 0.15 && score > 5) {
             if (Math.random() < 0.8) {
-                let length = Math.floor(Math.random() * 4) + 5; // De 5 a 8 bloques (larga)
+                let length = Math.floor(Math.random() * 4) + 5; 
                 for(let j=0; j<length; j++) {
-                    platforms.push({ x: nextX + (j * blockSize), y: groundY - 110, type: 'block' });
-                    // Obstáculo raro encima de plataforma flotante
-                    if (j === Math.floor(length/2) && Math.random() < 0.3) {
-                        spawnObstacle(nextX + (j * blockSize), groundY - 110);
-                    }
-                    // Posibilidad de ESTRELLA
-                    if (j === 2 && Math.random() < 0.1) {
-                        spawnItem(nextX + (j * blockSize), groundY - 150);
-                    }
+                    platforms.push({ x: nextX + (j * blockSize), y: groundY - 120, type: 'block' });
+                    if (j === Math.floor(length/2) && Math.random() < 0.3) spawnObstacle(nextX + (j * blockSize), groundY - 120);
+                    if (j === 2 && Math.random() < 0.12) spawnItem(nextX + (j * blockSize), groundY - 170);
                 }
             }
         } else {
-            // Suelo normal
             platforms.push({ x: nextX, y: groundY, type: 'grass' });
-            
-            // Obstáculos en suelo normal (menos frecuentes)
-            if (Math.random() < 0.1 && !items.some(it => Math.abs(it.x - nextX) < 100)) {
+            if (Math.random() < 0.1 && !items.some(it => Math.abs(it.x - nextX) < 120)) {
                 const tooClose = obstacles.some(o => Math.abs(o.x - nextX) < 220);
                 if (!tooClose) spawnObstacle(nextX, groundY);
             }
-
-            // Estrella en suelo normal
-            if (Math.random() < 0.02) {
-                spawnItem(nextX, groundY - 50);
-            }
+            if (Math.random() < 0.02) spawnItem(nextX, groundY - 60);
         }
     }
 
     function spawnObstacle(x, y) {
         const icons = ['🌵', '🍄', '🪨'];
-        obstacles.push({
-            x: x, y: y,
-            emoji: icons[Math.floor(Math.random() * icons.length)],
-            type: 'hazard', passed: false
-        });
+        obstacles.push({ x, y, emoji: icons[Math.floor(Math.random() * icons.length)], type: 'hazard', passed: false });
     }
 
     function spawnItem(x, y) {
-        items.push({ x: x, y: y, emoji: '⭐', type: 'star' });
+        items.push({ x, y, emoji: '⭐', type: 'star' });
     }
 
     function spawnBird() {
         if (birds.length > 0 || score < 10) return; 
-        birds.push({
-            x: W + 150, y: 70, 
-            speed: gameSpeed + 1.5,
-            emoji: '🐦', hasDropped: false,
-            dropX: player.x + 180 + Math.random() * 100 
-        });
+        birds.push({ x: LOGICAL_W + 150, y: 80, speed: gameSpeed + 1.5, emoji: '🐦', hasDropped: false, dropX: player.x + 180 + Math.random() * 100 });
     }
 
     function checkCollisions(dt) {
         let onAnyPlatform = false;
-
         platforms.forEach(p => {
-            const px = player.x + 12;
-            const pw = player.width - 24;
-            
-            if (player.dy >= 0 && 
-                px + pw > p.x && px < p.x + blockSize &&
-                player.y + player.height <= p.y + 15 &&
-                player.y + player.height + (player.dy * dt) >= p.y) {
-                
-                player.y = p.y - player.height;
-                player.dy = 0;
-                player.grounded = true;
-                onAnyPlatform = true;
+            const px = player.x + 10;
+            const pw = player.width - 20;
+            if (player.dy >= 0 && px + pw > p.x && px < p.x + blockSize && player.y + player.height <= p.y + 15 && player.y + player.height + (player.dy * dt) >= p.y) {
+                player.y = p.y - player.height; player.dy = 0; player.grounded = true; onAnyPlatform = true;
             }
         });
-
         if (!onAnyPlatform) player.grounded = false;
 
-        // Items (Estrellas)
         items.forEach((it, i) => {
-            if (Math.abs(player.x - it.x) < 30 && Math.abs(player.y - it.y) < 50) {
-                activateStar();
-                items.splice(i, 1);
-            }
+            if (Math.abs(player.x - it.x) < 40 && Math.abs(player.y - it.y) < 60) { activateStar(); items.splice(i, 1); }
         });
 
-        // Obstáculos
         obstacles.forEach(o => {
-            if (player.isInvincible) return; // Inmune
-
-            const px = player.x + 18;
-            const py = player.y + 18;
-            const pw = player.width - 36;
-            const ph = player.height - 25;
-
-            if (px < o.x + 25 && px + pw > o.x - 5 && py < o.y && py + ph > o.y - 30) {
-                gameOver();
-            }
-            if (!o.passed && o.x < player.x) {
-                o.passed = true;
-                score++;
-                scoreEl.innerText = `Puntos: ${score}`;
-                if (score % 10 === 0 && !player.isInvincible) {
-                    baseSpeed += 0.2;
-                    gameSpeed = baseSpeed;
-                }
-            }
+            if (player.isInvincible) return;
+            const px = player.x + 15; const py = player.y + 15;
+            const pw = player.width - 30; const ph = player.height - 20;
+            if (px < o.x + 25 && px + pw > o.x - 5 && py < o.y && py + ph > o.y - 30) gameOver();
+            if (!o.passed && o.x < player.x) { o.passed = true; score++; scoreEl.innerText = `Puntos: ${score}`; if (score % 10 === 0 && !player.isInvincible) { baseSpeed += 0.2; gameSpeed = baseSpeed; } }
         });
 
-        // Cacas de pájaro
         drops.forEach(d => {
-            if (player.isInvincible) return; // Inmune
-            const px = player.x + 15;
-            const py = player.y + 15;
-            if (Math.abs(px - d.x) < 20 && Math.abs(py - d.y) < 20) gameOver();
+            if (player.isInvincible) return;
+            if (Math.abs(player.x + 15 - d.x) < 22 && Math.abs(player.y + 15 - d.y) < 22) gameOver();
         });
     }
 
     function activateStar() {
         player.isInvincible = true;
-        player.invincibleTime = 7000; // 7 segundos
-        gameSpeed = baseSpeed * 1.4; // Aumentar velocidad por la emoción
+        player.invincibleTime = 7000;
+        gameSpeed = baseSpeed * 1.5;
         starTimerEl.style.display = 'block';
     }
 
     function updateEntities(dt) {
-        // Plataformas
+        const scale = getScale();
+        
         platforms.forEach((p, i) => {
             p.x -= gameSpeed * dt;
+            const drawX = p.x * scale;
+            const drawY = p.y * scale;
+            const drawW = (blockSize + 1) * scale;
+            const drawH = (LOGICAL_H - p.y) * scale;
+
             if (p.type === 'grass') {
                 ctx.fillStyle = '#795548';
-                ctx.fillRect(p.x, p.y, blockSize + 1, H - p.y);
+                ctx.fillRect(drawX, drawY, drawW, drawH);
                 ctx.fillStyle = '#4caf50';
-                ctx.fillRect(p.x, p.y, blockSize + 1, 8);
+                ctx.fillRect(drawX, drawY, drawW, 8 * scale);
             } else {
                 ctx.fillStyle = '#e67e22';
-                ctx.fillRect(p.x, p.y, blockSize - 1, blockSize - 1);
+                ctx.fillRect(drawX, drawY, drawW - scale, blockSize * scale);
                 ctx.fillStyle = '#d35400';
-                ctx.fillRect(p.x, p.y + blockSize - 8, blockSize - 1, 7);
+                ctx.fillRect(drawX, drawY + (blockSize - 8) * scale, drawW - scale, 8 * scale);
             }
             if (p.x < -blockSize * 10) platforms.splice(i, 1);
         });
 
         if (platforms.length < 25) spawnMapElement();
 
-        // Nubes
         ctx.save(); ctx.globalAlpha = 0.3;
         clouds.forEach((c, i) => {
             c.x -= c.speed * dt;
-            ctx.font = '40px Arial';
-            ctx.fillText('☁️', c.x, c.y);
+            ctx.font = `${40 * scale}px Arial`;
+            ctx.fillText('☁️', c.x * scale, c.y * scale);
             if (c.x < -100) clouds.splice(i, 1);
         });
         ctx.restore();
-        if (Math.random() < 0.005) clouds.push({x:W + 100, y:Math.random()*150+40, speed: 0.3});
+        if (Math.random() < 0.005) clouds.push({x:LOGICAL_W + 100, y:Math.random()*150+40, speed: 0.3});
 
-        // Obstáculos
         obstacles.forEach((o, i) => {
             o.x -= gameSpeed * dt;
-            ctx.font = '40px Arial';
-            ctx.fillText(o.emoji, o.x, o.y);
+            ctx.font = `${40 * scale}px Arial`;
+            ctx.fillText(o.emoji, o.x * scale, o.y * scale);
             if (o.x < -100) obstacles.splice(i, 1);
         });
 
-        // Items (Estrellas con flotación)
         items.forEach((it, i) => {
             it.x -= gameSpeed * dt;
             const hover = Math.sin(Date.now() / 200) * 10;
-            ctx.font = '35px Arial';
-            ctx.fillText(it.emoji, it.x, it.y + hover);
+            ctx.font = `${35 * scale}px Arial`;
+            ctx.fillText(it.emoji, it.x * scale, (it.y + hover) * scale);
             if (it.x < -100) items.splice(i, 1);
         });
 
-        // Pájaros
         birds.forEach((b, i) => {
             b.x -= b.speed * dt;
-            if (!b.hasDropped && Math.abs(b.x - b.dropX) < 50) {
-                ctx.font = '20px Arial'; ctx.fillText('❗', b.x, b.y - 20);
-            }
-            ctx.font = '35px Arial'; ctx.fillText(b.emoji, b.x, b.y);
-            if (!b.hasDropped && b.x < b.dropX) {
-                drops.push({ x: b.x, y: b.y, speedY: 5.5, landed: false });
-                b.hasDropped = true;
-            }
+            if (!b.hasDropped && Math.abs(b.x - b.dropX) < 50) { ctx.font = `${20 * scale}px Arial`; ctx.fillText('❗', b.x * scale, (b.y - 20) * scale); }
+            ctx.font = `${35 * scale}px Arial`; ctx.fillText(b.emoji, b.x * scale, b.y * scale);
+            if (!b.hasDropped && b.x < b.dropX) { drops.push({ x: b.x, y: b.y, speedY: 5.5, landed: false }); b.hasDropped = true; }
             if (b.x < -100) birds.splice(i, 1);
         });
 
-        // Proyectiles
         drops.forEach((d, i) => {
             if (!d.landed) {
                 d.y += d.speedY * dt;
-                platforms.forEach(p => {
-                    if (d.x > p.x && d.x < p.x + blockSize && d.y > p.y && d.y < p.y + 10) {
-                        d.landed = true; d.y = p.y;
-                    }
-                });
-                if (d.y > H) drops.splice(i, 1);
-            } else {
-                d.x -= gameSpeed * dt;
-            }
-            ctx.font = '25px Arial'; ctx.fillText('💩', d.x, d.y);
+                platforms.forEach(p => { if (d.x > p.x && d.x < p.x + blockSize && d.y > p.y && d.y < p.y + 10) { d.landed = true; d.y = p.y; } });
+                if (d.y > LOGICAL_H) drops.splice(i, 1);
+            } else { d.x -= gameSpeed * dt; }
+            ctx.font = `${25 * scale}px Arial`; ctx.fillText('💩', d.x * scale, d.y * scale);
             if (d.x < -100) drops.splice(i, 1);
         });
     }
@@ -442,47 +401,36 @@
         const dt = (time - lastTime) / 16.666;
         lastTime = time;
         frameCount += dt;
-
-        ctx.clearRect(0, 0, W, H);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (frameCount % 600 < 1) spawnBird();
-
         updateEntities(dt);
         player.update(dt);
         checkCollisions(dt);
-
         requestAnimationFrame(animate);
     }
 
     function gameOver() {
         if (isGameOver) return;
         isGameOver = true;
-        if (score > highScore) {
-            highScore = score;
-            hiEl.innerText = `🏆 ${highScore}`;
-        }
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(0, 0, W, H);
+        if (score > highScore) { highScore = score; hiEl.innerText = `🏆 ${highScore}`; }
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.font = 'bold 30px Nunito';
-        ctx.fillText('¡GAME OVER!', W/2, H/2 - 20);
-        ctx.font = '20px Nunito';
-        ctx.fillText(`Puntos: ${score}`, W/2, H/2 + 30);
-        ctx.font = '16px Nunito';
-        ctx.fillText('Toca para reiniciar', W/2, H/2 + 80);
+        const scale = getScale();
+        ctx.font = `bold ${32 * scale}px Nunito`;
+        ctx.fillText('¡FIN DE LA AVENTURA!', canvas.width/2, canvas.height/2 - 20);
+        ctx.font = `${20 * scale}px Nunito`;
+        ctx.fillText(`Puntos: ${score}`, canvas.width/2, canvas.height/2 + 30);
+        ctx.font = `${16 * scale}px Nunito`;
+        ctx.fillText('Toca para reiniciar', canvas.width/2, canvas.height/2 + 80);
     }
 
     function reset() {
-        score = 0;
-        isGameOver = false; isPressing = false;
-        frameCount = 0;
-        player.y = groundY - 100; player.dy = 0;
-        player.isInvincible = false;
-        starTimerEl.style.display = 'none';
-        scoreEl.innerText = 'Puntos: 0';
-        initMap();
-        lastTime = performance.now();
-        animate(lastTime);
+        score = 0; isGameOver = false; isPressing = false; frameCount = 0;
+        player.y = groundY - 100; player.dy = 0; player.isInvincible = false;
+        starTimerEl.style.display = 'none'; scoreEl.innerText = 'Puntos: 0';
+        initMap(); lastTime = performance.now(); animate(lastTime);
     }
 
     function start(e) {
@@ -492,7 +440,6 @@
         isPressing = true;
         if (player.grounded) player.dy = player.jumpForce;
     }
-
     function end() { isPressing = false; }
 
     canvas.addEventListener('mousedown', start);
@@ -515,4 +462,5 @@
 </script>
 </body>
 </html>
+
 
