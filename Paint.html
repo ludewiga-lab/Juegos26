@@ -35,17 +35,16 @@
             overflow: hidden;
             background-color: var(--bg-deep);
             font-family: var(--font-main);
-            position: fixed; /* Evita rebote en iOS */
+            position: fixed;
         }
 
         #app {
             display: flex;
             flex-direction: column;
             width: 100vw;
-            height: 100dvh; /* Dynamic viewport height */
+            height: 100dvh;
         }
 
-        /* --- CABECERA --- */
         header {
             flex-shrink: 0;
             padding-top: var(--safe-top);
@@ -95,13 +94,12 @@
             background: var(--accent);
         }
 
-        /* --- LIENZO --- */
         #canvas-container {
             flex: 1;
             position: relative;
             background: #ffffff;
             overflow: hidden;
-            touch-action: none; /* Crucial para evitar scroll mientras se dibuja */
+            touch-action: none;
         }
 
         #canvas {
@@ -111,7 +109,20 @@
             image-rendering: auto;
         }
 
-        /* --- PANEL DE CONTROL --- */
+        /* Cursor del borrador */
+        #eraser-cursor {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #000;
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         #controls {
             flex-shrink: 0;
             background: var(--bg-panel);
@@ -124,7 +135,6 @@
             box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
         }
 
-        /* Filas horizontales con scroll */
         .scroll-row {
             display: flex;
             align-items: center;
@@ -136,7 +146,6 @@
         }
         .scroll-row::-webkit-scrollbar { display: none; }
 
-        /* Herramientas */
         .tool-card {
             min-width: 56px;
             height: 64px;
@@ -158,7 +167,6 @@
         .tool-card span:last-child { font-size: 0.65rem; font-weight: 600; opacity: 0.6; }
         .tool-card.active span:last-child { opacity: 1; color: var(--accent); }
 
-        /* Colores */
         .color-dot {
             min-width: 32px;
             height: 32px;
@@ -181,7 +189,6 @@
             cursor: pointer;
         }
 
-        /* Slider de tamaño */
         .size-bar {
             display: flex;
             align-items: center;
@@ -204,7 +211,6 @@
             box-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
 
-        /* Mensajes Toast */
         #toast {
             position: fixed;
             top: 80px;
@@ -237,6 +243,7 @@
 
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
+        <div id="eraser-cursor"></div>
     </div>
 
     <div id="controls">
@@ -246,7 +253,7 @@
 
         <div class="size-bar">
             <span style="font-size: 0.8rem; color: #fff; opacity: 0.5;">Tamaño</span>
-            <input type="range" id="size-slider" min="2" max="60" value="15">
+            <input type="range" id="size-slider" min="2" max="100" value="15">
         </div>
 
         <div class="scroll-row" id="color-row">
@@ -267,6 +274,7 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d', { desynchronized: true });
     const container = document.getElementById('canvas-container');
+    const eraserCursor = document.getElementById('eraser-cursor');
     
     let isDrawing = false;
     let lastX = 0;
@@ -281,8 +289,12 @@
         { id: 'marker', icon: '🖊️', name: 'Marcador' },
         { id: 'spray', icon: '💨', name: 'Spray' },
         { id: 'rainbow', icon: '🌈', name: 'Magia' },
+        { id: 'stickers', icon: '⭐', name: 'Stickers' },
         { id: 'eraser', icon: '🧹', name: 'Borrador' }
     ];
+
+    const STICKERS = ['⭐', '❤️', '🔥', '✨', '🍀', '🍕', '🐱', '🚀', '🌈'];
+    let currentStickerIndex = 0;
 
     const COLORS = [
         '#ef4444', '#f97316', '#eab308', '#22c55e', 
@@ -299,7 +311,6 @@
         renderColors();
         setupEventListeners();
         
-        // Cargar High Score o estado previo si existiera (UX Premium)
         const saved = localStorage.getItem('magic_paint_last');
         if (saved) {
             const img = new Image();
@@ -310,7 +321,6 @@
         saveToHistory();
     }
 
-    // Ajustar canvas a densidad de pantalla (Retina Fix)
     function resize() {
         const dpr = window.devicePixelRatio || 1;
         const rect = container.getBoundingClientRect();
@@ -320,16 +330,13 @@
         
         ctx.scale(dpr, dpr);
         
-        // Fondo blanco inicial
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, rect.width, rect.height);
     }
 
-    /**
-     * RENDERIZADO DE UI
-     */
     function renderTools() {
         const row = document.getElementById('tool-row');
+        row.innerHTML = '';
         TOOLS.forEach(tool => {
             const div = document.createElement('div');
             div.className = `tool-card ${tool.id === currentTool ? 'active' : ''}`;
@@ -338,6 +345,13 @@
                 currentTool = tool.id;
                 document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('active'));
                 div.classList.add('active');
+                
+                // Actualizar cursor visual
+                if (currentTool === 'eraser') {
+                    updateEraserCursorSize();
+                } else {
+                    eraserCursor.style.display = 'none';
+                }
             };
             row.appendChild(div);
         });
@@ -354,31 +368,39 @@
                 document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
                 div.classList.add('active');
                 if(currentTool === 'eraser') {
-                    // Si elige color, vuelve al pincel automáticamente
-                    document.querySelector('.tool-card[data-id="brush"]')?.click();
+                    const brushBtn = Array.from(document.querySelectorAll('.tool-card')).find(c => c.innerText.includes('Pincel'));
+                    if(brushBtn) brushBtn.click();
                 }
             };
             row.appendChild(div);
         });
     }
 
+    function updateEraserCursorSize() {
+        const size = currentSize * 2;
+        eraserCursor.style.width = size + 'px';
+        eraserCursor.style.height = size + 'px';
+    }
+
     /**
      * LÓGICA DE DIBUJO
      */
     function setupEventListeners() {
-        // Pointer events para soporte universal táctil/ratón
         canvas.addEventListener('pointerdown', startDrawing);
         canvas.addEventListener('pointermove', draw);
         canvas.addEventListener('pointerup', stopDrawing);
         canvas.addEventListener('pointercancel', stopDrawing);
 
-        document.getElementById('size-slider').oninput = (e) => currentSize = e.target.value;
+        document.getElementById('size-slider').oninput = (e) => {
+            currentSize = parseInt(e.target.value);
+            if(currentTool === 'eraser') updateEraserCursorSize();
+        };
+
         document.getElementById('custom-color').oninput = (e) => {
             currentColor = e.target.value;
             document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
         };
 
-        // Acciones superiores
         document.getElementById('clear-btn').onclick = () => {
             if(confirm('¿Borrar todo el dibujo?')) {
                 ctx.fillStyle = '#ffffff';
@@ -397,13 +419,30 @@
         lastX = pos.x;
         lastY = pos.y;
         
-        // Efecto inicial para el Spray
-        if(currentTool === 'spray') drawSpray(pos.x, pos.y);
+        if (currentTool === 'eraser') {
+            eraserCursor.style.display = 'block';
+            updateCursorPos(pos.x, pos.y);
+        }
+
+        if (currentTool === 'stickers') {
+            drawSticker(pos.x, pos.y);
+        } else if (currentTool === 'spray') {
+            drawSpray(pos.x, pos.y);
+        }
     }
 
     function draw(e) {
-        if (!isDrawing) return;
         const pos = getMousePos(e);
+
+        // Siempre mover el cursor si es borrador aunque no esté dibujando
+        if (currentTool === 'eraser') {
+            eraserCursor.style.display = 'block';
+            updateCursorPos(pos.x, pos.y);
+        } else {
+            eraserCursor.style.display = 'none';
+        }
+
+        if (!isDrawing) return;
 
         ctx.lineWidth = currentSize;
         ctx.lineCap = 'round';
@@ -416,7 +455,7 @@
         } 
         else if (currentTool === 'marker') {
             ctx.strokeStyle = currentColor;
-            ctx.globalAlpha = 0.2; // Transparencia de marcador
+            ctx.globalAlpha = 0.2;
             drawLine(lastX, lastY, pos.x, pos.y);
         }
         else if (currentTool === 'eraser') {
@@ -455,17 +494,32 @@
         }
     }
 
+    function drawSticker(x, y) {
+        ctx.globalAlpha = 1;
+        ctx.font = `${currentSize * 2}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(STICKERS[currentStickerIndex], x, y);
+        // Rotar sticker para el siguiente click
+        currentStickerIndex = (currentStickerIndex + 1) % STICKERS.length;
+    }
+
+    function updateCursorPos(x, y) {
+        eraserCursor.style.left = x + 'px';
+        eraserCursor.style.top = y + 'px';
+    }
+
     function stopDrawing() {
         if(isDrawing) {
             isDrawing = false;
             saveToHistory();
-            // Guardar localmente para persistencia
             localStorage.setItem('magic_paint_last', canvas.toDataURL());
         }
     }
 
     function getMousePos(e) {
         const rect = canvas.getBoundingClientRect();
+        // Se usa clientX/Y directamente restando el rect para precisión absoluta
         return {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
@@ -508,9 +562,7 @@
         setTimeout(() => t.classList.remove('show'), 2500);
     }
 
-    // Iniciar
     window.onload = init;
-    // Evitar scroll accidental en mobile
     window.addEventListener('touchmove', (e) => {
         if (isDrawing) e.preventDefault();
     }, { passive: false });
