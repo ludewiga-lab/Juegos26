@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Animal Jump Adventure 🌟</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sky: #87CEEB;
+            --ground: #795548;
+            --ground-top: #5d4037;
+            --ui-text: #2c3e50;
+            --accent: #f1c40f;
+            --accent2: #e74c3c;
+            --shadow: rgba(0,0,0,0.18);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            background: #1a1a2e;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        /* ── WRAPPER CENTRA TODO ── */
+        #app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            gap: 0;
+        }
+
+        /* ── TÍTULO ── */
+        #title {
+            font-family: 'Fredoka One', cursive;
+            color: var(--accent);
+            text-align: center;
+            line-height: 1.1;
+            text-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            pointer-events: none;
+            flex-shrink: 0;
+        }
+
+        #subtitle {
+            color: rgba(255,255,255,0.75);
+            text-align: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ── SELECTOR DE PERSONAJE ── */
+        #selector {
+            background: rgba(255,255,255,0.12);
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 50px;
+            display: flex;
+            gap: 6px;
+            padding: 6px 12px;
+            flex-shrink: 0;
+        }
+
+        .char-option {
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.15s, background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .char-option:hover  { transform: scale(1.25); background: rgba(255,255,255,0.15); }
+        .char-option.active { background: var(--accent); transform: scale(1.2); box-shadow: 0 0 12px var(--accent); }
+
+        /* ── GAME CONTAINER ── */
+        #container {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            background: var(--sky);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45), 0 0 0 3px rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        canvas { display: block; }
+
+        /* ── HUD ── */
+        #hud {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 14px;
+            pointer-events: none;
+            font-family: 'Fredoka One', cursive;
+            color: var(--ui-text);
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.6);
+        }
+
+        /* ── BOTÓN MÓVIL ── */
+        #jumpBtn {
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #f1c40f, #e67e22);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 6px 20px rgba(241,196,15,0.5), 0 3px 0 #b7950b;
+            cursor: pointer;
+            display: none;           /* visible sólo en touch */
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.08s, box-shadow 0.08s;
+            active-scale: 0.92;
+        }
+        #jumpBtn:active {
+            transform: scale(0.92);
+            box-shadow: 0 2px 10px rgba(241,196,15,0.4), 0 1px 0 #b7950b;
+        }
+
+        @media (pointer: coarse) {
+            #jumpBtn { display: flex; }
+        }
+
+        /* ══ RESPONSIVE SIZES ══
+           Calculamos todo en JS según el viewport,
+           pero aquí definimos clases para texto */
+        .size-sm #title    { font-size: 20px; }
+        .size-sm #subtitle { font-size: 11px; margin: 2px 0 4px; }
+        .size-sm .char-option { width: 36px; height: 36px; font-size: 20px; }
+        .size-sm #jumpBtn  { width: 70px; height: 70px; margin-top: 8px; }
+
+        .size-md #title    { font-size: 26px; }
+        .size-md #subtitle { font-size: 13px; margin: 3px 0 6px; }
+        .size-md .char-option { width: 44px; height: 44px; font-size: 24px; }
+        .size-md #jumpBtn  { width: 84px; height: 84px; margin-top: 10px; }
+
+        .size-lg #title    { font-size: 32px; }
+        .size-lg #subtitle { font-size: 15px; margin: 4px 0 8px; }
+        .size-lg .char-option { width: 52px; height: 52px; font-size: 28px; }
+        .size-lg #jumpBtn  { width: 100px; height: 100px; margin-top: 12px; }
+    </style>
+</div>
+</head>
+<body>
+<div id="app">
+    <div id="title">🌟 Animal Jump Adventure!</div>
+    <div id="subtitle">Mantén <b>CLIC / ESPACIO / TAP</b> para saltar más alto</div>
+
+    <div id="selector">
+        <div class="char-option active" data-emoji="🦖">🦖</div>
+        <div class="char-option" data-emoji="🐰">🐰</div>
+        <div class="char-option" data-emoji="🐱">🐱</div>
+        <div class="char-option" data-emoji="🦄">🦄</div>
+        <div class="char-option" data-emoji="🐥">🐥</div>
+    </div>
+
+    <div id="container">
+        <div id="hud">
+            <span id="scoreDisplay">Puntos: 0</span>
+            <span id="highScoreDisplay">🏆 0</span>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <button id="jumpBtn" aria-label="Saltar">🦘</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  RESPONSIVE LAYOUT ENGINE
+// ══════════════════════════════════════════════
+const GAME_ASPECT = 800 / 300; // canvas native ratio
+
+function computeLayout() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Clase de tamaño para CSS
+    const app = document.getElementById('app');
+    app.classList.remove('size-sm','size-md','size-lg');
+    const sizeClass = vw < 480 ? 'size-sm' : vw < 900 ? 'size-md' : 'size-lg';
+    app.classList.add(sizeClass);
+
+    // ¿Pantalla táctil?
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    const jumpBtn = document.getElementById('jumpBtn');
+    const jumpBtnSize = jumpBtn.offsetHeight; // tras aplicar CSS
+
+    // Reservamos espacio para UI encima y abajo del canvas
+    const titleH  = document.getElementById('title').offsetHeight;
+    const subH    = document.getElementById('subtitle').offsetHeight;
+    const selH    = document.getElementById('selector').offsetHeight;
+    const btnH    = isTouch ? jumpBtnSize + (sizeClass === 'size-sm' ? 8 : sizeClass === 'size-md' ? 10 : 12) : 0;
+
+    const gapV    = sizeClass === 'size-sm' ? 4 : sizeClass === 'size-md' ? 7 : 10;
+    const padding = 16;
+
+    const availH = vh - padding*2 - titleH - subH - selH - btnH - gapV*4;
+    const availW = vw - padding*2;
+
+    let cw = availW;
+    let ch = cw / GAME_ASPECT;
+
+    if (ch > availH) {
+        ch = availH;
+        cw = ch * GAME_ASPECT;
+    }
+
+    // Mínimos
+    cw = Math.max(cw, 280);
+    ch = Math.max(ch, 100);
+
+    return { cw: Math.floor(cw), ch: Math.floor(ch), scale: cw / 800 };
+}
+
+// ══════════════════════════════════════════════
+//  CANVAS + GAME SETUP
+// ══════════════════════════════════════════════
+const canvas  = document.getElementById('gameCanvas');
+const ctx     = canvas.getContext('2d');
+const container = document.getElementById('container');
+const scoreEl = document.getElementById('scoreDisplay');
+const hiEl    = document.getElementById('highScoreDisplay');
+
+// Native resolution fixed; we SCALE the canvas element via CSS
+const W = 800, H = 300;
+canvas.width  = W;
+canvas.height = H;
+
+let scale = 1;
+
+function applyLayout() {
+    const { cw, ch, scale: s } = computeLayout();
+    scale = s;
+    canvas.style.width  = cw + 'px';
+    canvas.style.height = ch + 'px';
+    container.style.width  = cw + 'px';
+    container.style.height = ch + 'px';
+    // HUD font scaled
+    const hud = document.getElementById('hud');
+    hud.style.fontSize = Math.max(12, 20 * s) + 'px';
+}
+
+window.addEventListener('resize', () => { applyLayout(); });
+applyLayout();
+
+// ══════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════
+let score = 0, highScore = 0, gameSpeed = 5;
+let isGameOver = false, frame = 0;
+let isJumping = false;
+let clouds = [], obstacles = [], birds = [], drops = [];
+
+const groundY = H - 40;
+
+const dino = {
+    x: 80, y: groundY, width: 50, height: 50,
+    dy: 0, baseJump: -10, gravity: 0.6, grounded: false, emoji: '🦖',
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x + this.width, this.y);
+        ctx.scale(-1, 1);
+        ctx.font = '55px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(this.emoji, 0, 0);
+        ctx.restore();
+    },
+
+    update() {
+        this.dy += this.gravity;
+        if (isJumping && this.dy < 0) this.dy -= 0.3;
+        this.y += this.dy;
+        if (this.y > groundY) { this.y = groundY; this.dy = 0; this.grounded = true; }
+        else this.grounded = false;
+        this.draw();
+    },
+
+    jump() {
+        if (this.grounded) { this.dy = this.baseJump; this.grounded = false; }
+    }
+};
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function checkCollision(ox, oy, ow, oh) {
+    const pyTop    = dino.y - dino.height + 15;
+    const pyBottom = dino.y - 5;
+    const pxLeft   = dino.x + 15;
+    const pxRight  = dino.x + dino.width - 15;
+    return pxLeft < ox+ow && pxRight > ox && pyTop < oy+oh && pyBottom > oy;
+}
+
+function drawGround() {
+    ctx.fillStyle = '#795548';
+    ctx.fillRect(0, groundY, W, H - groundY);
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(0, groundY, W, 5);
+    // Línea de hierba
+    ctx.strokeStyle = '#4caf50';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY); ctx.lineTo(W, groundY);
+    ctx.stroke();
+}
+
+// ══════════════════════════════════════════════
+//  SPAWNS
+// ══════════════════════════════════════════════
+function spawnCloud() {
+    clouds.push({ x: W+100, y: Math.random()*80+20, speed: Math.random()*0.5+0.2,
+                  emoji: '☁️', size: Math.random()*20+30 });
+}
+function spawnBird() {
+    birds.push({ x: W+50, y: Math.random()*60+30, speed: gameSpeed+1.5,
+                 emoji: '🐦', nextDrop: Math.floor(Math.random()*50+40) });
+}
+function spawnObstacle() {
+    const types = ['🌵','🌿','🍄','🪨'];
+    obstacles.push({ x: W+50, y: groundY, emoji: types[Math.floor(Math.random()*types.length)] });
+}
+
+// ══════════════════════════════════════════════
+//  UPDATE OBJECTS
+// ══════════════════════════════════════════════
+function updateObjects() {
+    // Clouds
+    clouds.forEach((c,i) => {
+        c.x -= c.speed;
+        ctx.font = `${c.size}px Arial`;
+        ctx.textBaseline = 'top';
+        ctx.fillText(c.emoji, c.x, c.y);
+        if (c.x < -100) clouds.splice(i,1);
+    });
+
+    // Birds
+    birds.forEach((b,i) => {
+        b.x -= b.speed;
+        ctx.font = '35px Arial'; ctx.textBaseline = 'bottom';
+        ctx.fillText(b.emoji, b.x, b.y);
+        b.nextDrop--;
+        if (b.nextDrop <= 0) {
+            drops.push({ x: b.x+10, y: b.y-10, speedY: 5 });
+            b.nextDrop = 9999;
+        }
+        if (b.x < -50) birds.splice(i,1);
+    });
+
+    // Drops
+    drops.forEach((d,i) => {
+        if (d.y < groundY) d.y += d.speedY;
+        else { d.y = groundY; d.x -= gameSpeed; }
+        ctx.font = '30px Arial'; ctx.textBaseline = 'bottom';
+        ctx.fillText('💩', d.x, d.y);
+        if (checkCollision(d.x+8, d.y-25, 15, 20)) endGame();
+        if (d.x < -50) drops.splice(i,1);
+    });
+
+    // Obstacles
+    obstacles.forEach((o,i) => {
+        o.x -= gameSpeed;
+        ctx.font = '45px Arial'; ctx.textBaseline = 'bottom';
+        ctx.fillText(o.emoji, o.x, o.y);
+        if (checkCollision(o.x+10, o.y-35, 20, 35)) endGame();
+        if (o.x < -50) {
+            obstacles.splice(i,1);
+            score++;
+            scoreEl.innerText = 'Puntos: ' + score;
+            if (score % 8 === 0) gameSpeed += 0.4;
+        }
+    });
+}
+
+// ══════════════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════════════
+function animate() {
+    if (isGameOver) return;
+    frame++;
+    ctx.clearRect(0, 0, W, H);
+
+    // Sky gradient
+    const sky = ctx.createLinearGradient(0, 0, 0, groundY);
+    sky.addColorStop(0, '#87CEEB');
+    sky.addColorStop(1, '#b0e0f5');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, groundY);
+
+    if (frame % 150 === 0) spawnCloud();
+    if (frame % 280 === 0) spawnBird();
+    if (frame % 90  === 0) spawnObstacle();
+
+    drawGround();
+    updateObjects();
+    dino.update();
+
+    requestAnimationFrame(animate);
+}
+
+function endGame() {
+    if (isGameOver) return;
+    isGameOver = true; isJumping = false;
+    if (score > highScore) {
+        highScore = score;
+        hiEl.innerText = '🏆 ' + highScore;
+    }
+    // Overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Panel
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, W/2-180, H/2-55, 360, 110, 16);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#f1c40f';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 28px "Fredoka One", cursive';
+    ctx.fillText('¡CUIDADO CON LA 💩!', W/2, H/2 - 20);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = '15px "Nunito", sans-serif';
+    const hint = window.matchMedia('(pointer: coarse)').matches
+        ? 'TAP O PULSA EL BOTÓN PARA REINTENTAR'
+        : 'CLIC O ESPACIO PARA REINTENTAR';
+    ctx.fillText(hint, W/2, H/2 + 22);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+    ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+    ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+    ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+    ctx.closePath();
+}
+
+function reset() {
+    score = 0; gameSpeed = 5; frame = 0;
+    obstacles = []; clouds = []; birds = []; drops = [];
+    isGameOver = false; isJumping = false;
+    dino.y = groundY; dino.dy = 0;
+    scoreEl.innerText = 'Puntos: 0';
+    for (let i=0; i<3; i++) { spawnCloud(); clouds[clouds.length-1].x = Math.random()*W; }
+    animate();
+}
+
+// ══════════════════════════════════════════════
+//  SELECTOR DE PERSONAJE
+// ══════════════════════════════════════════════
+document.querySelectorAll('.char-option').forEach(el => {
+    el.addEventListener('click', () => {
+        document.querySelectorAll('.char-option').forEach(o => o.classList.remove('active'));
+        el.classList.add('active');
+        dino.emoji = el.dataset.emoji;
+        if (isGameOver) reset();
+    });
+    el.addEventListener('touchend', e => { e.preventDefault(); el.click(); });
+});
+
+// ══════════════════════════════════════════════
+//  INPUT HANDLERS
+// ══════════════════════════════════════════════
+function onStart(e) {
+    if (e.target.closest('#selector')) return;
+    if (e.cancelable) e.preventDefault();
+    if (isGameOver) reset();
+    else { isJumping = true; dino.jump(); }
+}
+function onEnd() { isJumping = false; }
+
+// Canvas: mouse
+canvas.addEventListener('mousedown', onStart);
+window.addEventListener('mouseup', onEnd);
+
+// Canvas: touch (directo sobre canvas)
+canvas.addEventListener('touchstart', onStart, { passive: false });
+canvas.addEventListener('touchend',   onEnd,  { passive: false });
+
+// Botón móvil
+const jumpBtn = document.getElementById('jumpBtn');
+jumpBtn.addEventListener('touchstart', (e) => {
+    e.stopPropagation(); e.preventDefault();
+    if (isGameOver) reset(); else { isJumping = true; dino.jump(); }
+}, { passive: false });
+jumpBtn.addEventListener('touchend', (e) => {
+    e.stopPropagation(); e.preventDefault(); isJumping = false;
+}, { passive: false });
+jumpBtn.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    if (isGameOver) reset(); else { isJumping = true; dino.jump(); }
+});
+jumpBtn.addEventListener('mouseup', (e) => { e.stopPropagation(); isJumping = false; });
+
+// Teclado
+window.addEventListener('keydown', (e) => {
+    if ((e.code === 'Space' || e.code === 'ArrowUp') && !e.repeat) {
+        e.preventDefault();
+        if (isGameOver) reset(); else { isJumping = true; dino.jump(); }
+    }
+});
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') isJumping = false;
+});
+
+// ══════════════════════════════════════════════
+//  ARRANQUE
+// ══════════════════════════════════════════════
+reset();
+</script>
+</body>
+</html>
