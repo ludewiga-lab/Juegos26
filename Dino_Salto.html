@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Animal Jump Pro 🦖</title>
+    <title>Animal Adventure World 🦖</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,9 +12,6 @@
             --grass: #4caf50;
             --accent: #f1c40f;
             --ui-bg: rgba(255, 255, 255, 0.2);
-            /* Safe areas para notch y barras de gestos */
-            --sat: env(safe-area-inset-top);
-            --sab: env(safe-area-inset-bottom);
         }
 
         * { 
@@ -28,7 +25,7 @@
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             overflow: hidden;
-            background: #1a1a2e;
+            background: #1a1a2e; /* Fondo oscuro exterior */
             font-family: 'Nunito', sans-serif;
             display: flex;
             justify-content: center;
@@ -37,19 +34,19 @@
 
         #app {
             width: 100%; 
-            height: 100dvh; /* Dynamic Viewport Height para móviles */
-            max-width: 500px;
+            height: 100%;
+            max-width: 500px; /* Limita el ancho en PC, pero en móvil será el 100% */
             display: flex;
             flex-direction: column;
             background: linear-gradient(to bottom, #87CEEB, #b0e2f5);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
         #header {
             position: absolute;
-            top: calc(20px + var(--sat)); 
-            left: 0; width: 100%;
+            top: 20px; left: 0; width: 100%;
             padding: 0 20px; z-index: 10;
             display: flex; flex-direction: column;
             align-items: center; pointer-events: none;
@@ -57,7 +54,7 @@
 
         #title {
             font-family: 'Fredoka One', cursive;
-            color: white; font-size: clamp(18px, 6vw, 24px);
+            color: white; font-size: 24px;
             text-shadow: 0 3px 6px rgba(0,0,0,0.3);
             text-transform: uppercase;
         }
@@ -68,52 +65,56 @@
             font-size: 18px; margin-top: 5px;
         }
 
-        #power-icons {
+        #star-timer {
             position: absolute;
-            top: calc(20px + var(--sat)); right: 20px;
-            display: flex; flex-direction: column;
-            gap: 10px; z-index: 20;
+            bottom: 100px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(241, 196, 15, 0.9);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 900;
+            display: none;
+            box-shadow: 0 0 20px #f1c40f;
+            z-index: 20;
+            border: 2px solid white;
+            animation: pulse 1s infinite;
         }
 
-        .power-indicator {
-            width: 45px; height: 45px;
-            background: rgba(255,255,255,0.4);
-            backdrop-filter: blur(5px);
-            border-radius: 12px;
-            display: none;
-            align-items: center; justify-content: center;
-            font-size: 24px;
-            border: 2px solid white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
         }
 
         #selector {
-            position: absolute; 
-            top: calc(90px + var(--sat)); 
-            left: 50%;
+            position: absolute; top: 90px; left: 50%;
             transform: translateX(-50%);
             display: flex; gap: 8px;
             background: var(--ui-bg); padding: 8px;
             border-radius: 40px; backdrop-filter: blur(10px);
             z-index: 10;
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         .char-option {
             width: 42px; height: 42px;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; border-radius: 50%;
-            cursor: pointer; transition: 0.3s;
+            cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             background: rgba(255,255,255,0.15);
         }
         .char-option.active {
             background: var(--accent); 
             transform: scale(1.2);
+            box-shadow: 0 0 15px white;
         }
 
         canvas { 
             display: block; 
             width: 100%; 
             height: 100%;
+            touch-action: none;
         }
     </style>
 </head>
@@ -128,11 +129,7 @@
         </div>
     </div>
 
-    <div id="power-icons">
-        <div id="icon-star" class="power-indicator">⭐</div>
-        <div id="icon-feather" class="power-indicator">🪶</div>
-        <div id="icon-mushroom" class="power-indicator">🍄</div>
-    </div>
+    <div id="star-timer">✨ MODO ESTRELLA ✨</div>
 
     <div id="selector">
         <div class="char-option active" data-emoji="🦖">🦖</div>
@@ -150,57 +147,42 @@
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('scoreDisplay');
     const hiEl = document.getElementById('highScoreDisplay');
+    const starTimerEl = document.getElementById('star-timer');
     const appContainer = document.getElementById('app');
     
-    const iconStar = document.getElementById('icon-star');
-    const iconFeather = document.getElementById('icon-feather');
-    const iconMushroom = document.getElementById('icon-mushroom');
-    
-    // Altura lógica dinámica basada en el aspecto del dispositivo
+    // Dimensiones lógicas fijas para el juego
     const LOGICAL_W = 400;
-    let LOGICAL_H = 600; 
-    let groundY = 540;
+    const LOGICAL_H = 600;
 
     function resize() {
         const rect = appContainer.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
-        
-        // Recalcular el alto lógico para que coincida con la proporción de la pantalla
-        LOGICAL_H = (canvas.height / canvas.width) * LOGICAL_W;
-        
-        // El suelo se ajusta dinámicamente al fondo (con margen para safe area)
-        const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0;
-        groundY = LOGICAL_H - (60 + (safeBottom / (canvas.width / LOGICAL_W)));
-        
-        if(!isGameOver && player) {
-            player.y = groundY - player.height;
-        }
     }
-    
     window.addEventListener('resize', resize);
-    window.addEventListener('orientationchange', () => setTimeout(resize, 200));
     resize();
 
-    function getScale() { return canvas.width / LOGICAL_W; }
+    // Helper para escalar coordenadas
+    function getScale() {
+        return canvas.width / LOGICAL_W;
+    }
 
-    let score = 0, highScore = localStorage.getItem('animalHigh') || 0;
-    hiEl.innerText = `🏆 ${highScore}`;
-    
-    let baseSpeed = 3.6;
+    let score = 0, highScore = 0;
+    let baseSpeed = 3.8;
     let gameSpeed = baseSpeed;
     let isGameOver = false;
     let isPressing = false;
     let lastTime = 0;
     let frameCount = 0;
     
+    const groundY = LOGICAL_H - 60;
     const blockSize = 40;
 
     const player = {
         x: 60,
-        y: 0, 
-        width: 34,
-        height: 34,
+        y: groundY - 40,
+        width: 36,
+        height: 36,
         dy: 0,
         gravity: 0.75,
         jumpForce: -12, 
@@ -208,36 +190,26 @@
         grounded: false,
         isInvincible: false,
         invincibleTime: 0,
-        isBig: false,
-        isFlying: false,
-        flyingTime: 0,
 
         draw() {
             const scale = getScale();
             ctx.save();
-            const emojiSize = this.isBig ? 70 : 45;
-            ctx.font = `${emojiSize * scale}px Arial`;
+            ctx.font = `${48 * scale}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
             
+            // Posicionamiento escalado
             const drawX = (this.x + this.width / 2) * scale;
             const drawY = (this.y + this.height) * scale;
 
             ctx.translate(drawX, drawY);
             ctx.scale(-1, 1); 
 
-            if (this.isInvincible && this.invincibleTime > 2000) {
+            if (this.isInvincible) {
                 const hue = (Date.now() / 2) % 360;
-                ctx.shadowBlur = 20 * scale;
+                ctx.shadowBlur = 25 * scale;
                 ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
                 ctx.filter = `hue-rotate(${hue}deg) brightness(1.5)`;
-            } else if (this.isInvincible) {
-                ctx.globalAlpha = Math.sin(Date.now() / 40) * 0.5 + 0.5;
-            }
-
-            if (this.isFlying) {
-                ctx.shadowBlur = 15 * scale;
-                ctx.shadowColor = "white";
             }
 
             ctx.fillText(this.emoji, 0, 0);
@@ -246,31 +218,20 @@
 
         update(dt) {
             let g = this.gravity;
-            if (this.isFlying) {
-                if (isPressing) this.dy = -6.5;
-                g = 0.25; 
-                this.flyingTime -= dt * 16.66;
-                if (this.flyingTime <= 0) {
-                    this.isFlying = false;
-                    iconFeather.style.display = 'none';
-                }
-            } else {
-                if (isPressing && this.dy < 0) g *= 0.45;
-            }
+            if (isPressing && this.dy < 0) g *= 0.45;
 
             this.dy += g * dt;
             this.y += this.dy * dt;
 
-            if (this.invincibleTime > 0) {
+            if (this.isInvincible) {
                 this.invincibleTime -= dt * 16.66;
                 if (this.invincibleTime <= 0) {
                     this.isInvincible = false;
-                    iconStar.style.display = 'none';
-                    if (!this.isFlying) gameSpeed = baseSpeed + (Math.floor(score / 500) * 0.2);
+                    gameSpeed = baseSpeed + (Math.floor(score / 10) * 0.2);
+                    starTimerEl.style.display = 'none';
                 }
             }
 
-            if (this.y < 0) { this.y = 0; this.dy = 0; }
             if (this.y > LOGICAL_H + 50) gameOver(); 
             this.draw();
         }
@@ -285,8 +246,7 @@
 
     function initMap() {
         platforms = []; obstacles = []; items = []; birds = []; drops = [];
-        baseSpeed = 3.6; gameSpeed = baseSpeed;
-        score = 0;
+        baseSpeed = 3.8; gameSpeed = baseSpeed;
         for(let i=0; i<15; i++) {
             platforms.push({ x: i * blockSize, y: groundY, type: 'grass' });
         }
@@ -297,99 +257,73 @@
         const nextX = lastP ? lastP.x + blockSize : 0;
         const rand = Math.random();
         
-        if (rand < 0.14 && score > 200) {
-            if (Math.random() < 0.75) {
-                let length = Math.floor(Math.random() * 6) + 6; 
+        if (rand < 0.15 && score > 5) {
+            if (Math.random() < 0.8) {
+                let length = Math.floor(Math.random() * 4) + 5; 
                 for(let j=0; j<length; j++) {
-                    platforms.push({ x: nextX + (j * blockSize), y: groundY - 140, type: 'block' });
-                    if (j === Math.floor(length/2) && Math.random() < 0.25) spawnObstacle(nextX + (j * blockSize), groundY - 140);
-                    if (j === 3 && Math.random() < 0.18) spawnRandomItem(nextX + (j * blockSize), groundY - 190);
+                    platforms.push({ x: nextX + (j * blockSize), y: groundY - 120, type: 'block' });
+                    if (j === Math.floor(length/2) && Math.random() < 0.3) spawnObstacle(nextX + (j * blockSize), groundY - 120);
+                    if (j === 2 && Math.random() < 0.12) spawnItem(nextX + (j * blockSize), groundY - 170);
                 }
             }
         } else {
             platforms.push({ x: nextX, y: groundY, type: 'grass' });
-            if (Math.random() < 0.08) {
-                const tooClose = obstacles.some(o => Math.abs(o.x - nextX) < 260);
+            if (Math.random() < 0.1 && !items.some(it => Math.abs(it.x - nextX) < 120)) {
+                const tooClose = obstacles.some(o => Math.abs(o.x - nextX) < 220);
                 if (!tooClose) spawnObstacle(nextX, groundY);
             }
-            if (Math.random() < 0.035) spawnRandomItem(nextX, groundY - 60);
+            if (Math.random() < 0.02) spawnItem(nextX, groundY - 60);
         }
     }
 
     function spawnObstacle(x, y) {
-        const icons = ['🌵', '🪨', '🔥'];
-        obstacles.push({ x, y, emoji: icons[Math.floor(Math.random() * icons.length)], passed: false });
+        const icons = ['🌵', '🍄', '🪨'];
+        obstacles.push({ x, y, emoji: icons[Math.floor(Math.random() * icons.length)], type: 'hazard', passed: false });
     }
 
-    function spawnRandomItem(x, y) {
-        const r = Math.random();
-        if (r < 0.4) items.push({ x, y, emoji: '🍄', type: 'mushroom' });
-        else if (r < 0.75) items.push({ x, y, emoji: '⭐', type: 'star' });
-        else items.push({ x, y, emoji: '🪶', type: 'feather' });
+    function spawnItem(x, y) {
+        items.push({ x, y, emoji: '⭐', type: 'star' });
     }
 
     function spawnBird() {
-        if (birds.length > 0 || score < 1000) return; 
-        birds.push({ x: LOGICAL_W + 150, y: 80, speed: gameSpeed + 1.2, emoji: '🐦', hasDropped: false, dropX: player.x + 200 });
+        if (birds.length > 0 || score < 10) return; 
+        birds.push({ x: LOGICAL_W + 150, y: 80, speed: gameSpeed + 1.5, emoji: '🐦', hasDropped: false, dropX: player.x + 180 + Math.random() * 100 });
     }
 
     function checkCollisions(dt) {
         let onAnyPlatform = false;
-        player.height = player.isBig ? 60 : 34; 
-
         platforms.forEach(p => {
-            const px = player.x + 8;
-            const pw = player.width - 16;
+            const px = player.x + 10;
+            const pw = player.width - 20;
             if (player.dy >= 0 && px + pw > p.x && px < p.x + blockSize && player.y + player.height <= p.y + 15 && player.y + player.height + (player.dy * dt) >= p.y) {
-                player.y = p.y - player.height; 
-                player.dy = 0; 
-                player.grounded = true; 
-                onAnyPlatform = true;
+                player.y = p.y - player.height; player.dy = 0; player.grounded = true; onAnyPlatform = true;
             }
         });
         if (!onAnyPlatform) player.grounded = false;
 
         items.forEach((it, i) => {
-            if (Math.abs(player.x - it.x) < 40 && Math.abs(player.y - it.y) < 65) {
-                if (it.type === 'mushroom') {
-                    if (!player.isBig) player.y -= 26;
-                    player.isBig = true;
-                    iconMushroom.style.display = 'flex';
-                } else if (it.type === 'star') {
-                    player.invincibleTime = 7000;
-                    player.isInvincible = true;
-                    iconStar.style.display = 'flex';
-                    gameSpeed = baseSpeed * 1.5;
-                } else if (it.type === 'feather') {
-                    player.isFlying = true;
-                    player.flyingTime = 6000;
-                    iconFeather.style.display = 'flex';
-                }
-                items.splice(i, 1);
-            }
+            if (Math.abs(player.x - it.x) < 40 && Math.abs(player.y - it.y) < 60) { activateStar(); items.splice(i, 1); }
         });
 
-        const handleHit = () => {
-            if (player.isInvincible) return;
-            if (player.isBig) {
-                player.isBig = false;
-                player.isInvincible = true;
-                player.invincibleTime = 2000; 
-                iconMushroom.style.display = 'none';
-            } else {
-                gameOver();
-            }
-        };
-
         obstacles.forEach(o => {
-            const px = player.x + 10;
-            const py = player.y + 10;
-            if (px < o.x + 30 && px + 20 > o.x && py < o.y && py + 40 > o.y - 30) handleHit();
+            if (player.isInvincible) return;
+            const px = player.x + 15; const py = player.y + 15;
+            const pw = player.width - 30; const ph = player.height - 20;
+            if (px < o.x + 25 && px + pw > o.x - 5 && py < o.y && py + ph > o.y - 30) gameOver();
+            if (!o.passed && o.x < player.x) { o.passed = true; score++; scoreEl.innerText = `Puntos: ${score}`; if (score % 10 === 0 && !player.isInvincible) { baseSpeed += 0.2; gameSpeed = baseSpeed; } }
         });
 
         drops.forEach(d => {
-            if (Math.abs(player.x + 15 - d.x) < 25 && Math.abs(player.y + 15 - d.y) < 25) handleHit();
+            if (player.isInvincible) return;
+            if (Math.abs(player.x + 15 - d.x) < 22 && Math.abs(player.y + 15 - d.y) < 22) gameOver();
         });
+    }
+
+    function activateStar() {
+        player.isInvincible = true;
+        player.invincibleTime = 7000;
+        gameSpeed = baseSpeed * 1.5;
+        starTimerEl.style.display = 'block';
     }
 
     function updateEntities(dt) {
@@ -397,18 +331,21 @@
         
         platforms.forEach((p, i) => {
             p.x -= gameSpeed * dt;
-            const dX = p.x * scale, dY = p.y * scale, dW = (blockSize + 0.5) * scale, dH = (LOGICAL_H - p.y + 100) * scale;
+            const drawX = p.x * scale;
+            const drawY = p.y * scale;
+            const drawW = (blockSize + 1) * scale;
+            const drawH = (LOGICAL_H - p.y) * scale;
 
             if (p.type === 'grass') {
-                ctx.fillStyle = '#795548'; ctx.fillRect(dX, dY, dW, dH);
-                ctx.fillStyle = '#4caf50'; ctx.fillRect(dX, dY, dW, 8 * scale);
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(drawX, drawY, drawW, drawH);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(drawX, drawY, drawW, 8 * scale);
             } else {
-                ctx.fillStyle = '#8d6e63'; ctx.fillRect(dX, dY, dW, blockSize * scale);
-                ctx.strokeStyle = '#5d4037'; ctx.lineWidth = 2 * scale;
-                ctx.strokeRect(dX + 2*scale, dY + 2*scale, dW - 4*scale, (blockSize-4)*scale);
-                ctx.fillStyle = '#5d4037';
-                ctx.fillRect(dX + 5*scale, dY + 5*scale, 4*scale, 4*scale);
-                ctx.fillRect(dX + dW - 9*scale, dY + blockSize*scale - 9*scale, 4*scale, 4*scale);
+                ctx.fillStyle = '#e67e22';
+                ctx.fillRect(drawX, drawY, drawW - scale, blockSize * scale);
+                ctx.fillStyle = '#d35400';
+                ctx.fillRect(drawX, drawY + (blockSize - 8) * scale, drawW - scale, 8 * scale);
             }
             if (p.x < -blockSize * 10) platforms.splice(i, 1);
         });
@@ -418,7 +355,8 @@
         ctx.save(); ctx.globalAlpha = 0.3;
         clouds.forEach((c, i) => {
             c.x -= c.speed * dt;
-            ctx.font = `${40 * scale}px Arial`; ctx.fillText('☁️', c.x * scale, c.y * scale);
+            ctx.font = `${40 * scale}px Arial`;
+            ctx.fillText('☁️', c.x * scale, c.y * scale);
             if (c.x < -100) clouds.splice(i, 1);
         });
         ctx.restore();
@@ -426,19 +364,22 @@
 
         obstacles.forEach((o, i) => {
             o.x -= gameSpeed * dt;
-            ctx.font = `${40 * scale}px Arial`; ctx.fillText(o.emoji, o.x * scale, o.y * scale);
+            ctx.font = `${40 * scale}px Arial`;
+            ctx.fillText(o.emoji, o.x * scale, o.y * scale);
             if (o.x < -100) obstacles.splice(i, 1);
         });
 
         items.forEach((it, i) => {
             it.x -= gameSpeed * dt;
-            const h = Math.sin(Date.now() / 200) * 8;
-            ctx.font = `${35 * scale}px Arial`; ctx.fillText(it.emoji, it.x * scale, (it.y + h) * scale);
+            const hover = Math.sin(Date.now() / 200) * 10;
+            ctx.font = `${35 * scale}px Arial`;
+            ctx.fillText(it.emoji, it.x * scale, (it.y + hover) * scale);
             if (it.x < -100) items.splice(i, 1);
         });
 
         birds.forEach((b, i) => {
             b.x -= b.speed * dt;
+            if (!b.hasDropped && Math.abs(b.x - b.dropX) < 50) { ctx.font = `${20 * scale}px Arial`; ctx.fillText('❗', b.x * scale, (b.y - 20) * scale); }
             ctx.font = `${35 * scale}px Arial`; ctx.fillText(b.emoji, b.x * scale, b.y * scale);
             if (!b.hasDropped && b.x < b.dropX) { drops.push({ x: b.x, y: b.y, speedY: 5.5, landed: false }); b.hasDropped = true; }
             if (b.x < -100) birds.splice(i, 1);
@@ -457,15 +398,11 @@
 
     function animate(time = 0) {
         if (isGameOver) return;
-        const dt = Math.min((time - lastTime) / 16.666, 3);
+        const dt = (time - lastTime) / 16.666;
         lastTime = time;
         frameCount += dt;
-        
-        score += Math.floor(dt * 1);
-        scoreEl.innerText = `Puntos: ${score}`;
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (frameCount % 700 < 1) spawnBird();
+        if (frameCount % 600 < 1) spawnBird();
         updateEntities(dt);
         player.update(dt);
         checkCollisions(dt);
@@ -475,34 +412,24 @@
     function gameOver() {
         if (isGameOver) return;
         isGameOver = true;
-        if (score > highScore) { 
-            highScore = score; 
-            localStorage.setItem('animalHigh', highScore);
-            hiEl.innerText = `🏆 ${highScore}`; 
-        }
-        ctx.fillStyle = 'rgba(0,0,0,0.85)';
+        if (score > highScore) { highScore = score; hiEl.innerText = `🏆 ${highScore}`; }
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        const s = getScale();
-        ctx.font = `bold ${32 * s}px Nunito`;
-        ctx.fillText('FIN DE LA PARTIDA', canvas.width/2, canvas.height/2 - 20);
-        ctx.font = `${20 * s}px Nunito`;
+        const scale = getScale();
+        ctx.font = `bold ${32 * scale}px Nunito`;
+        ctx.fillText('¡FIN DE LA AVENTURA!', canvas.width/2, canvas.height/2 - 20);
+        ctx.font = `${20 * scale}px Nunito`;
         ctx.fillText(`Puntos: ${score}`, canvas.width/2, canvas.height/2 + 30);
-        ctx.font = `${16 * s}px Nunito`;
+        ctx.font = `${16 * scale}px Nunito`;
         ctx.fillText('Toca para reiniciar', canvas.width/2, canvas.height/2 + 80);
     }
 
     function reset() {
-        resize();
         score = 0; isGameOver = false; isPressing = false; frameCount = 0;
         player.y = groundY - 100; player.dy = 0; player.isInvincible = false;
-        player.isBig = false; player.isFlying = false;
-        player.height = 34;
-        iconStar.style.display = 'none';
-        iconFeather.style.display = 'none';
-        iconMushroom.style.display = 'none';
-        scoreEl.innerText = 'Puntos: 0';
+        starTimerEl.style.display = 'none'; scoreEl.innerText = 'Puntos: 0';
         initMap(); lastTime = performance.now(); animate(lastTime);
     }
 
@@ -511,7 +438,7 @@
         if (e.cancelable) e.preventDefault();
         if (isGameOver) { reset(); return; }
         isPressing = true;
-        if (player.grounded && !player.isFlying) player.dy = player.jumpForce;
+        if (player.grounded) player.dy = player.jumpForce;
     }
     function end() { isPressing = false; }
 
