@@ -192,7 +192,7 @@
         flyingTime: 0,
 
         getCurrentHeight() {
-            return this.isBig ? 60 : 34;
+            return this.isBig ? 58 : 34; // Reducido un poco para evitar que se hunda
         },
 
         draw() {
@@ -202,11 +202,12 @@
             const currentSize = this.isBig ? 65 : 45;
             ctx.font = `${currentSize * scale}px Arial`;
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'alphabetic'; 
+            // Cambiado a ideographic para que los pies del emoji queden justo sobre la línea
+            ctx.textBaseline = 'ideographic'; 
             
             const drawX = (this.x + this.width / 2) * scale;
-            // Dibujamos desde la base real del hitbox para que no flote
-            const drawY = (this.y + this.getCurrentHeight()) * scale;
+            // Ajuste de 2px hacia arriba para que camine sobre la grama y no dentro
+            const drawY = (this.y + this.getCurrentHeight() - 2) * scale;
 
             ctx.translate(drawX, drawY);
             ctx.scale(-1, 1); 
@@ -257,7 +258,6 @@
             }
 
             if (this.y < 0) { this.y = 0; this.dy = 0; }
-            // Muerte por caer al vacío
             if (this.y > LOGICAL_H + 100) gameOver(); 
             this.draw();
         }
@@ -285,7 +285,6 @@
         const nextX = lastP ? lastP.x + blockSize : 0;
         const rand = Math.random();
         
-        // Dificultad basada en tiempo (score)
         if (rand < 0.14 && score > 15) {
             if (Math.random() < 0.75) {
                 let length = Math.floor(Math.random() * 6) + 6; 
@@ -329,12 +328,11 @@
         const pw = player.width - 16;
 
         platforms.forEach(p => {
-            // Detección de colisión vertical mejorada
-            // Comprobamos si el pie del jugador está tocando o atravesando la plataforma
+            // Colisión vertical precisa
             if (player.dy >= 0 && 
                 px + pw > p.x && 
                 px < p.x + blockSize && 
-                player.y + pHeight <= p.y + 10 && 
+                player.y + pHeight <= p.y + 15 && 
                 player.y + pHeight + (player.dy * dt) >= p.y) {
                 
                 player.y = p.y - pHeight; 
@@ -348,7 +346,11 @@
         items.forEach((it, i) => {
             if (Math.abs(player.x - it.x) < 40 && Math.abs(player.y - it.y) < 65) {
                 if (it.type === 'mushroom') {
-                    // Si ya es grande, simplemente renovamos el estado, pero evitamos que el cambio de altura lo empuje abajo
+                    // FIX CRÍTICO: Recalcular Y antes de crecer para evitar caer al vacío
+                    if (!player.isBig) {
+                        const heightDiff = 58 - 34;
+                        player.y -= heightDiff;
+                    }
                     player.isBig = true;
                     iconMushroom.style.display = 'flex';
                 } else if (it.type === 'star') {
@@ -395,7 +397,6 @@
         platforms.forEach((p, i) => {
             p.x -= gameSpeed * dt;
             const dX = p.x * scale, dY = p.y * scale, dW = (blockSize + 0.5) * scale;
-            // El alto de la tierra ahora llena hasta el final del canvas (innerHeight o canvas.height)
             const dH = canvas.height - dY;
 
             if (p.type === 'grass') {
@@ -461,7 +462,6 @@
         lastTime = time;
         frameCount += dt;
         
-        // Puntuación por tiempo
         score = Math.floor((Date.now() - startTime) / 1000);
         scoreEl.innerText = `Tiempo: ${score}s`;
 
