@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Animal Adventure World 🦖</title>
+    <title>Animal Jump Pro 🦖</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,6 +12,9 @@
             --grass: #4caf50;
             --accent: #f1c40f;
             --ui-bg: rgba(255, 255, 255, 0.2);
+            /* Safe areas para notch y barras de gestos */
+            --sat: env(safe-area-inset-top);
+            --sab: env(safe-area-inset-bottom);
         }
 
         * { 
@@ -34,7 +37,7 @@
 
         #app {
             width: 100%; 
-            height: 100%;
+            height: 100dvh; /* Dynamic Viewport Height para móviles */
             max-width: 500px;
             display: flex;
             flex-direction: column;
@@ -45,7 +48,8 @@
 
         #header {
             position: absolute;
-            top: 20px; left: 0; width: 100%;
+            top: calc(20px + var(--sat)); 
+            left: 0; width: 100%;
             padding: 0 20px; z-index: 10;
             display: flex; flex-direction: column;
             align-items: center; pointer-events: none;
@@ -53,7 +57,7 @@
 
         #title {
             font-family: 'Fredoka One', cursive;
-            color: white; font-size: 24px;
+            color: white; font-size: clamp(18px, 6vw, 24px);
             text-shadow: 0 3px 6px rgba(0,0,0,0.3);
             text-transform: uppercase;
         }
@@ -66,7 +70,7 @@
 
         #power-icons {
             position: absolute;
-            top: 20px; right: 20px;
+            top: calc(20px + var(--sat)); right: 20px;
             display: flex; flex-direction: column;
             gap: 10px; z-index: 20;
         }
@@ -84,7 +88,9 @@
         }
 
         #selector {
-            position: absolute; top: 90px; left: 50%;
+            position: absolute; 
+            top: calc(90px + var(--sat)); 
+            left: 50%;
             transform: translateX(-50%);
             display: flex; gap: 8px;
             background: var(--ui-bg); padding: 8px;
@@ -150,20 +156,37 @@
     const iconFeather = document.getElementById('icon-feather');
     const iconMushroom = document.getElementById('icon-mushroom');
     
+    // Altura lógica dinámica basada en el aspecto del dispositivo
     const LOGICAL_W = 400;
-    const LOGICAL_H = 600;
+    let LOGICAL_H = 600; 
+    let groundY = 540;
 
     function resize() {
         const rect = appContainer.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
+        
+        // Recalcular el alto lógico para que coincida con la proporción de la pantalla
+        LOGICAL_H = (canvas.height / canvas.width) * LOGICAL_W;
+        
+        // El suelo se ajusta dinámicamente al fondo (con margen para safe area)
+        const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0;
+        groundY = LOGICAL_H - (60 + (safeBottom / (canvas.width / LOGICAL_W)));
+        
+        if(!isGameOver && player) {
+            player.y = groundY - player.height;
+        }
     }
+    
     window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', () => setTimeout(resize, 200));
     resize();
 
     function getScale() { return canvas.width / LOGICAL_W; }
 
-    let score = 0, highScore = 0;
+    let score = 0, highScore = localStorage.getItem('animalHigh') || 0;
+    hiEl.innerText = `🏆 ${highScore}`;
+    
     let baseSpeed = 3.6;
     let gameSpeed = baseSpeed;
     let isGameOver = false;
@@ -171,12 +194,11 @@
     let lastTime = 0;
     let frameCount = 0;
     
-    const groundY = LOGICAL_H - 60;
     const blockSize = 40;
 
     const player = {
         x: 60,
-        y: groundY - 40,
+        y: 0, 
         width: 34,
         height: 34,
         dy: 0,
@@ -193,21 +215,17 @@
         draw() {
             const scale = getScale();
             ctx.save();
-            
-            // Tamaño visual basado en el estado
             const emojiSize = this.isBig ? 70 : 45;
             ctx.font = `${emojiSize * scale}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
             
             const drawX = (this.x + this.width / 2) * scale;
-            // Dibujamos usando la base actual del jugador (y + height)
             const drawY = (this.y + this.height) * scale;
 
             ctx.translate(drawX, drawY);
             ctx.scale(-1, 1); 
 
-            // Animación estrella
             if (this.isInvincible && this.invincibleTime > 2000) {
                 const hue = (Date.now() / 2) % 360;
                 ctx.shadowBlur = 20 * scale;
@@ -228,7 +246,6 @@
 
         update(dt) {
             let g = this.gravity;
-            
             if (this.isFlying) {
                 if (isPressing) this.dy = -6.5;
                 g = 0.25; 
@@ -318,14 +335,11 @@
 
     function checkCollisions(dt) {
         let onAnyPlatform = false;
-        // La altura del colisionador cambia al crecer para que el pie sea el punto de referencia
-        const currentHeight = player.isBig ? 60 : 34;
-        player.height = currentHeight; 
+        player.height = player.isBig ? 60 : 34; 
 
         platforms.forEach(p => {
             const px = player.x + 8;
             const pw = player.width - 16;
-            
             if (player.dy >= 0 && px + pw > p.x && px < p.x + blockSize && player.y + player.height <= p.y + 15 && player.y + player.height + (player.dy * dt) >= p.y) {
                 player.y = p.y - player.height; 
                 player.dy = 0; 
@@ -338,9 +352,7 @@
         items.forEach((it, i) => {
             if (Math.abs(player.x - it.x) < 40 && Math.abs(player.y - it.y) < 65) {
                 if (it.type === 'mushroom') {
-                    if (!player.isBig) {
-                        player.y -= 26; // Ajustar posición al instante para no quedar dentro del suelo
-                    }
+                    if (!player.isBig) player.y -= 26;
                     player.isBig = true;
                     iconMushroom.style.display = 'flex';
                 } else if (it.type === 'star') {
@@ -371,7 +383,7 @@
 
         obstacles.forEach(o => {
             const px = player.x + 10;
-            const py = player.y + (player.isBig ? 10 : 10);
+            const py = player.y + 10;
             if (px < o.x + 30 && px + 20 > o.x && py < o.y && py + 40 > o.y - 30) handleHit();
         });
 
@@ -385,7 +397,7 @@
         
         platforms.forEach((p, i) => {
             p.x -= gameSpeed * dt;
-            const dX = p.x * scale, dY = p.y * scale, dW = (blockSize + 0.5) * scale, dH = (LOGICAL_H - p.y) * scale;
+            const dX = p.x * scale, dY = p.y * scale, dW = (blockSize + 0.5) * scale, dH = (LOGICAL_H - p.y + 100) * scale;
 
             if (p.type === 'grass') {
                 ctx.fillStyle = '#795548'; ctx.fillRect(dX, dY, dW, dH);
@@ -427,7 +439,6 @@
 
         birds.forEach((b, i) => {
             b.x -= b.speed * dt;
-            if (!b.hasDropped && Math.abs(b.x - b.dropX) < 50) { ctx.font = `${20 * scale}px Arial`; ctx.fillText('❗', b.x * scale, (b.y - 20) * scale); }
             ctx.font = `${35 * scale}px Arial`; ctx.fillText(b.emoji, b.x * scale, b.y * scale);
             if (!b.hasDropped && b.x < b.dropX) { drops.push({ x: b.x, y: b.y, speedY: 5.5, landed: false }); b.hasDropped = true; }
             if (b.x < -100) birds.splice(i, 1);
@@ -446,7 +457,7 @@
 
     function animate(time = 0) {
         if (isGameOver) return;
-        const dt = (time - lastTime) / 16.666;
+        const dt = Math.min((time - lastTime) / 16.666, 3);
         lastTime = time;
         frameCount += dt;
         
@@ -464,7 +475,11 @@
     function gameOver() {
         if (isGameOver) return;
         isGameOver = true;
-        if (score > highScore) { highScore = score; hiEl.innerText = `🏆 ${highScore}`; }
+        if (score > highScore) { 
+            highScore = score; 
+            localStorage.setItem('animalHigh', highScore);
+            hiEl.innerText = `🏆 ${highScore}`; 
+        }
         ctx.fillStyle = 'rgba(0,0,0,0.85)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
@@ -479,6 +494,7 @@
     }
 
     function reset() {
+        resize();
         score = 0; isGameOver = false; isPressing = false; frameCount = 0;
         player.y = groundY - 100; player.dy = 0; player.isInvincible = false;
         player.isBig = false; player.isFlying = false;
