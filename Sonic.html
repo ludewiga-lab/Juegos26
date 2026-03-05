@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Blue Sphere: Mobile Edition</title>
+    <title>Blue Sphere: Platformer Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -27,7 +27,7 @@
         }
         canvas {
             display: block;
-            background: linear-gradient(to bottom, #1e1b4b, #020617);
+            background: linear-gradient(to bottom, #0f172a, #020617);
         }
         .ui-layer {
             position: absolute;
@@ -37,32 +37,41 @@
             pointer-events: none;
             z-index: 10;
         }
-        #overlay, #exit-modal {
+        #overlay {
             position: absolute;
             inset: 0;
-            background: rgba(2, 6, 23, 0.95);
+            background: rgba(2, 6, 23, 0.9);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 100;
         }
-        #exit-modal {
-            z-index: 200;
-            display: none;
-        }
         .btn-main {
             background: #2563eb;
             color: white;
             font-weight: 900;
-            padding: 24px 60px;
+            padding: 20px 50px;
             border-radius: 9999px;
-            font-size: 2.5rem;
-            border-bottom: 8px solid #1e40af;
+            font-size: 2rem;
+            border-bottom: 6px solid #1e40af;
             cursor: pointer;
             pointer-events: auto;
-            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
-            -webkit-appearance: none;
+            transition: transform 0.1s;
+        }
+        .btn-main:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+        }
+        .active-power-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -71,34 +80,28 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         
-        <!-- UI -->
         <div class="ui-layer">
-            <div class="text-5xl font-black italic text-yellow-400 drop-shadow-md" id="score">0</div>
-            <div class="text-xs opacity-60 font-bold uppercase tracking-widest">RECORD: <span id="highscore">0</span></div>
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🪙</span>
+                <div class="text-5xl font-black italic text-yellow-400 drop-shadow-md" id="score">0</div>
+            </div>
+            <div class="text-xs opacity-60 font-bold uppercase tracking-widest mt-1">RECORD: <span id="highscore">0</span></div>
+            
+            <!-- Indicadores de Salto -->
             <div class="mt-4 flex gap-2" id="jump-indicators">
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_8px_#3b82f6]"></div>
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_8px_#3b82f6]"></div>
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_8px_#3b82f6]"></div>
+                <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
+                <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
+                <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
             </div>
+
+            <!-- Badges de Poder Activo -->
+            <div id="active-powers" class="flex flex-col gap-2 mt-4"></div>
         </div>
 
-        <!-- Pantalla de Inicio -->
         <div id="overlay">
-            <h1 class="text-6xl font-black text-white mb-4 italic tracking-tighter text-center uppercase">Sonic <span class="text-blue-500">Sphere</span></h1>
-            <p class="text-slate-400 mb-12 text-xl">Toca la pantalla para saltar</p>
+            <h1 class="text-5xl font-black text-white mb-2 italic tracking-tighter text-center uppercase">Sonic <span class="text-blue-500">Sphere</span></h1>
+            <p class="text-slate-400 mb-8 text-lg text-center px-6">Salta sobre plataformas estilo Mario.<br>¡Cuidado con las puyas!</p>
             <button id="startBtn" class="btn-main">¡JUGAR!</button>
-        </div>
-
-        <!-- Modal Anti-Salida -->
-        <div id="exit-modal">
-            <div class="bg-slate-900 border-2 border-blue-500 p-8 rounded-[2rem] text-center max-w-[80%]">
-                <h2 class="text-3xl font-black text-white mb-2 italic">¿ESTÁS SEGURO?</h2>
-                <p class="text-slate-400 mb-8 text-lg">Si sales ahora perderás tu puntuación.</p>
-                <div class="flex flex-col gap-4">
-                    <button id="resumeBtn" class="bg-blue-600 text-white font-bold py-5 rounded-2xl text-2xl">VOLVER AL JUEGO</button>
-                    <button id="confirmExitBtn" class="text-slate-500 font-bold py-2">SÍ, SALIR</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -108,13 +111,13 @@
         const scoreEl = document.getElementById('score');
         const highscoreEl = document.getElementById('highscore');
         const overlay = document.getElementById('overlay');
-        const exitModal = document.getElementById('exit-modal');
         const startBtn = document.getElementById('startBtn');
         const jumpIndicators = document.getElementById('jump-indicators').children;
+        const activePowersContainer = document.getElementById('active-powers');
 
         let gameActive = false;
         let score = 0;
-        let highscore = localStorage.getItem('sonicSphereHighscore') || 0;
+        let highscore = localStorage.getItem('sonicSphereCoins') || 0;
         highscoreEl.innerText = highscore;
 
         function resize() {
@@ -124,45 +127,49 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // Configuración de Poderes
+        const POWER_TYPES = {
+            TURBO: { id: 'turbo', icon: '⚡', color: '#fbbf24', duration: 7000 },
+            SHIELD: { id: 'shield', icon: '🛡️', color: '#10b981', duration: 8000 },
+            MAGNET: { id: 'magnet', icon: '🧲', color: '#ec4899', duration: 10000 }
+        };
+
         const player = {
-            x: 120,
+            x: 150,
             y: 0,
-            radius: 22,
+            radius: 20,
             dy: 0,
             rotation: 0,
             jumpCount: 0,
             maxJumps: 3,
-            rampBoost: 0
+            powers: {}, // Objeto para guardar tiempos de poderes activos
+            baseJumpForce: -13
         };
 
         let platforms = [];
-        let ramps = [];
-        let obstacles = []; // Las "puyas"
+        let collectibles = []; 
+        let obstacles = []; 
         let particles = [];
-        const gravity = 0.6;
-        const jumpForce = -13;
-        let gameSpeed = 6; // Velocidad un poco más lenta para no ser tan difícil
+        
+        const gravity = 0.65;
+        let baseSpeed = 8; // Dificultad aumentada
 
-        // --- PREVENCIÓN DE SALIDA SAMSUNG S24 ---
-        window.history.pushState(null, null, window.location.href);
-        window.onpopstate = function() {
-            if (gameActive) {
-                gameActive = false;
-                exitModal.style.display = 'flex';
-                window.history.pushState(null, null, window.location.href);
+        function jump() {
+            if (!gameActive) return;
+            if (player.jumpCount < player.maxJumps) {
+                const boost = player.powers.turbo ? 1.2 : 1.0;
+                player.dy = player.baseJumpForce * boost;
+                player.jumpCount++;
+                updateJumpUI();
+                createParticles(player.x, player.y, player.powers.turbo ? '#fbbf24' : '#60a5fa', 12);
             }
-        };
+        }
 
-        document.getElementById('resumeBtn').onclick = () => {
-            exitModal.style.display = 'none';
-            gameActive = true;
-        };
-
-        document.getElementById('confirmExitBtn').onclick = () => {
-            window.location.reload();
-        };
-
-        // --- LÓGICA DE JUEGO ---
+        function updateJumpUI() {
+            for(let i=0; i<3; i++) {
+                jumpIndicators[i].style.opacity = i < (player.maxJumps - player.jumpCount) ? "1" : "0.2";
+            }
+        }
 
         function createParticles(x, y, color, count) {
             for(let i=0; i<count; i++) {
@@ -176,51 +183,46 @@
             }
         }
 
-        function jump() {
-            if (!gameActive) return;
-            if (player.jumpCount < player.maxJumps) {
-                player.dy = jumpForce;
-                player.jumpCount++;
-                updateJumpUI();
-                createParticles(player.x, player.y, '#60a5fa', 8);
-            }
-        }
-
-        function updateJumpUI() {
-            for(let i=0; i<3; i++) {
-                jumpIndicators[i].style.opacity = i < (player.maxJumps - player.jumpCount) ? "1" : "0.2";
-                jumpIndicators[i].style.transform = i < (player.maxJumps - player.jumpCount) ? "scale(1)" : "scale(0.8)";
-            }
-        }
-
         function spawn() {
-            const groundY = canvas.height * 0.8;
+            const groundLevel = canvas.height * 0.85;
             
-            // Generar plataformas si el camino se acaba
-            if (platforms.length === 0 || platforms[platforms.length-1].x < canvas.width + 200) {
-                const lastPlatform = platforms[platforms.length-1];
-                const startX = lastPlatform ? lastPlatform.x + lastPlatform.w : 0;
+            if (platforms.length === 0 || platforms[platforms.length-1].x < canvas.width + 300) {
+                const lastP = platforms[platforms.length-1];
+                const startX = lastP ? lastP.x + lastP.w : 0;
                 
-                // Huecos aleatorios pero no imposibles
-                const gap = lastPlatform ? (Math.random() < 0.2 ? 150 : 0) : 0;
-                const width = 800 + Math.random() * 600;
+                // Gap estilo Mario (huecos entre plataformas)
+                const gap = lastP ? (Math.random() < 0.5 ? 140 : 80) : 0;
+                const width = 400 + Math.random() * 800;
                 
-                const newPlatform = { x: startX + gap, y: groundY, w: width, h: 200 };
-                platforms.push(newPlatform);
+                // Variación de altura estilo Mario
+                let targetY = lastP ? lastP.y + (Math.random() * 160 - 80) : groundLevel;
+                // Mantener dentro de límites legibles
+                targetY = Math.max(canvas.height * 0.4, Math.min(targetY, groundLevel));
 
-                // Generar Rampa
-                if (Math.random() < 0.3) {
-                    ramps.push({ x: newPlatform.x + 300, y: groundY, w: 100, h: 60, passed: false });
-                }
+                const newP = { x: startX + gap, y: targetY, w: width, h: 400 };
+                platforms.push(newP);
 
-                // Generar Puyas (Obstáculos) sobre la plataforma
-                if (Math.random() < 0.4 && width > 500) {
-                    obstacles.push({ 
-                        x: newPlatform.x + 500, 
-                        y: groundY, 
-                        w: 50, 
-                        h: 50 
-                    });
+                // Spawneo de items y peligros sobre la plataforma
+                if (width > 200) {
+                    const step = width / 3;
+                    for (let i = 50; i < width - 50; i += step) {
+                        const rand = Math.random();
+                        const itemX = newP.x + i;
+                        const itemY = newP.y - 40;
+
+                        if (rand < 0.15) {
+                            // Poder aleatorio
+                            const pKeys = Object.keys(POWER_TYPES);
+                            const pType = POWER_TYPES[pKeys[Math.floor(Math.random() * pKeys.length)]];
+                            collectibles.push({ x: itemX, y: itemY - 40, type: 'power', pData: pType, radius: 22 });
+                        } else if (rand < 0.6) {
+                            // Monedas
+                            collectibles.push({ x: itemX, y: itemY - 20, type: 'coin', radius: 14 });
+                        } else if (rand < 0.8) {
+                            // Puya
+                            obstacles.push({ x: itemX, y: newP.y, w: 40, h: 40 });
+                        }
+                    }
                 }
             }
         }
@@ -231,92 +233,127 @@
             player.y = canvas.height / 2;
             player.dy = 0;
             player.jumpCount = 0;
-            player.rampBoost = 0;
+            player.powers = {};
             platforms = [];
-            ramps = [];
+            collectibles = [];
             obstacles = [];
             particles = [];
             gameActive = true;
             overlay.style.display = 'none';
+            activePowersContainer.innerHTML = '';
             
-            // Plataforma inicial garantizada
-            platforms.push({ x: 0, y: canvas.height * 0.8, w: canvas.width * 2, h: 200 });
+            // Primera plataforma segura
+            platforms.push({ x: 0, y: canvas.height * 0.75, w: 800, h: 400 });
             updateJumpUI();
         }
 
         function update() {
             if (!gameActive) return;
 
-            if (player.rampBoost > 0) player.rampBoost *= 0.98;
+            // Velocidad dinámica (Turbo afecta al desplazamiento)
+            const currentSpeed = baseSpeed * (player.powers.turbo ? 1.5 : 1);
+            
             player.dy += gravity;
             player.y += player.dy;
-            player.rotation += (gameSpeed + player.rampBoost) * 0.1;
+            player.rotation += currentSpeed * 0.12;
 
-            let currentMoveSpeed = (gameSpeed + player.rampBoost);
+            // Lógica de Poderes Activos
+            activePowersContainer.innerHTML = '';
+            for (let key in player.powers) {
+                player.powers[key] -= 16;
+                if (player.powers[key] <= 0) {
+                    delete player.powers[key];
+                } else {
+                    const p = POWER_TYPES[key.toUpperCase()];
+                    const badge = document.createElement('div');
+                    badge.className = 'active-power-badge';
+                    badge.style.color = p.color;
+                    badge.innerHTML = `<span>${p.icon}</span> <div class="w-16 h-1 bg-white/20"><div class="h-full" style="background:${p.color}; width:${(player.powers[key]/p.duration)*100}%"></div></div>`;
+                    activePowersContainer.appendChild(badge);
+                }
+            }
 
-            // Colisiones con Plataformas
-            let onAnyPlatform = false;
+            // Colisión Plataformas (Estilo Mario: Solo colisiona desde arriba)
+            let onGround = false;
             platforms.forEach(p => {
-                p.x -= currentMoveSpeed;
-                if (player.x > p.x && player.x < p.x + p.w && 
-                    player.y + player.radius > p.y && player.y + player.radius < p.y + 50 && 
-                    player.dy >= 0) {
+                p.x -= currentSpeed;
+                
+                if (player.dy >= 0 && 
+                    player.x + player.radius*0.7 > p.x && 
+                    player.x - player.radius*0.7 < p.x + p.w &&
+                    player.y + player.radius >= p.y && 
+                    player.y + player.radius <= p.y + player.dy + 10) {
+                    
                     player.y = p.y - player.radius;
                     player.dy = 0;
                     if (player.jumpCount > 0) {
                         player.jumpCount = 0;
                         updateJumpUI();
                     }
-                    onAnyPlatform = true;
+                    onGround = true;
                 }
             });
 
-            // Colisiones con Rampas
-            ramps.forEach(r => {
-                r.x -= currentMoveSpeed;
-                if (!r.passed && player.x + 10 > r.x && player.x - 10 < r.x + r.w && 
-                    player.y + player.radius > r.y - r.h && player.y < r.y) {
-                    player.dy = -18;
-                    player.rampBoost = 15;
-                    player.jumpCount = 1;
-                    updateJumpUI();
-                    r.passed = true;
-                    score += 50;
-                    scoreEl.innerText = score;
-                    createParticles(player.x, player.y, '#fbbf24', 20);
+            // Colisión Items
+            collectibles.forEach((c, idx) => {
+                c.x -= currentSpeed;
+                
+                // Efecto Imán
+                if (player.powers.magnet && c.type === 'coin') {
+                    const dx = player.x - c.x;
+                    const dy = player.y - c.y;
+                    c.x += dx * 0.15;
+                    c.y += dy * 0.15;
+                }
+
+                const dist = Math.hypot(player.x - c.x, player.y - c.y);
+                if (dist < player.radius + c.radius) {
+                    if (c.type === 'coin') {
+                        score++;
+                        scoreEl.innerText = score;
+                        createParticles(c.x, c.y, '#facc15', 6);
+                    } else {
+                        // Activar Superpoder
+                        player.powers[c.pData.id] = c.pData.duration;
+                        createParticles(c.x, c.y, c.pData.color, 20);
+                    }
+                    collectibles.splice(idx, 1);
                 }
             });
 
-            // Colisiones con Puyas (Obstáculos Rojos)
+            // Colisión Obstáculos
             obstacles.forEach(o => {
-                o.x -= currentMoveSpeed;
-                // Colisión simple por cercanía
+                o.x -= currentSpeed;
                 const distX = Math.abs(player.x - (o.x + o.w/2));
                 const distY = Math.abs(player.y - (o.y - o.h/2));
+                
                 if (distX < player.radius * 0.8 && distY < player.radius * 0.8) {
-                    gameOver();
+                    if (player.powers.shield) {
+                        delete player.powers.shield;
+                        createParticles(o.x, o.y, '#ffffff', 30);
+                        // Eliminar la puya para no chocar dos veces
+                        o.x = -1000;
+                    } else {
+                        gameOver();
+                    }
                 }
-            });
-
-            // Limpiar objetos fuera de pantalla
-            platforms = platforms.filter(p => p.x + p.w > -100);
-            ramps = ramps.filter(r => r.x + r.w > -100);
-            obstacles = obstacles.filter(o => o.x + o.w > -100);
-
-            particles.forEach((p, i) => {
-                p.x += p.vx - (currentMoveSpeed * 0.5);
-                p.y += p.vy;
-                p.life -= 0.02;
-                if (p.life <= 0) particles.splice(i, 1);
             });
 
             // Caída al vacío
-            if (player.y > canvas.height + 100) {
-                gameOver();
-            }
+            if (player.y > canvas.height + 50) gameOver();
 
-            score += 0.1;
-            scoreEl.innerText = Math.floor(score);
+            // Limpieza
+            platforms = platforms.filter(p => p.x + p.w > -100);
+            collectibles = collectibles.filter(c => c.x > -50);
+            obstacles = obstacles.filter(o => o.x > -50);
+
+            particles.forEach((p, i) => {
+                p.x += p.vx - (currentSpeed * 0.4);
+                p.y += p.vy;
+                p.life -= 0.025;
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+
             spawn();
         }
 
@@ -324,8 +361,8 @@
             gameActive = false;
             overlay.style.display = 'flex';
             if (score > highscore) {
-                highscore = Math.floor(score);
-                localStorage.setItem('sonicSphereHighscore', highscore);
+                highscore = score;
+                localStorage.setItem('sonicSphereCoins', highscore);
                 highscoreEl.innerText = highscore;
             }
         }
@@ -333,24 +370,33 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Dibujar Plataformas
-            ctx.fillStyle = '#1e293b';
+            // Dibujar Plataformas (Diseño de bloques)
             platforms.forEach(p => {
+                ctx.fillStyle = '#1e293b';
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
-                ctx.strokeRect(p.x, p.y, p.w, 2);
+                // Borde neón
+                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
+                ctx.strokeRect(p.x, p.y, p.w, 5);
+                // Detalle decorativo interno
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(p.x + 10, p.y + 15, p.w - 20, 2);
             });
 
-            // Dibujar Rampas
-            ramps.forEach(r => {
-                ctx.fillStyle = '#2563eb';
-                ctx.beginPath();
-                ctx.moveTo(r.x, r.y);
-                ctx.lineTo(r.x + r.w, r.y);
-                ctx.lineTo(r.x + r.w, r.y - r.h);
-                ctx.closePath();
-                ctx.fill();
-                ctx.strokeStyle = '#93c5fd'; ctx.stroke();
+            // Dibujar Monedas y Poderes
+            collectibles.forEach(c => {
+                if (c.type === 'coin') {
+                    ctx.fillStyle = '#facc15';
+                    ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#eab308'; ctx.lineWidth = 2; ctx.stroke();
+                } else {
+                    // Icono de poder en el canvas
+                    ctx.fillStyle = c.pData.color;
+                    ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'white';
+                    ctx.font = '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(c.pData.icon, c.x, c.y + 7);
+                }
             });
 
             // Dibujar Puyas (Triángulos rojos)
@@ -358,12 +404,10 @@
             obstacles.forEach(o => {
                 ctx.beginPath();
                 ctx.moveTo(o.x, o.y);
-                ctx.lineTo(o.x + o.w / 2, o.y - o.h);
+                ctx.lineTo(o.x + o.w/2, o.y - o.h);
                 ctx.lineTo(o.x + o.w, o.y);
-                ctx.closePath();
                 ctx.fill();
-                // Brillo en la puya
-                ctx.strokeStyle = '#fee2e2'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke();
             });
 
             // Dibujar Partículas
@@ -378,13 +422,22 @@
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.rotation);
+            
+            // Efecto visual de Escudo
+            if (player.powers.shield) {
+                ctx.beginPath();
+                ctx.arc(0, 0, player.radius + 10, 0, Math.PI*2);
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
             const g = ctx.createRadialGradient(-5, -5, 2, 0, 0, player.radius);
-            g.addColorStop(0, '#60a5fa'); g.addColorStop(1, '#1d4ed8');
+            g.addColorStop(0, player.powers.turbo ? '#fde047' : '#60a5fa'); 
+            g.addColorStop(1, player.powers.turbo ? '#b45309' : '#1d4ed8');
+            
             ctx.fillStyle = g;
             ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
-            // Brillo de la esfera
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(0, 0, player.radius - 5, 0, Math.PI * 0.5); ctx.stroke();
             ctx.restore();
 
             requestAnimationFrame(() => {
@@ -393,20 +446,16 @@
             });
         }
 
-        // CONTROL TÁCTIL UNIVERSAL
+        // CONTROL TÁCTIL
         window.addEventListener('touchstart', (e) => {
-            if (e.target === startBtn || e.target.closest('#exit-modal')) return; 
+            if (e.target === startBtn) return;
             if (gameActive) {
                 e.preventDefault();
                 jump();
             }
         }, { passive: false });
 
-        startBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            resetGame();
-        });
-
+        startBtn.addEventListener('click', resetGame);
         draw();
     </script>
 </body>
