@@ -8,79 +8,61 @@
     <style>
         body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
             background: #020617;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             user-select: none;
             touch-action: none;
             -webkit-tap-highlight-color: transparent;
+            width: 100vw;
+            height: 100vh;
         }
         #game-container {
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%;
+            height: 100%;
             background: #020617;
+            overflow: hidden;
         }
         canvas {
-            background: linear-gradient(to bottom, #1e1b4b, #020617);
             display: block;
+            background: linear-gradient(to bottom, #1e1b4b, #020617);
         }
         .ui-layer {
             position: absolute;
-            top: env(safe-area-inset-top, 20px);
-            left: env(safe-area-inset-left, 20px);
+            top: 20px;
+            left: 20px;
             color: white;
             pointer-events: none;
-        }
-        .power-up-indicator {
-            position: absolute;
-            top: env(safe-area-inset-top, 20px);
-            right: env(safe-area-inset-right, 20px);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-end;
-        }
-        .badge {
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 10px;
-            display: none;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            z-index: 10;
         }
         #overlay, #exit-modal {
             position: absolute;
             inset: 0;
-            background: rgba(2, 6, 23, 0.9);
+            background: rgba(2, 6, 23, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 200;
+            z-index: 100;
         }
         #exit-modal {
-            z-index: 300;
+            z-index: 200;
             display: none;
         }
         .btn-main {
             background: #2563eb;
             color: white;
             font-weight: 900;
-            padding: 20px 50px;
+            padding: 24px 60px;
             border-radius: 9999px;
-            font-size: 2rem;
-            border-bottom: 6px solid #1e40af;
-            transition: transform 0.1s;
-        }
-        .btn-main:active {
-            transform: scale(0.95);
-            border-bottom-width: 2px;
-            margin-top: 4px;
+            font-size: 2.5rem;
+            border-bottom: 8px solid #1e40af;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+            -webkit-appearance: none;
         }
     </style>
 </head>
@@ -89,44 +71,32 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         
-        <!-- UI del Juego -->
+        <!-- UI -->
         <div class="ui-layer">
-            <div class="text-4xl font-black italic text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                <span id="score">0</span>
-            </div>
+            <div class="text-5xl font-black italic text-yellow-400 drop-shadow-md" id="score">0</div>
             <div class="text-xs opacity-60 font-bold uppercase tracking-widest">RECORD: <span id="highscore">0</span></div>
             <div class="mt-4 flex gap-2" id="jump-indicators">
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_10px_#3b82f6]"></div>
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_10px_#3b82f6]"></div>
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_10px_#3b82f6]"></div>
+                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white"></div>
+                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white"></div>
+                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white"></div>
             </div>
         </div>
 
-        <!-- Indicadores de Poder -->
-        <div class="power-up-indicator">
-            <div id="badge-shield" class="badge bg-blue-600 border border-blue-400">ESCUDO</div>
-            <div id="badge-magnet" class="badge bg-purple-600 border border-purple-400">IMÁN</div>
-            <div id="badge-turbo" class="badge bg-red-600 border border-red-400 animate-pulse">TURBO</div>
-        </div>
-
-        <!-- Menú de Inicio -->
+        <!-- Pantalla de Inicio -->
         <div id="overlay">
-            <div class="text-center px-6">
-                <h1 class="text-7xl font-black text-white mb-2 italic tracking-tighter">SONIC <span class="text-blue-500">SPHERE</span></h1>
-                <p class="text-slate-400 mb-10 text-xl font-medium">Toca para saltar • Usa las rampas azules</p>
-                <button id="startBtn" class="btn-main mb-6">¡JUGAR!</button>
-                <p class="text-slate-500 text-sm">Optimizado para Samsung S24</p>
-            </div>
+            <h1 class="text-6xl font-black text-white mb-4 italic tracking-tighter text-center uppercase">Sonic <span class="text-blue-500">Sphere</span></h1>
+            <p class="text-slate-400 mb-12 text-xl">Toca cualquier parte para saltar</p>
+            <button id="startBtn" class="btn-main">¡JUGAR!</button>
         </div>
 
-        <!-- Modal de Confirmación de Salida (Anti-Missclick) -->
+        <!-- Modal Anti-Salida -->
         <div id="exit-modal">
             <div class="bg-slate-900 border-2 border-blue-500 p-8 rounded-[2rem] text-center max-w-[80%]">
-                <h2 class="text-3xl font-black text-white mb-2 italic">¿YA TE VAS?</h2>
-                <p class="text-slate-400 mb-8">Tu progreso actual se perderá si sales ahora.</p>
+                <h2 class="text-3xl font-black text-white mb-2 italic">¿ESTÁS SEGURO?</h2>
+                <p class="text-slate-400 mb-8 text-lg">Si sales ahora perderás tu puntuación.</p>
                 <div class="flex flex-col gap-4">
-                    <button id="resumeBtn" class="bg-blue-600 text-white font-bold py-4 rounded-2xl text-xl">CONTINUAR JUGANDO</button>
-                    <button id="confirmExitBtn" class="text-slate-500 font-bold py-2">SÍ, QUIERO SALIR</button>
+                    <button id="resumeBtn" class="bg-blue-600 text-white font-bold py-5 rounded-2xl text-2xl">VOLVER AL JUEGO</button>
+                    <button id="confirmExitBtn" class="text-slate-500 font-bold py-2">SÍ, SALIR</button>
                 </div>
             </div>
         </div>
@@ -140,372 +110,212 @@
         const overlay = document.getElementById('overlay');
         const exitModal = document.getElementById('exit-modal');
         const startBtn = document.getElementById('startBtn');
-        const resumeBtn = document.getElementById('resumeBtn');
-        const confirmExitBtn = document.getElementById('confirmExitBtn');
         const jumpIndicators = document.getElementById('jump-indicators').children;
-
-        // Configuración de pantalla para móvil
-        function resize() {
-            const ratio = window.devicePixelRatio || 1;
-            canvas.width = window.innerWidth * ratio;
-            canvas.height = window.innerHeight * ratio;
-            canvas.style.width = window.innerWidth + 'px';
-            canvas.style.height = window.innerHeight + 'px';
-            ctx.scale(ratio, ratio);
-        }
-        window.addEventListener('resize', resize);
-        resize();
 
         let gameActive = false;
         let score = 0;
         let highscore = localStorage.getItem('sonicSphereHighscore') || 0;
         highscoreEl.innerText = highscore;
 
-        let gameSpeed = 6;
-        const gravity = 0.5;
-        const jumpForce = -12; // Un poco más fuerte para móvil
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
         const player = {
-            x: window.innerWidth * 0.2,
-            y: window.innerHeight * 0.7,
+            x: 100,
+            y: 0,
             radius: 22,
             dy: 0,
             rotation: 0,
             jumpCount: 0,
             maxJumps: 3,
-            shield: false,
-            magnet: false,
-            turbo: false,
             rampBoost: 0
         };
 
-        // Prevención de salida involuntaria (Samsung S24 / Android)
-        // Usamos el API de History para "atrapar" el botón atrás
+        let platforms = [];
+        let ramps = [];
+        let particles = [];
+        const gravity = 0.6;
+        const jumpForce = -13;
+        let gameSpeed = 7;
+
+        // --- PREVENCIÓN DE SALIDA SAMSUNG S24 ---
         window.history.pushState(null, null, window.location.href);
         window.onpopstate = function() {
             if (gameActive) {
-                gameActive = false; // Pausar
+                gameActive = false;
                 exitModal.style.display = 'flex';
-                window.history.pushState(null, null, window.location.href);
-            } else if (exitModal.style.display === 'flex') {
-                // Si ya está el modal abierto y tocan atrás de nuevo
                 window.history.pushState(null, null, window.location.href);
             }
         };
 
-        resumeBtn.onclick = () => {
+        document.getElementById('resumeBtn').onclick = () => {
             exitModal.style.display = 'none';
             gameActive = true;
         };
 
-        confirmExitBtn.onclick = () => {
-            window.location.reload(); // O redirigir a donde quieras
+        document.getElementById('confirmExitBtn').onclick = () => {
+            window.location.reload();
         };
 
-        let platforms = [];
-        let obstacles = [];
-        let coins = [];
-        let powerUps = [];
-        let ramps = [];
-        let particles = [];
-
-        class Platform {
-            constructor(x, y, w, isGround = false) {
-                this.x = x;
-                this.y = y;
-                this.w = w;
-                this.h = 60;
-                this.isGround = isGround;
-            }
-            update() { this.x -= (gameSpeed + player.rampBoost); }
-            draw() {
-                ctx.fillStyle = this.isGround ? '#0f172a' : '#1e293b';
-                ctx.fillRect(this.x, this.y, this.w, this.h);
-                ctx.strokeStyle = '#3b82f6';
-                ctx.lineWidth = 4;
-                ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x + this.w, this.y); ctx.stroke();
-            }
-        }
-
-        class Ramp {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.w = 90;
-                this.h = 55;
-                this.passed = false;
-            }
-            update() { this.x -= (gameSpeed + player.rampBoost); }
-            draw() {
-                const grad = ctx.createLinearGradient(this.x, this.y, this.x + this.w, this.y - this.h);
-                grad.addColorStop(0, '#1d4ed8'); grad.addColorStop(1, '#60a5fa');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.moveTo(this.x, this.y);
-                ctx.lineTo(this.x + this.w, this.y);
-                ctx.lineTo(this.x + this.w, this.y - this.h);
-                ctx.closePath();
-                ctx.fill();
-                ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 4;
-                ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x + this.w, this.y - this.h); ctx.stroke();
-            }
-        }
-
-        function spawn() {
-            if (!gameActive) return;
-            const groundY = window.innerHeight * 0.8;
-
-            if (platforms.length === 0 || platforms[platforms.length-1].x < window.innerWidth + 400) {
-                const lastPlatform = platforms[platforms.length-1];
-                const lastX = lastPlatform ? lastPlatform.x + lastPlatform.w : 0;
-                
-                const gap = Math.random() < 0.2 ? 150 : 0;
-                const width = 1000 + Math.random() * 500;
-                
-                const newP = new Platform(lastX + gap, groundY, width, true);
-                platforms.push(newP);
-
-                if (Math.random() < 0.45 && width > 400) {
-                    ramps.push(new Ramp(newP.x + 300, groundY));
-                }
-                if (Math.random() < 0.5) {
-                    platforms.push(new Platform(lastX + gap + 300, groundY - 180, 400));
-                }
-            }
-
-            if (Math.random() < 0.02) {
-                const p = platforms.find(p => p.x > window.innerWidth);
-                if (p) obstacles.push({x: window.innerWidth + 100, y: p.y - 45, w: 45, h: 45});
-            }
-
-            if (Math.random() < 0.08) coins.push({x: window.innerWidth + 100, y: groundY - 100 - Math.random() * 300, r: 10});
-            if (Math.random() < 0.005) {
-                const types = ['shield', 'magnet', 'turbo'];
-                powerUps.push({x: window.innerWidth + 100, y: groundY - 250, r: 20, type: types[Math.floor(Math.random()*3)]});
-            }
-        }
-
-        function jump(e) {
-            if (e) e.preventDefault();
-            if (!gameActive) return;
-            if (player.jumpCount < player.maxJumps) {
-                player.dy = jumpForce;
-                player.jumpCount++;
-                updateJumpUI();
-                createParticles(player.x, player.y, '#60a5fa', 12);
-            }
-        }
-
-        function updateJumpUI() {
-            for(let i=0; i<3; i++) {
-                jumpIndicators[i].style.opacity = i < (player.maxJumps - player.jumpCount) ? "1" : "0.1";
-                jumpIndicators[i].style.transform = i < (player.maxJumps - player.jumpCount) ? "scale(1.1)" : "scale(0.8)";
-            }
-        }
+        // --- LÓGICA DE JUEGO ---
 
         function createParticles(x, y, color, count) {
             for(let i=0; i<count; i++) {
                 particles.push({
                     x, y,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
                     life: 1.0,
                     color
                 });
             }
         }
 
-        function resetGame() {
-            // Activar pantalla completa en móviles para mejor experiencia
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
+        function jump() {
+            if (!gameActive) return;
+            if (player.jumpCount < player.maxJumps) {
+                player.dy = jumpForce;
+                player.jumpCount++;
+                for(let i=0; i<3; i++) {
+                    jumpIndicators[i].style.opacity = i < (player.maxJumps - player.jumpCount) ? "1" : "0.2";
+                }
+                createParticles(player.x, player.y, '#60a5fa', 8);
             }
-            
-            score = 0;
-            gameSpeed = 6;
-            player.y = window.innerHeight * 0.5;
-            player.dy = 0;
-            player.jumpCount = 0;
-            player.shield = false;
-            player.magnet = false;
-            player.turbo = false;
-            player.rampBoost = 0;
-            platforms = [new Platform(0, window.innerHeight * 0.8, 2000, true)];
-            obstacles = [];
-            coins = [];
-            powerUps = [];
-            ramps = [];
-            particles = [];
-            updateJumpUI();
-            scoreEl.innerText = "0";
-            document.querySelectorAll('.badge').forEach(b => b.style.display = 'none');
-            gameActive = true;
-            overlay.style.display = 'none';
         }
 
-        function gameOver() {
-            gameActive = false;
-            overlay.style.display = 'flex';
-            if (score > highscore) {
-                highscore = score;
-                localStorage.setItem('sonicSphereHighscore', highscore);
-                highscoreEl.innerText = highscore;
+        function spawn() {
+            const groundY = canvas.height * 0.8;
+            if (platforms.length === 0 || platforms[platforms.length-1].x < canvas.width + 500) {
+                const lastX = platforms.length > 0 ? platforms[platforms.length-1].x + platforms[platforms.length-1].w : 0;
+                const gap = platforms.length === 0 ? 0 : (Math.random() < 0.3 ? 160 : 0);
+                const w = 1200 + Math.random() * 800;
+                
+                platforms.push({ x: lastX + gap, y: groundY, w: w, h: 100 });
+                
+                if (platforms.length > 1 && Math.random() < 0.5) {
+                    ramps.push({ x: lastX + gap + 400, y: groundY, w: 100, h: 60, passed: false });
+                }
             }
+        }
+
+        function resetGame() {
+            // Se elimina requestFullscreen para evitar el error de "Permissions Policy"
+            score = 0;
+            scoreEl.innerText = "0";
+            player.y = canvas.height / 2;
+            player.dy = 0;
+            player.jumpCount = 0;
+            player.rampBoost = 0;
+            platforms = [];
+            ramps = [];
+            particles = [];
+            gameActive = true;
+            overlay.style.display = 'none';
+            spawn();
         }
 
         function update() {
             if (!gameActive) return;
 
-            if (player.rampBoost > 0) player.rampBoost *= 0.97;
-
+            if (player.rampBoost > 0) player.rampBoost *= 0.98;
             player.dy += gravity;
             player.y += player.dy;
-            player.rotation += ((gameSpeed + player.rampBoost) * 0.1);
+            player.rotation += (gameSpeed + player.rampBoost) * 0.1;
 
+            let onGround = false;
             platforms.forEach(p => {
-                p.update();
-                if (player.x + 10 > p.x && player.x - 10 < p.x + p.w &&
-                    player.y + player.radius > p.y && player.y + player.radius < p.y + 40 &&
+                p.x -= (gameSpeed + player.rampBoost);
+                if (player.x > p.x && player.x < p.x + p.w && 
+                    player.y + player.radius > p.y && player.y + player.radius < p.y + 50 && 
                     player.dy >= 0) {
                     player.y = p.y - player.radius;
                     player.dy = 0;
                     player.jumpCount = 0;
-                    updateJumpUI();
+                    onGround = true;
                 }
             });
+
+            if (onGround) {
+                for(let i=0; i<3; i++) jumpIndicators[i].style.opacity = "1";
+            }
 
             ramps.forEach(r => {
-                r.update();
-                if (!r.passed && player.x + 10 > r.x && player.x - 10 < r.x + r.w &&
+                r.x -= (gameSpeed + player.rampBoost);
+                if (!r.passed && player.x > r.x && player.x < r.x + r.w && 
                     player.y + player.radius > r.y - r.h && player.y < r.y) {
-                    player.dy = -16;
-                    player.rampBoost = 14;
+                    player.dy = -18;
+                    player.rampBoost = 15;
                     player.jumpCount = 1;
                     r.passed = true;
-                    score += 50;
+                    score += 100;
                     scoreEl.innerText = score;
-                    createParticles(player.x, player.y, '#facc15', 25);
+                    createParticles(player.x, player.y, '#fbbf24', 20);
                 }
             });
 
-            if (player.y > window.innerHeight + 100) gameOver();
-
-            obstacles.forEach((o, i) => {
-                o.x -= (gameSpeed + player.rampBoost);
-                const hb = 12;
-                if (!player.turbo &&
-                    player.x + player.radius - hb > o.x && 
-                    player.x - player.radius + hb < o.x + o.w &&
-                    player.y + player.radius - hb > o.y &&
-                    player.y - player.radius + hb < o.y + o.h) {
-                    if (player.shield) {
-                        player.shield = false;
-                        document.getElementById('badge-shield').style.display = 'none';
-                        obstacles.splice(i, 1);
-                        createParticles(player.x, player.y, '#3b82f6', 20);
-                    } else {
-                        gameOver();
-                    }
-                }
-            });
-
-            coins.forEach((c, i) => {
-                c.x -= (gameSpeed + player.rampBoost);
-                if (player.magnet && !player.turbo) {
-                    c.x += (player.x - c.x) * 0.2;
-                    c.y += (player.y - c.y) * 0.2;
-                }
-                const dist = Math.hypot(player.x - c.x, player.y - c.y);
-                if (dist < player.radius + c.r) {
-                    score += 10;
-                    scoreEl.innerText = score;
-                    coins.splice(i, 1);
-                    createParticles(c.x, c.y, '#facc15', 6);
-                }
-            });
-
-            powerUps.forEach((p, i) => {
-                p.x -= (gameSpeed + player.rampBoost);
-                if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.r) {
-                    activatePowerUp(p.type);
-                    powerUps.splice(i, 1);
-                }
-            });
+            platforms = platforms.filter(p => p.x + p.w > -100);
+            ramps = ramps.filter(r => r.x + r.w > -100);
 
             particles.forEach((p, i) => {
-                p.x += p.vx - (gameActive ? (gameSpeed + player.rampBoost) * 0.5 : 0);
+                p.x += p.vx - (gameSpeed * 0.5);
                 p.y += p.vy;
                 p.life -= 0.02;
                 if (p.life <= 0) particles.splice(i, 1);
             });
 
-            gameSpeed = player.turbo ? 25 : 7 + (score / 4000);
+            if (player.y > canvas.height + 100) {
+                gameActive = false;
+                overlay.style.display = 'flex';
+                if (score > highscore) {
+                    highscore = score;
+                    localStorage.setItem('sonicSphereHighscore', highscore);
+                    highscoreEl.innerText = highscore;
+                }
+            }
+
             spawn();
         }
 
-        function activatePowerUp(type) {
-            player[type] = true;
-            document.getElementById(`badge-${type}`).style.display = 'block';
-            createParticles(player.x, player.y, '#fff', 25);
-            setTimeout(() => {
-                player[type] = false;
-                document.getElementById(`badge-${type}`).style.display = 'none';
-            }, type === 'turbo' ? 4000 : 10000);
-        }
-
         function draw() {
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ramps.forEach(r => r.draw());
-            platforms.forEach(p => p.draw());
-            
-            obstacles.forEach(o => {
-                ctx.fillStyle = '#ef4444';
+            ctx.fillStyle = '#1e293b';
+            platforms.forEach(p => {
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
+                ctx.strokeRect(p.x, p.y, p.w, 1);
+            });
+
+            ramps.forEach(r => {
+                ctx.fillStyle = '#2563eb';
                 ctx.beginPath();
-                ctx.moveTo(o.x, o.y + o.h);
-                ctx.lineTo(o.x + o.w/2, o.y);
-                ctx.lineTo(o.x + o.w, o.y + o.h);
+                ctx.moveTo(r.x, r.y);
+                ctx.lineTo(r.x + r.w, r.y);
+                ctx.lineTo(r.x + r.w, r.y - r.h);
+                ctx.closePath();
                 ctx.fill();
-            });
-
-            coins.forEach(c => {
-                ctx.fillStyle = '#facc15';
-                ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
-            });
-
-            powerUps.forEach(p => {
-                ctx.fillStyle = p.type === 'shield' ? '#3b82f6' : (p.type === 'magnet' ? '#a855f7' : '#ef4444');
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = 'white'; ctx.font='bold 16px Arial'; ctx.textAlign='center'; ctx.fillText(p.type[0].toUpperCase(), p.x, p.y+6);
+                ctx.strokeStyle = '#93c5fd'; ctx.stroke();
             });
 
             particles.forEach(p => {
-                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
                 ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
             });
-            ctx.globalAlpha = 1.0;
+            ctx.globalAlpha = 1;
 
-            // Player
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.rotation);
-            const grad = ctx.createRadialGradient(-6, -6, 2, 0, 0, player.radius);
-            grad.addColorStop(0, '#93c5fd'); grad.addColorStop(1, '#1d4ed8');
-            ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.arc(0, 0, player.radius-6, 0, Math.PI*0.4); ctx.stroke();
+            const g = ctx.createRadialGradient(-5, -5, 2, 0, 0, player.radius);
+            g.addColorStop(0, '#60a5fa'); g.addColorStop(1, '#1d4ed8');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
             ctx.restore();
-
-            if (player.shield) {
-                ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 4; ctx.beginPath();
-                ctx.arc(player.x, player.y, player.radius+12, 0, Math.PI*2); ctx.stroke();
-            }
-            if (player.turbo || player.rampBoost > 5) {
-                ctx.strokeStyle = player.turbo ? '#ef4444' : '#60a5fa'; ctx.lineWidth = 6;
-                ctx.beginPath(); ctx.arc(player.x, player.y, player.radius+8, 0, Math.PI*2); ctx.stroke();
-            }
 
             requestAnimationFrame(() => {
                 update();
@@ -513,10 +323,24 @@
             });
         }
 
-        // Eventos táctiles (Jump everywhere)
-        window.addEventListener('touchstart', jump, {passive: false});
-        startBtn.addEventListener('click', resetGame);
+        // SALTO EN CUALQUIER PARTE DE LA VENTANA
+        window.addEventListener('touchstart', (e) => {
+            // Ignorar el toque si es sobre el botón de inicio para evitar conflictos
+            if (e.target === startBtn) return; 
+            
+            if (gameActive) {
+                e.preventDefault();
+                jump();
+            }
+        }, { passive: false });
 
+        // Inicio de juego robusto
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetGame();
+        });
+
+        // Loop de dibujo principal
         draw();
     </script>
 </body>
