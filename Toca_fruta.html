@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Emoji Slice Duel</title>
+    <style>
+        :root {
+            --p1-color: #ff4757;
+            --p2-color: #2e86de;
+            --bg-color: #2f3542;
+            --fail-color: #ff3e3e;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #ui-header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .turn-card {
+            display: inline-block;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 10px;
+        }
+
+        .p1-active { background-color: var(--p1-color); border: 4px solid #fff; }
+        .p2-active { background-color: var(--p2-color); border: 4px solid #fff; }
+
+        #game-container {
+            position: relative;
+            width: 95vw;
+            max-width: 500px;
+            height: 400px;
+            background: #3e4451;
+            border-radius: 20px;
+            border: 5px solid #57606f;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 15px;
+        }
+
+        #status-msg {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            height: 1.5rem;
+            color: #ced4da;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .modal h2 { font-size: 3rem; margin-bottom: 10px; }
+        .modal p { font-size: 1.5rem; margin-bottom: 30px; padding: 0 20px; }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #27ae60;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-header">
+        <div id="turn-display" class="turn-card p1-active">Jugador 1</div>
+        <div id="status-msg">¡Toca para cortar el emoji!</div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="gameOverModal" class="modal">
+        <h2 id="winnerTitle">¡GANA P2!</h2>
+        <p id="loseReason">¡P1 cortó el aire!</p>
+        <button onclick="resetGame()">REINTENTAR</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const turnDisplay = document.getElementById('turn-display');
+        const statusMsg = document.getElementById('status-msg');
+        const modal = document.getElementById('gameOverModal');
+        const winnerTitle = document.getElementById('winnerTitle');
+        const loseReason = document.getElementById('loseReason');
+
+        // Configuración
+        let width, height;
+        let emojiSize, barX, barSpeed, barDirection;
+        let currentPlayer = 1;
+        let isGameOver = false;
+        let failPositionX = null;
+        
+        const emojis = ["🍕", "🍉", "🍔", "🍎", "🥑", "🍩", "🍪", "🍍", "🌮"];
+        let currentEmoji = emojis[0];
+
+        function setupCanvas() {
+            const container = document.getElementById('game-container');
+            width = canvas.width = container.clientWidth;
+            height = canvas.height = container.clientHeight;
+            resetParams();
+        }
+
+        function resetParams() {
+            emojiSize = width * 0.45;
+            barX = 10;
+            barSpeed = 4;
+            barDirection = 1;
+            currentPlayer = 1;
+            isGameOver = false;
+            failPositionX = null;
+            currentEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+            updateUI();
+        }
+
+        function updateUI() {
+            turnDisplay.textContent = `Jugador ${currentPlayer}`;
+            turnDisplay.className = `turn-card ${currentPlayer === 1 ? 'p1-active' : 'p2-active'}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Dibujar zona de éxito (Límites invisibles o guía muy tenue)
+            const leftEdge = (width / 2) - (emojiSize / 2.2);
+            const rightEdge = (width / 2) + (emojiSize / 2.2);
+
+            // Dibujar emoji
+            ctx.font = `${emojiSize}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(currentEmoji, width / 2, height / 2);
+
+            // Si perdió, dibujar marca de error
+            if (isGameOver && failPositionX !== null) {
+                // Dibujar línea roja punteada del error
+                ctx.strokeStyle = "#ff4757";
+                ctx.lineWidth = 3;
+                ctx.setLineDash([10, 5]);
+                ctx.beginPath();
+                ctx.moveTo(failPositionX + 5, 0);
+                ctx.lineTo(failPositionX + 5, height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Resaltar la barra en rojo en el punto exacto del fallo
+                ctx.fillStyle = "#ff4757";
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = "#ff4757";
+                ctx.fillRect(failPositionX, 0, 10, height);
+            } else {
+                // Dibujar barra cortadora normal
+                ctx.fillStyle = "#f1c40f";
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = "rgba(241, 196, 15, 0.5)";
+                ctx.fillRect(barX, 0, 10, height);
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function update() {
+            if (isGameOver) return;
+
+            barX += barSpeed * barDirection;
+
+            // Rebote
+            if (barX + 10 > width || barX < 0) {
+                barDirection *= -1;
+            }
+        }
+
+        function handleSlice(e) {
+            if (isGameOver) return;
+            if (e) e.preventDefault();
+
+            const leftEdge = (width / 2) - (emojiSize / 2.2);
+            const rightEdge = (width / 2) + (emojiSize / 2.2);
+
+            // Verificamos si la barra está dentro del rango del emoji
+            if (barX >= leftEdge && barX <= rightEdge) {
+                // ÉXITO
+                emojiSize *= 0.88; // Se reduce un 12%
+                barSpeed += 1.4;    // Aumenta velocidad
+                currentEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                updateUI();
+                statusMsg.textContent = "¡Corte limpio!";
+                
+                // Feedback visual de acierto
+                canvas.style.backgroundColor = "#4b5563";
+                setTimeout(() => canvas.style.backgroundColor = "transparent", 100);
+            } else {
+                // FALLO
+                failPositionX = barX; // Congelar barra donde falló
+                endGame();
+            }
+        }
+
+        function endGame() {
+            isGameOver = true;
+            const winner = currentPlayer === 1 ? 2 : 1;
+            winnerTitle.textContent = `¡GANA JUGADOR ${winner}!`;
+            winnerTitle.style.color = winner === 1 ? 'var(--p1-color)' : 'var(--p2-color)';
+            loseReason.innerHTML = `El Jugador ${currentPlayer} cortó el aire.<br><small>(La barra estaba fuera del emoji)</small>`;
+            
+            // Retraso para que vean el fallo antes del modal
+            setTimeout(() => {
+                modal.style.display = "flex";
+            }, 800);
+        }
+
+        function resetGame() {
+            modal.style.display = "none";
+            resetParams();
+            statusMsg.textContent = "¡Toca para cortar el emoji!";
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Eventos
+        window.addEventListener('resize', setupCanvas);
+        canvas.addEventListener('mousedown', handleSlice);
+        canvas.addEventListener('touchstart', handleSlice);
+
+        // Inicio
+        setupCanvas();
+        gameLoop();
+    </script>
+</body>
+</html>
