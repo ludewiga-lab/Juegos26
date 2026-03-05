@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Plinko Arcade Real Style</title>
+    <style>
+        :root {
+            --plinko-blue: #1c354e;
+            --plinko-yellow: #f1d331;
+            --p1: #ff4444; --p2: #44ff44; --p3: #3399ff; --p4: #ffaa00;
+        }
+
+        body {
+            margin: 0; background: #222; font-family: 'Arial Black', sans-serif;
+            display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden;
+        }
+
+        #game-container {
+            position: relative; width: 100vw; height: 100vh; max-width: 450px;
+            background: var(--plinko-blue); border: 8px solid var(--plinko-yellow);
+            border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); touch-action: none;
+        }
+
+        #setup-screen, #win-screen {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.95);
+            z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white; text-align: center;
+        }
+
+        #win-screen { display: none; }
+
+        .btn-setup {
+            background: var(--plinko-yellow); border: none; padding: 15px 30px;
+            margin: 8px; font-size: 1.5rem; font-weight: 900; border-radius: 12px;
+            cursor: pointer; box-shadow: 0 4px 0 #b39b1a; color: #1c354e;
+        }
+
+        #scoreboard {
+            display: flex; justify-content: space-around; background: #111;
+            padding: 10px; border-bottom: 4px solid var(--plinko-yellow);
+        }
+
+        .score-pill { padding: 5px 15px; border-radius: 15px; font-size: 0.9rem; font-weight: bold; color: #fff; transition: all 0.3s; }
+
+        canvas { flex-grow: 1; width: 100%; cursor: crosshair; }
+
+        #controls { padding: 20px; background: #111; border-top: 4px solid var(--plinko-yellow); }
+        #action-btn {
+            width: 100%; padding: 20px; border: none; border-radius: 15px;
+            background: var(--plinko-yellow); font-size: 1.4rem; font-weight: 900;
+            box-shadow: 0 6px 0 #b39b1a; cursor: pointer; color: #1c354e;
+        }
+        #action-btn:disabled { background: #555; box-shadow: none; color: #888; }
+
+        #message-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--plinko-yellow); color: #1c354e; padding: 25px;
+            border-radius: 20px; font-weight: 900; display: none; z-index: 50;
+            text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            border: 4px solid white; width: 70%; font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="setup-screen">
+        <h1 style="color:var(--plinko-yellow); font-size: 4rem; margin:0; text-shadow: 4px 4px 0 #000;">PLINKO</h1>
+        <p style="margin: 20px 0; font-size: 1.2rem;">¿CUÁNTOS JUGADORES?</p>
+        <div style="display:flex; flex-wrap: wrap; justify-content: center;">
+            <button class="btn-setup" onclick="startGame(1)">1</button>
+            <button class="btn-setup" onclick="startGame(2)">2</button>
+            <button class="btn-setup" onclick="startGame(3)">3</button>
+            <button class="btn-setup" onclick="startGame(4)">4</button>
+        </div>
+    </div>
+
+    <div id="win-screen">
+        <h1 id="winner-text" style="color:var(--plinko-yellow); font-size: 3rem;">¡GANADOR!</h1>
+        <button class="btn-setup" onclick="location.reload()">REINTENTAR</button>
+    </div>
+
+    <div id="message-overlay"></div>
+    <div id="scoreboard"></div>
+    <div id="turn-info" style="color:var(--plinko-yellow); text-align:center; padding:10px; font-size:1rem; font-weight: 900; background:rgba(0,0,0,0.5)">...</div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="controls">
+        <button id="action-btn" disabled>ELIGE TU CESTA</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const actionBtn = document.getElementById('action-btn');
+const scoreboard = document.getElementById('scoreboard');
+const turnInfo = document.getElementById('turn-info');
+const msgOverlay = document.getElementById('message-overlay');
+const winScreen = document.getElementById('win-screen');
+const winnerText = document.getElementById('winner-text');
+
+let numPlayers = 0, currentPlayer = 0, gameState = 'choosing';
+let players = [], pins = [], slots = [], walls = [], ball = { x: 0, y: 0, vx: 0, vy: 0, radius: 11, active: false, settleTimer: 0, color: '#fff' };
+let launchX = 0;
+const playerColors = ['#ff4444', '#44ff44', '#3399ff', '#ffaa00'];
+const WIN_SCORE = 5;
+
+function showMessage(text) {
+    msgOverlay.innerText = text;
+    msgOverlay.style.display = 'block';
+    setTimeout(() => { msgOverlay.style.display = 'none'; }, 2500);
+}
+
+function startGame(n) {
+    numPlayers = n;
+    players = Array.from({length: n}, (_, i) => ({ id: i+1, color: playerColors[i], choice: null, score: 0 }));
+    document.getElementById('setup-screen').style.display = 'none';
+    init();
+}
+
+function init() {
+    resize();
+    createBoard();
+    updateUI();
+    loop();
+}
+
+function resize() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    launchX = canvas.width / 2;
+}
+
+function createBoard() {
+    pins = []; slots = []; walls = [];
+    const rows = 9;
+    const spacingX = canvas.width / 7;
+    const spacingY = (canvas.height - 180) / rows;
+
+    for (let r = 0; r < rows; r++) {
+        let cols = (r % 2 === 0) ? 6 : 5;
+        let startX = (canvas.width - (cols - 1) * spacingX) / 2;
+        for (let c = 0; c < cols; c++) {
+            pins.push({ x: startX + c * spacingX, y: 110 + r * spacingY, r: 8 });
+        }
+        
+        let zigX = (r % 2 === 0) ? 15 : 45;
+        walls.push({x: zigX, y: 110 + r * spacingY, side: 'left'});
+        walls.push({x: canvas.width - zigX, y: 110 + r * spacingY, side: 'right'});
+    }
+
+    const slotW = canvas.width / 4;
+    for (let i = 0; i < 4; i++) {
+        slots.push({ x: i * slotW, y: canvas.height - 90, w: slotW, h: 90 });
+    }
+}
+
+function updateUI() {
+    scoreboard.innerHTML = players.map(p => 
+        `<div class="score-pill" style="background:${p.color}; border: 3px solid ${currentPlayer === p.id-1 ? 'white' : 'transparent'}">
+            P${p.id}: ${p.score}/${WIN_SCORE}
+        </div>`
+    ).join('');
+    
+    const pNeedingChoice = players.find(p => p.choice === null);
+    if (pNeedingChoice) {
+        turnInfo.innerHTML = `JUGADOR ${pNeedingChoice.id}: TOCA TU CESTA`;
+        gameState = 'choosing';
+        actionBtn.disabled = true;
+    } else {
+        turnInfo.innerHTML = `JUGADOR ${players[currentPlayer].id}: APUNTA Y LANZA`;
+        gameState = 'positioning';
+        actionBtn.disabled = false;
+        actionBtn.innerText = "¡SOLTAR BOLA!";
+    }
+}
+
+canvas.addEventListener('pointerdown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+
+    if (gameState === 'choosing') {
+        slots.forEach((s, i) => {
+            if (x > s.x && x < s.x + s.w && y > s.y - 50) {
+                if (!players.some(p => p.choice === i)) {
+                    const p = players.find(p => p.choice === null);
+                    if (p) { p.choice = i; updateUI(); }
+                } else {
+                    showMessage("CESTA YA OCUPADA");
+                }
+            }
+        });
+    }
+});
+
+canvas.addEventListener('pointermove', e => {
+    if (gameState === 'positioning') {
+        const rect = canvas.getBoundingClientRect();
+        launchX = Math.max(40, Math.min(canvas.width - 40, e.clientX - rect.left));
+    }
+});
+
+actionBtn.addEventListener('click', () => {
+    if (gameState === 'positioning' && !ball.active) {
+        gameState = 'dropping';
+        actionBtn.disabled = true;
+        ball.active = true;
+        ball.x = launchX; ball.y = 40;
+        ball.vx = (Math.random() - 0.5) * 5; ball.vy = 3;
+        ball.color = players[currentPlayer].color; // Asignar color del jugador actual a la bola
+        ball.settleTimer = 0;
+    }
+});
+
+function loop() {
+    if (ball.active) {
+        ball.vy += 0.3;
+        ball.x += ball.vx; ball.y += ball.vy;
+
+        walls.forEach((w, i) => {
+            const nextW = walls[i+2];
+            if(nextW && w.side === nextW.side) {
+                if (w.side === 'left' && ball.x < Math.max(w.x, nextW.x) + ball.radius && ball.y > w.y && ball.y < nextW.y) {
+                    ball.vx = Math.abs(ball.vx) * 0.7 + 2;
+                    ball.x = Math.max(w.x, nextW.x) + ball.radius;
+                }
+                if (w.side === 'right' && ball.x > Math.min(w.x, nextW.x) - ball.radius && ball.y > w.y && ball.y < nextW.y) {
+                    ball.vx = -Math.abs(ball.vx) * 0.7 - 2;
+                    ball.x = Math.min(w.x, nextW.x) - ball.radius;
+                }
+            }
+        });
+
+        pins.forEach(p => {
+            const dx = ball.x - p.x, dy = ball.y - p.y, dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < ball.radius + p.r) {
+                const angle = Math.atan2(dy, dx);
+                const speed = Math.sqrt(ball.vx**2 + ball.vy**2);
+                ball.x = p.x + Math.cos(angle) * (ball.radius + p.r);
+                ball.y = p.y + Math.sin(angle) * (ball.radius + p.r);
+                ball.vx = Math.cos(angle) * speed * 0.8 + (Math.random()-0.5) * 2;
+                ball.vy = Math.sin(angle) * speed * 0.8;
+            }
+        });
+
+        const slotW = canvas.width / 4;
+        for(let i=1; i<4; i++) {
+            const sepX = i * slotW;
+            if (ball.y > canvas.height - 100 && Math.abs(ball.x - sepX) < 8) {
+                ball.vx *= -0.4;
+                ball.x = ball.x < sepX ? sepX - 8 : sepX + 8;
+            }
+        }
+
+        if (ball.y > canvas.height - ball.radius - 10) {
+            ball.y = canvas.height - ball.radius - 10;
+            ball.vy *= -0.2; ball.vx *= 0.7;
+            ball.settleTimer++;
+            if (ball.settleTimer > 40) finalizeTurn();
+        }
+    }
+    draw();
+    requestAnimationFrame(loop);
+}
+
+function finalizeTurn() {
+    ball.active = false;
+    const hitIndex = Math.floor(ball.x / (canvas.width / 4));
+    
+    // Identificar a quién pertenece la cesta donde cayó
+    const ownerOfSlot = players.find(p => p.choice === hitIndex);
+    const launcher = players[currentPlayer];
+    
+    if (ownerOfSlot) {
+        ownerOfSlot.score += 1;
+        if (ownerOfSlot.id === launcher.id) {
+            showMessage(`¡P${launcher.id} ANOTA EN SU CESTA! (+1)`);
+        } else {
+            showMessage(`¡P${launcher.id} REGALÓ UN PUNTO A P${ownerOfSlot.id}!`);
+        }
+    } else {
+        showMessage(`P${launcher.id} FALLÓ... (Cesta vacía)`);
+    }
+
+    // Comprobar si alguien ganó (podría haber ganado el oponente por el punto regalado)
+    const winner = players.find(p => p.score >= WIN_SCORE);
+    if (winner) {
+        winnerText.innerText = `¡JUGADOR ${winner.id} GANA!`;
+        winnerText.style.color = winner.color;
+        winScreen.style.display = 'flex';
+        return;
+    }
+
+    currentPlayer = (currentPlayer + 1) % numPlayers;
+    if (currentPlayer === 0) players.forEach(pl => pl.choice = null);
+    updateUI();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "var(--plinko-yellow)";
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    walls.filter(w => w.side === 'left').forEach(w => ctx.lineTo(w.x, w.y));
+    ctx.lineTo(0, canvas.height); ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(canvas.width, 0);
+    walls.filter(w => w.side === 'right').forEach(w => ctx.lineTo(w.x, w.y));
+    ctx.lineTo(canvas.width, canvas.height); ctx.fill();
+
+    ctx.fillStyle = "var(--plinko-yellow)";
+    ctx.font = "900 45px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("PLINKO", canvas.width/2, 60);
+
+    slots.forEach((s, i) => {
+        const playerWhoChose = players.find(p => p.choice === i);
+        
+        ctx.fillStyle = "var(--plinko-yellow)";
+        ctx.fillRect(s.x, s.y - 20, 10, s.h + 20);
+        if(i === 3) ctx.fillRect(s.x + s.w - 10, s.y - 20, 10, s.h + 20);
+
+        if (playerWhoChose) {
+            ctx.fillStyle = playerWhoChose.color;
+            ctx.fillRect(s.x + 10, s.y + s.h - 15, s.w - 20, 15);
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(s.x + 10, s.y, s.w - 20, s.h);
+            ctx.globalAlpha = 1;
+        }
+    });
+
+    pins.forEach(p => {
+        ctx.fillStyle = "#b39b1a";
+        ctx.beginPath(); ctx.arc(p.x + 3, p.y + 3, p.r, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "var(--plinko-yellow)";
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+    });
+
+    if (gameState === 'positioning') {
+        ctx.fillStyle = players[currentPlayer].color;
+        ctx.shadowBlur = 10; ctx.shadowColor = "black";
+        ctx.beginPath(); ctx.arc(launchX, 40, ball.radius, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+    } else if (ball.active) {
+        ctx.fillStyle = ball.color; // La bola usa su color asignado al lanzar
+        ctx.shadowBlur = 10; ctx.shadowColor = "black";
+        ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+</script>
+</body>
+</html>
