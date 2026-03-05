@@ -76,16 +76,16 @@
             <div class="text-5xl font-black italic text-yellow-400 drop-shadow-md" id="score">0</div>
             <div class="text-xs opacity-60 font-bold uppercase tracking-widest">RECORD: <span id="highscore">0</span></div>
             <div class="mt-4 flex gap-2" id="jump-indicators">
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white"></div>
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white"></div>
-                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white"></div>
+                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_8px_#3b82f6]"></div>
+                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_8px_#3b82f6]"></div>
+                <div class="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_8px_#3b82f6]"></div>
             </div>
         </div>
 
         <!-- Pantalla de Inicio -->
         <div id="overlay">
             <h1 class="text-6xl font-black text-white mb-4 italic tracking-tighter text-center uppercase">Sonic <span class="text-blue-500">Sphere</span></h1>
-            <p class="text-slate-400 mb-12 text-xl">Toca cualquier parte para saltar</p>
+            <p class="text-slate-400 mb-12 text-xl">Toca la pantalla para saltar</p>
             <button id="startBtn" class="btn-main">¡JUGAR!</button>
         </div>
 
@@ -125,7 +125,7 @@
         resize();
 
         const player = {
-            x: 100,
+            x: 120,
             y: 0,
             radius: 22,
             dy: 0,
@@ -137,10 +137,11 @@
 
         let platforms = [];
         let ramps = [];
+        let obstacles = []; // Las "puyas"
         let particles = [];
         const gravity = 0.6;
         const jumpForce = -13;
-        let gameSpeed = 7;
+        let gameSpeed = 6; // Velocidad un poco más lenta para no ser tan difícil
 
         // --- PREVENCIÓN DE SALIDA SAMSUNG S24 ---
         window.history.pushState(null, null, window.location.href);
@@ -180,30 +181,51 @@
             if (player.jumpCount < player.maxJumps) {
                 player.dy = jumpForce;
                 player.jumpCount++;
-                for(let i=0; i<3; i++) {
-                    jumpIndicators[i].style.opacity = i < (player.maxJumps - player.jumpCount) ? "1" : "0.2";
-                }
+                updateJumpUI();
                 createParticles(player.x, player.y, '#60a5fa', 8);
+            }
+        }
+
+        function updateJumpUI() {
+            for(let i=0; i<3; i++) {
+                jumpIndicators[i].style.opacity = i < (player.maxJumps - player.jumpCount) ? "1" : "0.2";
+                jumpIndicators[i].style.transform = i < (player.maxJumps - player.jumpCount) ? "scale(1)" : "scale(0.8)";
             }
         }
 
         function spawn() {
             const groundY = canvas.height * 0.8;
-            if (platforms.length === 0 || platforms[platforms.length-1].x < canvas.width + 500) {
-                const lastX = platforms.length > 0 ? platforms[platforms.length-1].x + platforms[platforms.length-1].w : 0;
-                const gap = platforms.length === 0 ? 0 : (Math.random() < 0.3 ? 160 : 0);
-                const w = 1200 + Math.random() * 800;
+            
+            // Generar plataformas si el camino se acaba
+            if (platforms.length === 0 || platforms[platforms.length-1].x < canvas.width + 200) {
+                const lastPlatform = platforms[platforms.length-1];
+                const startX = lastPlatform ? lastPlatform.x + lastPlatform.w : 0;
                 
-                platforms.push({ x: lastX + gap, y: groundY, w: w, h: 100 });
+                // Huecos aleatorios pero no imposibles
+                const gap = lastPlatform ? (Math.random() < 0.2 ? 150 : 0) : 0;
+                const width = 800 + Math.random() * 600;
                 
-                if (platforms.length > 1 && Math.random() < 0.5) {
-                    ramps.push({ x: lastX + gap + 400, y: groundY, w: 100, h: 60, passed: false });
+                const newPlatform = { x: startX + gap, y: groundY, w: width, h: 200 };
+                platforms.push(newPlatform);
+
+                // Generar Rampa
+                if (Math.random() < 0.3) {
+                    ramps.push({ x: newPlatform.x + 300, y: groundY, w: 100, h: 60, passed: false });
+                }
+
+                // Generar Puyas (Obstáculos) sobre la plataforma
+                if (Math.random() < 0.4 && width > 500) {
+                    obstacles.push({ 
+                        x: newPlatform.x + 500, 
+                        y: groundY, 
+                        w: 50, 
+                        h: 50 
+                    });
                 }
             }
         }
 
         function resetGame() {
-            // Se elimina requestFullscreen para evitar el error de "Permissions Policy"
             score = 0;
             scoreEl.innerText = "0";
             player.y = canvas.height / 2;
@@ -212,10 +234,14 @@
             player.rampBoost = 0;
             platforms = [];
             ramps = [];
+            obstacles = [];
             particles = [];
             gameActive = true;
             overlay.style.display = 'none';
-            spawn();
+            
+            // Plataforma inicial garantizada
+            platforms.push({ x: 0, y: canvas.height * 0.8, w: canvas.width * 2, h: 200 });
+            updateJumpUI();
         }
 
         function update() {
@@ -226,70 +252,96 @@
             player.y += player.dy;
             player.rotation += (gameSpeed + player.rampBoost) * 0.1;
 
-            let onGround = false;
+            let currentMoveSpeed = (gameSpeed + player.rampBoost);
+
+            // Colisiones con Plataformas
+            let onAnyPlatform = false;
             platforms.forEach(p => {
-                p.x -= (gameSpeed + player.rampBoost);
+                p.x -= currentMoveSpeed;
                 if (player.x > p.x && player.x < p.x + p.w && 
                     player.y + player.radius > p.y && player.y + player.radius < p.y + 50 && 
                     player.dy >= 0) {
                     player.y = p.y - player.radius;
                     player.dy = 0;
-                    player.jumpCount = 0;
-                    onGround = true;
+                    if (player.jumpCount > 0) {
+                        player.jumpCount = 0;
+                        updateJumpUI();
+                    }
+                    onAnyPlatform = true;
                 }
             });
 
-            if (onGround) {
-                for(let i=0; i<3; i++) jumpIndicators[i].style.opacity = "1";
-            }
-
+            // Colisiones con Rampas
             ramps.forEach(r => {
-                r.x -= (gameSpeed + player.rampBoost);
-                if (!r.passed && player.x > r.x && player.x < r.x + r.w && 
+                r.x -= currentMoveSpeed;
+                if (!r.passed && player.x + 10 > r.x && player.x - 10 < r.x + r.w && 
                     player.y + player.radius > r.y - r.h && player.y < r.y) {
                     player.dy = -18;
                     player.rampBoost = 15;
                     player.jumpCount = 1;
+                    updateJumpUI();
                     r.passed = true;
-                    score += 100;
+                    score += 50;
                     scoreEl.innerText = score;
                     createParticles(player.x, player.y, '#fbbf24', 20);
                 }
             });
 
+            // Colisiones con Puyas (Obstáculos Rojos)
+            obstacles.forEach(o => {
+                o.x -= currentMoveSpeed;
+                // Colisión simple por cercanía
+                const distX = Math.abs(player.x - (o.x + o.w/2));
+                const distY = Math.abs(player.y - (o.y - o.h/2));
+                if (distX < player.radius * 0.8 && distY < player.radius * 0.8) {
+                    gameOver();
+                }
+            });
+
+            // Limpiar objetos fuera de pantalla
             platforms = platforms.filter(p => p.x + p.w > -100);
             ramps = ramps.filter(r => r.x + r.w > -100);
+            obstacles = obstacles.filter(o => o.x + o.w > -100);
 
             particles.forEach((p, i) => {
-                p.x += p.vx - (gameSpeed * 0.5);
+                p.x += p.vx - (currentMoveSpeed * 0.5);
                 p.y += p.vy;
                 p.life -= 0.02;
                 if (p.life <= 0) particles.splice(i, 1);
             });
 
+            // Caída al vacío
             if (player.y > canvas.height + 100) {
-                gameActive = false;
-                overlay.style.display = 'flex';
-                if (score > highscore) {
-                    highscore = score;
-                    localStorage.setItem('sonicSphereHighscore', highscore);
-                    highscoreEl.innerText = highscore;
-                }
+                gameOver();
             }
 
+            score += 0.1;
+            scoreEl.innerText = Math.floor(score);
             spawn();
+        }
+
+        function gameOver() {
+            gameActive = false;
+            overlay.style.display = 'flex';
+            if (score > highscore) {
+                highscore = Math.floor(score);
+                localStorage.setItem('sonicSphereHighscore', highscore);
+                highscoreEl.innerText = highscore;
+            }
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Dibujar Plataformas
             ctx.fillStyle = '#1e293b';
             platforms.forEach(p => {
                 ctx.fillRect(p.x, p.y, p.w, p.h);
                 ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4;
-                ctx.strokeRect(p.x, p.y, p.w, 1);
+                ctx.strokeRect(p.x, p.y, p.w, 2);
             });
 
+            // Dibujar Rampas
             ramps.forEach(r => {
                 ctx.fillStyle = '#2563eb';
                 ctx.beginPath();
@@ -301,6 +353,20 @@
                 ctx.strokeStyle = '#93c5fd'; ctx.stroke();
             });
 
+            // Dibujar Puyas (Triángulos rojos)
+            ctx.fillStyle = '#ef4444';
+            obstacles.forEach(o => {
+                ctx.beginPath();
+                ctx.moveTo(o.x, o.y);
+                ctx.lineTo(o.x + o.w / 2, o.y - o.h);
+                ctx.lineTo(o.x + o.w, o.y);
+                ctx.closePath();
+                ctx.fill();
+                // Brillo en la puya
+                ctx.strokeStyle = '#fee2e2'; ctx.lineWidth = 2; ctx.stroke();
+            });
+
+            // Dibujar Partículas
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
@@ -308,6 +374,7 @@
             });
             ctx.globalAlpha = 1;
 
+            // Dibujar Jugador
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.rotation);
@@ -315,6 +382,9 @@
             g.addColorStop(0, '#60a5fa'); g.addColorStop(1, '#1d4ed8');
             ctx.fillStyle = g;
             ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
+            // Brillo de la esfera
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(0, 0, player.radius - 5, 0, Math.PI * 0.5); ctx.stroke();
             ctx.restore();
 
             requestAnimationFrame(() => {
@@ -323,24 +393,20 @@
             });
         }
 
-        // SALTO EN CUALQUIER PARTE DE LA VENTANA
+        // CONTROL TÁCTIL UNIVERSAL
         window.addEventListener('touchstart', (e) => {
-            // Ignorar el toque si es sobre el botón de inicio para evitar conflictos
-            if (e.target === startBtn) return; 
-            
+            if (e.target === startBtn || e.target.closest('#exit-modal')) return; 
             if (gameActive) {
                 e.preventDefault();
                 jump();
             }
         }, { passive: false });
 
-        // Inicio de juego robusto
         startBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             resetGame();
         });
 
-        // Loop de dibujo principal
         draw();
     </script>
 </body>
