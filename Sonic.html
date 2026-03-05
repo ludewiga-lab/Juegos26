@@ -37,7 +37,7 @@
             pointer-events: none;
             z-index: 10;
         }
-        #overlay {
+        #overlay, #exit-modal {
             position: absolute;
             inset: 0;
             background: rgba(2, 6, 23, 0.9);
@@ -46,6 +46,10 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
+        }
+        #exit-modal {
+            z-index: 200;
+            display: none;
         }
         .btn-main {
             background: #2563eb;
@@ -98,10 +102,23 @@
             <div id="active-powers" class="flex flex-col gap-2 mt-4"></div>
         </div>
 
+        <!-- Pantalla de Inicio -->
         <div id="overlay">
             <h1 class="text-5xl font-black text-white mb-2 italic tracking-tighter text-center uppercase">Sonic <span class="text-blue-500">Sphere</span></h1>
             <p class="text-slate-400 mb-8 text-lg text-center px-6">Salta sobre plataformas estilo Mario.<br>¡Cuidado con las puyas!</p>
             <button id="startBtn" class="btn-main">¡JUGAR!</button>
+        </div>
+
+        <!-- Modal Anti-Salida (Android/Navegador) -->
+        <div id="exit-modal">
+            <div class="bg-slate-900 border-2 border-blue-500 p-8 rounded-[2rem] text-center max-w-[85%]">
+                <h2 class="text-3xl font-black text-white mb-2 italic uppercase">¡Atención!</h2>
+                <p class="text-slate-400 mb-8 text-lg">¿Quieres salir del juego? Perderás tu progreso actual.</p>
+                <div class="flex flex-col gap-4">
+                    <button id="resumeBtn" class="bg-blue-600 text-white font-bold py-5 rounded-2xl text-2xl">CONTINUAR JUGANDO</button>
+                    <button id="confirmExitBtn" class="text-slate-500 font-bold py-2 underline">SÍ, SALIR</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -111,7 +128,10 @@
         const scoreEl = document.getElementById('score');
         const highscoreEl = document.getElementById('highscore');
         const overlay = document.getElementById('overlay');
+        const exitModal = document.getElementById('exit-modal');
         const startBtn = document.getElementById('startBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const confirmExitBtn = document.getElementById('confirmExitBtn');
         const jumpIndicators = document.getElementById('jump-indicators').children;
         const activePowersContainer = document.getElementById('active-powers');
 
@@ -126,6 +146,30 @@
         }
         window.addEventListener('resize', resize);
         resize();
+
+        // --- LÓGICA ANTI-SALIDA ANDROID ---
+        // Empujamos un estado falso al historial para capturar el botón "atrás"
+        function setupHistoryTrap() {
+            window.history.pushState({ noExit: true }, "");
+        }
+
+        window.onpopstate = function(event) {
+            if (gameActive) {
+                gameActive = false; // Pausa el juego
+                exitModal.style.display = 'flex';
+                // Volvemos a empujar el estado para que el siguiente "atrás" vuelva a disparar esto
+                setupHistoryTrap();
+            }
+        };
+
+        resumeBtn.onclick = () => {
+            exitModal.style.display = 'none';
+            gameActive = true;
+        };
+
+        confirmExitBtn.onclick = () => {
+            window.location.reload();
+        };
 
         // Configuración de Poderes
         const POWER_TYPES = {
@@ -142,7 +186,7 @@
             rotation: 0,
             jumpCount: 0,
             maxJumps: 3,
-            powers: {}, // Objeto para guardar tiempos de poderes activos
+            powers: {}, 
             baseJumpForce: -13
         };
 
@@ -152,7 +196,7 @@
         let particles = [];
         
         const gravity = 0.65;
-        let baseSpeed = 8; // Dificultad aumentada
+        let baseSpeed = 8; 
 
         function jump() {
             if (!gameActive) return;
@@ -190,19 +234,15 @@
                 const lastP = platforms[platforms.length-1];
                 const startX = lastP ? lastP.x + lastP.w : 0;
                 
-                // Gap estilo Mario (huecos entre plataformas)
                 const gap = lastP ? (Math.random() < 0.5 ? 140 : 80) : 0;
                 const width = 400 + Math.random() * 800;
                 
-                // Variación de altura estilo Mario
                 let targetY = lastP ? lastP.y + (Math.random() * 160 - 80) : groundLevel;
-                // Mantener dentro de límites legibles
                 targetY = Math.max(canvas.height * 0.4, Math.min(targetY, groundLevel));
 
                 const newP = { x: startX + gap, y: targetY, w: width, h: 400 };
                 platforms.push(newP);
 
-                // Spawneo de items y peligros sobre la plataforma
                 if (width > 200) {
                     const step = width / 3;
                     for (let i = 50; i < width - 50; i += step) {
@@ -211,15 +251,12 @@
                         const itemY = newP.y - 40;
 
                         if (rand < 0.15) {
-                            // Poder aleatorio
                             const pKeys = Object.keys(POWER_TYPES);
                             const pType = POWER_TYPES[pKeys[Math.floor(Math.random() * pKeys.length)]];
                             collectibles.push({ x: itemX, y: itemY - 40, type: 'power', pData: pType, radius: 22 });
                         } else if (rand < 0.6) {
-                            // Monedas
                             collectibles.push({ x: itemX, y: itemY - 20, type: 'coin', radius: 14 });
                         } else if (rand < 0.8) {
-                            // Puya
                             obstacles.push({ x: itemX, y: newP.y, w: 40, h: 40 });
                         }
                     }
@@ -240,9 +277,10 @@
             particles = [];
             gameActive = true;
             overlay.style.display = 'none';
+            exitModal.style.display = 'none';
             activePowersContainer.innerHTML = '';
             
-            // Primera plataforma segura
+            setupHistoryTrap(); // Activa la trampa de historial al empezar
             platforms.push({ x: 0, y: canvas.height * 0.75, w: 800, h: 400 });
             updateJumpUI();
         }
@@ -250,14 +288,12 @@
         function update() {
             if (!gameActive) return;
 
-            // Velocidad dinámica (Turbo afecta al desplazamiento)
             const currentSpeed = baseSpeed * (player.powers.turbo ? 1.5 : 1);
             
             player.dy += gravity;
             player.y += player.dy;
             player.rotation += currentSpeed * 0.12;
 
-            // Lógica de Poderes Activos
             activePowersContainer.innerHTML = '';
             for (let key in player.powers) {
                 player.powers[key] -= 16;
@@ -273,7 +309,6 @@
                 }
             }
 
-            // Colisión Plataformas (Estilo Mario: Solo colisiona desde arriba)
             let onGround = false;
             platforms.forEach(p => {
                 p.x -= currentSpeed;
@@ -294,11 +329,9 @@
                 }
             });
 
-            // Colisión Items
             collectibles.forEach((c, idx) => {
                 c.x -= currentSpeed;
                 
-                // Efecto Imán
                 if (player.powers.magnet && c.type === 'coin') {
                     const dx = player.x - c.x;
                     const dy = player.y - c.y;
@@ -313,7 +346,6 @@
                         scoreEl.innerText = score;
                         createParticles(c.x, c.y, '#facc15', 6);
                     } else {
-                        // Activar Superpoder
                         player.powers[c.pData.id] = c.pData.duration;
                         createParticles(c.x, c.y, c.pData.color, 20);
                     }
@@ -321,7 +353,6 @@
                 }
             });
 
-            // Colisión Obstáculos
             obstacles.forEach(o => {
                 o.x -= currentSpeed;
                 const distX = Math.abs(player.x - (o.x + o.w/2));
@@ -331,7 +362,6 @@
                     if (player.powers.shield) {
                         delete player.powers.shield;
                         createParticles(o.x, o.y, '#ffffff', 30);
-                        // Eliminar la puya para no chocar dos veces
                         o.x = -1000;
                     } else {
                         gameOver();
@@ -339,10 +369,8 @@
                 }
             });
 
-            // Caída al vacío
             if (player.y > canvas.height + 50) gameOver();
 
-            // Limpieza
             platforms = platforms.filter(p => p.x + p.w > -100);
             collectibles = collectibles.filter(c => c.x > -50);
             obstacles = obstacles.filter(o => o.x > -50);
@@ -370,26 +398,21 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Dibujar Plataformas (Diseño de bloques)
             platforms.forEach(p => {
                 ctx.fillStyle = '#1e293b';
                 ctx.fillRect(p.x, p.y, p.w, p.h);
-                // Borde neón
                 ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
                 ctx.strokeRect(p.x, p.y, p.w, 5);
-                // Detalle decorativo interno
                 ctx.fillStyle = '#334155';
                 ctx.fillRect(p.x + 10, p.y + 15, p.w - 20, 2);
             });
 
-            // Dibujar Monedas y Poderes
             collectibles.forEach(c => {
                 if (c.type === 'coin') {
                     ctx.fillStyle = '#facc15';
                     ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
                     ctx.strokeStyle = '#eab308'; ctx.lineWidth = 2; ctx.stroke();
                 } else {
-                    // Icono de poder en el canvas
                     ctx.fillStyle = c.pData.color;
                     ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = 'white';
@@ -399,7 +422,6 @@
                 }
             });
 
-            // Dibujar Puyas (Triángulos rojos)
             ctx.fillStyle = '#ef4444';
             obstacles.forEach(o => {
                 ctx.beginPath();
@@ -410,7 +432,6 @@
                 ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke();
             });
 
-            // Dibujar Partículas
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
@@ -418,12 +439,10 @@
             });
             ctx.globalAlpha = 1;
 
-            // Dibujar Jugador
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.rotation);
             
-            // Efecto visual de Escudo
             if (player.powers.shield) {
                 ctx.beginPath();
                 ctx.arc(0, 0, player.radius + 10, 0, Math.PI*2);
@@ -446,9 +465,8 @@
             });
         }
 
-        // CONTROL TÁCTIL
         window.addEventListener('touchstart', (e) => {
-            if (e.target === startBtn) return;
+            if (e.target === startBtn || e.target.closest('#exit-modal')) return;
             if (gameActive) {
                 e.preventDefault();
                 jump();
