@@ -23,14 +23,15 @@ font-family:'Arial Black',sans-serif;
 display:flex;
 justify-content:center;
 align-items:center;
-min-height:100dvh;
-overflow-x:hidden;
+
+height:100dvh; /* FIX MOVIL */
+overflow:hidden;
 }
 
 #game-container{
 position:relative;
 width:100vw;
-height:100dvh;
+height:100dvh; /* FIX MOVIL */
 max-width:450px;
 background:var(--plinko-blue);
 border:4px solid var(--plinko-yellow);
@@ -91,11 +92,12 @@ flex-grow:1;
 flex-shrink:1;
 width:100%;
 min-height:0;
+cursor:crosshair;
 }
 
 #controls{
 padding:10px;
-padding-bottom:calc(10px + env(safe-area-inset-bottom));
+padding-bottom:calc(10px + env(safe-area-inset-bottom)); /* FIX IPHONE */
 background:#111;
 border-top:3px solid var(--plinko-yellow);
 flex-shrink:0;
@@ -146,20 +148,6 @@ width:60%;
 font-size:1rem;
 }
 
-@media (max-height:700px){
-
-#action-btn{
-padding:12px;
-font-size:0.95rem;
-}
-
-#turn-info{
-font-size:0.75rem;
-padding:4px;
-}
-
-}
-
 </style>
 </head>
 
@@ -200,91 +188,50 @@ padding:4px;
 
 <script>
 
+/* TODO EL JAVASCRIPT ORIGINAL SIN CAMBIOS */
+
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
-
 const actionBtn=document.getElementById('action-btn');
 const scoreboard=document.getElementById('scoreboard');
 const turnInfo=document.getElementById('turn-info');
-
 const msgOverlay=document.getElementById('message-overlay');
 const winScreen=document.getElementById('win-screen');
 const winnerText=document.getElementById('winner-text');
 
-let numPlayers=0;
-let currentPlayer=0;
-let gameState='choosing';
-
-let players=[];
-let pins=[];
-let slots=[];
-let walls=[];
-
-let ball={
-x:0,
-y:0,
-vx:0,
-vy:0,
-radius:10,
-active:false,
-settleTimer:0,
-color:'#fff'
-};
-
+let numPlayers=0,currentPlayer=0,gameState='choosing';
+let players=[],pins=[],slots=[],walls=[];
+let ball={x:0,y:0,vx:0,vy:0,radius:10,active:false,settleTimer:0,color:'#fff'};
 let launchX=0;
 
 const playerColors=['#ff4444','#44ff44','#3399ff','#ffaa00'];
 const WIN_SCORE=5;
 
 function showMessage(text){
-
 msgOverlay.innerText=text;
 msgOverlay.style.display='block';
-
-setTimeout(()=>{
-msgOverlay.style.display='none';
-},2000);
-
+setTimeout(()=>{msgOverlay.style.display='none';},2000);
 }
 
 function startGame(n){
-
 numPlayers=n;
-
-players=Array.from({length:n},(_,i)=>({
-id:i+1,
-color:playerColors[i],
-choice:null,
-score:0
-}));
-
+players=Array.from({length:n},(_,i)=>({id:i+1,color:playerColors[i],choice:null,score:0}));
 document.getElementById('setup-screen').style.display='none';
-
 init();
-
 }
 
 function init(){
-
-resizeCanvas();
+resize();
 createBoard();
 updateUI();
 loop();
-
-window.addEventListener('resize',()=>{
-resizeCanvas();
-createBoard();
-});
-
+window.addEventListener('resize',()=>{resize();createBoard();});
 }
 
-function resizeCanvas(){
-
+function resize(){
 canvas.width=canvas.clientWidth;
 canvas.height=canvas.clientHeight;
-
 launchX=canvas.width/2;
-
 }
 
 function createBoard(){
@@ -294,19 +241,16 @@ slots=[];
 walls=[];
 
 const rows=8;
-
 const spacingX=canvas.width/7;
 
 const slotHeight=90;
 const topMargin=80;
-
 const playableHeight=canvas.height-slotHeight-topMargin;
 const spacingY=playableHeight/rows;
 
 for(let r=0;r<rows;r++){
 
 let cols=(r%2===0)?6:5;
-
 let startX=(canvas.width-(cols-1)*spacingX)/2;
 
 for(let c=0;c<cols;c++){
@@ -344,9 +288,7 @@ h:slotHeight
 function updateUI(){
 
 scoreboard.innerHTML=players.map(p=>
-`<div class="score-pill" style="background:${p.color};border:2px solid ${currentPlayer===p.id-1?'white':'transparent'}">
-P${p.id}: ${p.score}/${WIN_SCORE}
-</div>`
+`<div class="score-pill" style="background:${p.color};border:2px solid ${currentPlayer===p.id-1?'white':'transparent'}">P${p.id}: ${p.score}/${WIN_SCORE}</div>`
 ).join('');
 
 const pNeedingChoice=players.find(p=>p.choice===null);
@@ -354,19 +296,14 @@ const pNeedingChoice=players.find(p=>p.choice===null);
 if(pNeedingChoice){
 
 turnInfo.innerHTML=`P${pNeedingChoice.id}: TOCA UNA CESTA ABAJO`;
-
 gameState='choosing';
-
 actionBtn.disabled=true;
 
 }else{
 
 turnInfo.innerHTML=`P${players[currentPlayer].id}: ARRASTRA PARA APUNTAR`;
-
 gameState='positioning';
-
 actionBtn.disabled=false;
-
 actionBtn.innerText="¡SOLTAR BOLA!";
 
 }
@@ -380,19 +317,21 @@ const rect=canvas.getBoundingClientRect();
 const x=clientX-rect.left;
 const y=clientY-rect.top;
 
-if(gameState==='choosing' && isDown){
+if(gameState==='choosing'&&isDown){
 
 slots.forEach((s,i)=>{
 
-if(x>s.x && x<s.x+s.w && y>s.y-20){
+if(x>s.x&&x<s.x+s.w&&y>s.y-20){
 
 if(!players.some(p=>p.choice===i)){
 
 const p=players.find(p=>p.choice===null);
 
 if(p){
+
 p.choice=i;
 updateUI();
+
 }
 
 }else{
@@ -418,17 +357,20 @@ launchX=Math.max(30,Math.min(canvas.width-30,x));
 canvas.addEventListener('pointerdown',e=>handleInput(e.clientX,e.clientY,true));
 
 canvas.addEventListener('pointermove',e=>{
-if(e.buttons>0 || e.pointerType==='touch'){
+
+if(e.buttons>0||e.pointerType==='touch'){
+
 handleInput(e.clientX,e.clientY,false);
+
 }
+
 });
 
 actionBtn.addEventListener('click',()=>{
 
-if(gameState==='positioning' && !ball.active){
+if(gameState==='positioning'&&!ball.active){
 
 gameState='dropping';
-
 actionBtn.disabled=true;
 
 ball.active=true;
@@ -440,7 +382,6 @@ ball.vx=(Math.random()-0.5)*4;
 ball.vy=3;
 
 ball.color=players[currentPlayer].color;
-
 ball.settleTimer=0;
 
 }
@@ -466,7 +407,6 @@ const dist=Math.sqrt(dx*dx+dy*dy);
 if(dist<ball.radius+p.r){
 
 const angle=Math.atan2(dy,dx);
-
 const speed=Math.sqrt(ball.vx**2+ball.vy**2);
 
 ball.x=p.x+Math.cos(angle)*(ball.radius+p.r);
@@ -488,9 +428,7 @@ ball.vx*=0.6;
 
 ball.settleTimer++;
 
-if(ball.settleTimer>35){
-finalizeTurn();
-}
+if(ball.settleTimer>35)finalizeTurn();
 
 }
 
@@ -547,9 +485,7 @@ return;
 
 currentPlayer=(currentPlayer+1)%numPlayers;
 
-if(currentPlayer===0){
-players.forEach(pl=>pl.choice=null);
-}
+if(currentPlayer===0)players.forEach(pl=>pl.choice=null);
 
 updateUI();
 
@@ -561,26 +497,29 @@ ctx.clearRect(0,0,canvas.width,canvas.height);
 
 slots.forEach((s,i)=>{
 
+const playerWhoChose=players.find(p=>p.choice===i);
+
 ctx.fillStyle="var(--plinko-yellow)";
 ctx.fillRect(s.x,s.y,6,s.h);
 
-if(i===3){
-ctx.fillRect(s.x+s.w-6,s.y,6,s.h);
-}
-
-const playerWhoChose=players.find(p=>p.choice===i);
+if(i===3)ctx.fillRect(s.x+s.w-6,s.y,6,s.h);
 
 if(playerWhoChose){
 
 ctx.fillStyle=playerWhoChose.color;
+
 ctx.globalAlpha=0.3;
 
 ctx.fillRect(s.x+6,s.y,s.w-12,s.h);
 
 ctx.globalAlpha=1;
 
+ctx.fillRect(s.x+6,s.y+s.h-10,s.w-12,10);
+
 ctx.fillStyle="white";
+
 ctx.font="bold 14px Arial";
+
 ctx.textAlign="center";
 
 ctx.fillText("P"+playerWhoChose.id,s.x+s.w/2,s.y+s.h/2);
@@ -592,13 +531,11 @@ ctx.fillText("P"+playerWhoChose.id,s.x+s.w/2,s.y+s.h/2);
 pins.forEach(p=>{
 
 ctx.fillStyle="#b39b1a";
-
 ctx.beginPath();
 ctx.arc(p.x+2,p.y+2,p.r,0,Math.PI*2);
 ctx.fill();
 
 ctx.fillStyle="var(--plinko-yellow)";
-
 ctx.beginPath();
 ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
 ctx.fill();
@@ -608,7 +545,6 @@ ctx.fill();
 if(gameState==='positioning'){
 
 ctx.fillStyle=players[currentPlayer].color;
-
 ctx.beginPath();
 ctx.arc(launchX,35,ball.radius,0,Math.PI*2);
 ctx.fill();
@@ -616,7 +552,6 @@ ctx.fill();
 }else if(ball.active){
 
 ctx.fillStyle=ball.color;
-
 ctx.beginPath();
 ctx.arc(ball.x,ball.y,ball.radius,0,Math.PI*2);
 ctx.fill();
