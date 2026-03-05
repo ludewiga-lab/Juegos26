@@ -107,7 +107,7 @@
 
     <div id="overlay">
         <h1 id="title" style="font-size: 3rem; margin: 0; color: #f1d331; text-shadow: 4px 4px 0 #000;">CHICKEN ADVENTURE</h1>
-        <p id="subtitle">Evita rocas, coches y no caigas al río</p>
+        <p id="subtitle">Cruza los troncos en sentidos opuestos</p>
         <button class="btn-start" onclick="initGame()">¡EMPEZAR!</button>
     </div>
 
@@ -136,7 +136,7 @@
     let laneHeight = 0;
     let chicken = { x: 0, y: 0, size: 0, lane: 8, onLog: null }; 
     let lanes = []; 
-    let entities = []; // Coches, Troncos, Rocas, Árboles
+    let entities = []; 
 
     const ICONS = {
         CHICKEN: "🐔",
@@ -174,30 +174,46 @@
     function generateLevel() {
         lanes = [];
         entities = [];
+        let lastRiverDirection = 1; // Para alternar sentidos en el río
+
         for (let i = 0; i < 9; i++) {
             let type = 'grass';
             if (i > 0 && i < 8) {
                 const rand = Math.random();
                 if (rand < 0.4) type = 'road';
-                else if (rand < 0.7) type = 'water';
+                else if (rand < 0.75) type = 'water';
                 else type = 'grass';
             }
 
-            let speed = (Math.random() * 1.5 + 1.5) * (Math.random() > 0.5 ? 1 : -1);
-            speed += (score * 0.2) * (speed > 0 ? 1 : -1);
+            // Dificultad base más baja, aumenta con el nivel
+            let baseSpeed = 1.0 + (score * 0.15);
+            let speed = (Math.random() * 0.5 + baseSpeed);
+            
+            // Si es agua, alternamos sentido obligatoriamente
+            if (type === 'water') {
+                speed *= lastRiverDirection;
+                lastRiverDirection *= -1;
+            } else {
+                speed *= (Math.random() > 0.5 ? 1 : -1);
+            }
+
             lanes[i] = { type, speed };
 
             if (type === 'road') {
-                spawnEntity(i, 'car', 2);
+                // Menos coches al principio
+                const numCars = score < 3 ? 1 : 2;
+                spawnEntity(i, 'car', numCars);
             } else if (type === 'water') {
+                // Troncos más frecuentes al inicio para facilitar
                 spawnEntity(i, 'log', 3);
             } else if (type === 'grass' && i !== 8 && i !== 0) {
-                // Añadir rocas o árboles aleatorios
-                for (let j = 0; j < 3; j++) {
+                // Obstáculos estáticos más espaciados
+                const numObs = score < 5 ? 2 : 3;
+                for (let j = 0; j < numObs; j++) {
                     entities.push({
                         type: Math.random() > 0.5 ? 'rock' : 'tree',
                         laneIndex: i,
-                        x: Math.random() * canvas.width,
+                        x: Math.random() * (canvas.width - 100) + 50,
                         speed: 0
                     });
                 }
@@ -211,10 +227,10 @@
             entities.push({
                 type: type,
                 laneIndex: laneIndex,
-                x: i * spacing + (Math.random() * 50),
+                x: i * spacing + (spacing / 2),
                 icon: type === 'car' ? ICONS.CARS[Math.floor(Math.random() * ICONS.CARS.length)] : ICONS.LOG,
                 speed: lanes[laneIndex].speed,
-                width: laneHeight * 1.2
+                width: type === 'car' ? laneHeight : laneHeight * 1.5
             });
         }
     }
@@ -226,20 +242,20 @@
         let nextLane = chicken.lane;
 
         if (dir === 'up') nextLane--;
-        else if (dir === 'left') nextX -= canvas.width * 0.15;
-        else if (dir === 'right') nextX += canvas.width * 0.15;
+        else if (dir === 'left') nextX -= canvas.width * 0.12;
+        else if (dir === 'right') nextX += canvas.width * 0.12;
 
-        // Verificar colisión con obstáculos estáticos (rocas/árboles)
+        // Verificar bloqueo por rocas/árboles
         const obstacle = entities.find(e => 
             e.laneIndex === nextLane && 
             (e.type === 'rock' || e.type === 'tree') &&
-            Math.abs(e.x - nextX) < chicken.size * 0.8
+            Math.abs(e.x - nextX) < chicken.size * 0.6
         );
 
         if (!obstacle) {
             chicken.x = nextX;
             chicken.lane = nextLane;
-            chicken.onLog = null; // Al saltar, perdemos el tronco actual hasta validar de nuevo
+            chicken.onLog = null; 
         }
 
         if (chicken.lane < 0) {
@@ -249,7 +265,7 @@
             generateLevel();
         }
 
-        chicken.x = Math.max(30, Math.min(canvas.width - 30, chicken.x));
+        chicken.x = Math.max(20, Math.min(canvas.width - 20, chicken.x));
     }
 
     window.addEventListener('keydown', e => {
@@ -279,7 +295,7 @@
         lanes.forEach((lane, i) => {
             if (lane.type === 'grass') ctx.fillStyle = '#4caf50';
             else if (lane.type === 'road') ctx.fillStyle = '#333';
-            else ctx.fillStyle = '#2196f3';
+            else ctx.fillStyle = '#1e88e5'; // Azul agua más vibrante
             
             ctx.fillRect(0, i * laneHeight, canvas.width, laneHeight);
             
@@ -301,6 +317,7 @@
         entities.forEach(e => {
             if (e.speed !== 0) {
                 e.x += e.speed;
+                // Loop infinito de entidades
                 if (e.x > canvas.width + 100) e.x = -100;
                 if (e.x < -100) e.x = canvas.width + 100;
             }
@@ -313,39 +330,35 @@
             ctx.translate(e.x, e.laneIndex * laneHeight + laneHeight/2);
             
             if (e.type === 'car') {
-                // Sentido correcto del coche
                 if (e.speed < 0) ctx.scale(-1, 1);
                 ctx.fillText(e.icon, 0, 0);
                 
-                // Colisión con coche
-                if (e.laneIndex === chicken.lane && Math.abs(e.x - chicken.x) < chicken.size * 0.7) {
-                    gameOver("¡ATROPELLADO!");
+                if (e.laneIndex === chicken.lane && Math.abs(e.x - chicken.x) < chicken.size * 0.65) {
+                    gameOver("¡CUIDADO CON EL TRÁFICO!");
                 }
             } else if (e.type === 'log') {
                 ctx.fillText(ICONS.LOG, 0, 0);
-                // Colisión con tronco
-                if (e.laneIndex === chicken.lane && Math.abs(e.x - chicken.x) < chicken.size * 1.1) {
+                // Colisión con tronco (hitbox un poco más ancha)
+                if (e.laneIndex === chicken.lane && Math.abs(e.x - chicken.x) < laneHeight * 0.8) {
                     foundLog = true;
                     chicken.onLog = e;
                 }
             } else {
-                // Roca o Árbol
                 ctx.fillText(e.type === 'rock' ? ICONS.ROCK : ICONS.TREE, 0, 0);
             }
             ctx.restore();
         });
 
-        // 3. Lógica de Agua
+        // 3. Lógica de Agua y Arrastre
         if (chickenInWater) {
             if (foundLog && chicken.onLog) {
-                // Mover gallina con el tronco
                 chicken.x += chicken.onLog.speed;
-                // Si el tronco se lleva a la gallina fuera de pantalla
-                if (chicken.x < 0 || chicken.x > canvas.width) {
-                    gameOver("¡TE FUISTE LEJOS!");
+                // Perder si el tronco te saca de la pantalla
+                if (chicken.x < -20 || chicken.x > canvas.width + 20) {
+                    gameOver("¡TE LLEVÓ LA CORRIENTE!");
                 }
             } else {
-                gameOver("¡AL AGUA!");
+                gameOver("¡GLUB GLUB! (AL AGUA)");
             }
         }
 
