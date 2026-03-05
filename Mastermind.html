@@ -8,6 +8,8 @@
         :root {
             --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8;
             --danger: #f43f5e; --border: #334155;
+            --success: #22c55e;
+            --gold: #f1c40f;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -49,13 +51,13 @@
             flex-shrink: 0;
         }
 
-        /* EL TABLERO: Ahora es elástico y nunca tapa nada */
+        /* EL TABLERO */
         #board { 
-            flex: 1; /* Ocupa todo el espacio disponible */
+            flex: 1; 
             overflow-y: auto; 
             padding: 10px;
             display: flex;
-            flex-direction: column; /* Cambiado a normal para mejor control de scroll */
+            flex-direction: column; 
             gap: 8px;
             background: #0b1120;
         }
@@ -64,34 +66,61 @@
             display: flex; align-items: center; justify-content: space-between; 
             background: var(--panel); padding: 8px 12px; border-radius: 10px;
             border: 1px solid var(--border); flex-shrink: 0;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .row.solution-row {
+            border: 2px solid var(--gold);
+            background: rgba(241, 196, 15, 0.1);
+            margin-top: 10px;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .pegs { display: flex; gap: 5px; }
         .peg { width: 24px; height: 24px; border-radius: 50%; background: #334155; border: 1px solid rgba(0,0,0,0.5); }
 
-        .hints { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+        .hints { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; width: 35px; }
         .hint { width: 8px; height: 8px; border-radius: 50%; background: #000; }
         .hint.red { background: var(--danger); }
         .hint.white { background: #fff; }
 
-        /* CONTROLES: Fijos en la parte inferior */
+        .row-label { font-size: 10px; color: #94a3b8; width: 60px; }
+        .solution-label { color: var(--gold); font-weight: bold; }
+
+        /* CONTROLES */
         #controls { 
             background: var(--panel); 
             padding: 15px;
             border-top: 2px solid var(--accent);
-            flex-shrink: 0; /* Prohibido encogerse */
+            flex-shrink: 0;
         }
 
         .current-guess { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
         .color-picker { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
         
-        .btn-color { width: 45px; height: 45px; border-radius: 10px; border: none; }
-        .btn-color:disabled { opacity: 0.1; }
+        .btn-color { width: 45px; height: 45px; border-radius: 10px; border: none; cursor: pointer; transition: transform 0.1s; }
+        .btn-color:active { transform: scale(0.9); }
+        .btn-color:disabled { opacity: 0.1; cursor: default; }
 
         .action-btns { display: flex; gap: 10px; }
-        .btn-act { flex: 1; padding: 15px; border: none; border-radius: 10px; font-weight: bold; }
+        .btn-act { flex: 1; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
         #del-btn { background: #475569; color: white; }
         #check-btn { background: var(--accent); color: #000; }
+
+        /* BANNER DE ESTADO */
+        #game-status-banner {
+            display: none;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -100,27 +129,25 @@
     <h1 style="color:var(--accent)">Mastermind Pro</h1>
     <div class="lvl-card" onclick="startGame(3)">
         <strong>Nivel Inicial</strong><br><small>3 Colores</small>
-        <div id="score-3" style="font-size:10px; color:var(--accent)">Record: --</div>
     </div>
     <div class="lvl-card" onclick="startGame(4)">
         <strong>Nivel Avanzado</strong><br><small>4 Colores</small>
-        <div id="score-4" style="font-size:10px; color:var(--accent)">Record: --</div>
     </div>
     <div class="lvl-card" onclick="startGame(5)">
         <strong>Nivel Experto</strong><br><small>5 Colores</small>
-        <div id="score-5" style="font-size:10px; color:var(--accent)">Record: --</div>
     </div>
 </div>
 
 <div id="game-screen">
     <header>
         <span id="att-num" style="font-size:12px">INTENTO 1/10</span>
-        <button onclick="backToHome()" style="background:none; border:none; color:#94a3b8;">SALIR</button>
+        <button onclick="backToHome()" style="background:none; border:none; color:#94a3b8; font-weight: bold; cursor: pointer;">SALIR</button>
     </header>
 
     <div id="board"></div>
 
     <div id="controls">
+        <div id="game-status-banner"></div>
         <div class="current-guess" id="guess-display"></div>
         <div class="color-picker" id="picker"></div>
         <div class="action-btns">
@@ -131,18 +158,23 @@
 </div>
 
 <script>
-    let secret = [], currentGuess = [], size = 4, attempts = 0;
+    let secret = [], currentGuess = [], size = 4, attempts = 0, isGameOver = false;
     const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308', '#a855f7', '#f97316'];
     
     function startGame(s) {
-        size = s; attempts = 0; currentGuess = [];
+        size = s; attempts = 0; currentGuess = []; isGameOver = false;
         let available = [...colors];
         secret = [];
+        // Generar código secreto sin repetición
         for(let i=0; i<size; i++) secret.push(available.splice(Math.floor(Math.random()*available.length), 1)[0]);
 
         document.getElementById('home-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
         document.getElementById('board').innerHTML = '';
+        document.getElementById('game-status-banner').style.display = 'none';
+        document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('del-btn').style.display = 'block';
+        
         initPicker();
         updateUI();
     }
@@ -156,7 +188,7 @@
             b.style.background = c;
             b.id = 'c-' + c.replace('#','');
             b.onclick = () => {
-                if(currentGuess.length < size && !currentGuess.includes(c)) {
+                if(!isGameOver && currentGuess.length < size && !currentGuess.includes(c)) {
                     currentGuess.push(c);
                     updateUI();
                 }
@@ -165,7 +197,7 @@
         });
     }
 
-    function deleteLast() { currentGuess.pop(); updateUI(); }
+    function deleteLast() { if(!isGameOver) { currentGuess.pop(); updateUI(); } }
 
     function updateUI() {
         const container = document.getElementById('guess-display');
@@ -176,21 +208,80 @@
             if(currentGuess[i]) peg.style.background = currentGuess[i];
             container.appendChild(peg);
         }
+        
         colors.forEach(c => {
             const btn = document.getElementById('c-' + c.replace('#',''));
-            if(btn) btn.disabled = currentGuess.includes(c);
+            if(btn) btn.disabled = isGameOver || currentGuess.includes(c);
         });
-        document.getElementById('att-num').innerText = `INTENTO ${attempts + 1}/10`;
+
+        if(!isGameOver) {
+            document.getElementById('att-num').innerText = `INTENTO ${attempts + 1}/10`;
+        }
     }
 
     function submitGuess() {
-        if(currentGuess.length < size) return;
+        if(isGameOver || currentGuess.length < size) return;
+        
         attempts++;
         const feedback = getFeedback(currentGuess, secret);
-        addRow(currentGuess, feedback);
-        if(feedback.red === size) { alert("¡GANASTE!"); backToHome(); }
-        else if(attempts >= 10) { alert("PERDISTE. El código era otro."); backToHome(); }
-        else { currentGuess = []; updateUI(); }
+        addRow(currentGuess, feedback, `INTENTO ${attempts}`);
+        
+        if(feedback.red === size) { 
+            endGame(true);
+        }
+        else if(attempts >= 10) { 
+            endGame(false);
+        }
+        else { 
+            currentGuess = []; 
+            updateUI(); 
+        }
+    }
+
+    function addRow(guess, fb, labelText, isSolution = false) {
+        const row = document.createElement('div');
+        row.className = 'row' + (isSolution ? ' solution-row' : '');
+        
+        let html = `<div class="row-label ${isSolution ? 'solution-label' : ''}">${labelText}</div>`;
+        html += '<div class="pegs">';
+        guess.forEach(c => html += `<div class="peg" style="background:${c}"></div>`);
+        html += '</div><div class="hints">';
+        
+        if(!isSolution) {
+            for(let i=0; i<fb.red; i++) html += '<div class="hint red"></div>';
+            for(let i=0; i<fb.white; i++) html += '<div class="hint white"></div>';
+        } else {
+            html += '<span>✨</span>';
+        }
+        
+        html += '</div>';
+        row.innerHTML = html;
+        const b = document.getElementById('board');
+        b.appendChild(row);
+        b.scrollTop = b.scrollHeight; 
+    }
+
+    function endGame(win) {
+        isGameOver = true;
+        const banner = document.getElementById('game-status-banner');
+        banner.style.display = 'block';
+        
+        if(win) {
+            banner.innerText = "¡CÓDIGO DESCIFRADO! VICTORIA";
+            banner.style.background = "var(--success)";
+            banner.style.color = "#fff";
+        } else {
+            banner.innerText = "FIN DEL JUEGO: INTENTOS AGOTADOS";
+            banner.style.background = "var(--danger)";
+            banner.style.color = "#fff";
+            // Añadir la fila 11 con la solución
+            addRow(secret, null, "SOLUCIÓN", true);
+        }
+
+        // Ocultar botones de acción y mostrar botón de salida
+        document.getElementById('check-btn').style.display = 'none';
+        document.getElementById('del-btn').style.display = 'none';
+        document.getElementById('guess-display').innerHTML = '<p style="color:var(--accent); font-weight:bold;">Analiza tus jugadas arriba</p>';
     }
 
     function getFeedback(guess, sec) {
@@ -200,21 +291,6 @@
             else if(sec.includes(c)) white++;
         });
         return { red, white };
-    }
-
-    function addRow(guess, fb) {
-        const row = document.createElement('div');
-        row.className = 'row';
-        let html = '<div class="pegs">';
-        guess.forEach(c => html += `<div class="peg" style="background:${c}"></div>`);
-        html += '</div><div class="hints">';
-        for(let i=0; i<fb.red; i++) html += '<div class="hint red"></div>';
-        for(let i=0; i<fb.white; i++) html += '<div class="hint white"></div>';
-        html += '</div>';
-        row.innerHTML = html;
-        const b = document.getElementById('board');
-        b.appendChild(row);
-        b.scrollTop = b.scrollHeight; // Auto-scroll al final
     }
 
     function backToHome() {
