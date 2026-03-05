@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Chicken Crosser - Ríos y Obstáculos</title>
+    <style>
+        :root {
+            --grass: #4caf50;
+            --road: #333;
+            --water: #2196f3;
+            --white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #222;
+            font-family: 'Arial Black', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100dvh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100dvh;
+            background: var(--grass);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            border: 2px solid #fff;
+        }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+            text-align: center;
+        }
+
+        .btn-start {
+            background: #f1d331;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            color: #333;
+            box-shadow: 0 6px 0 #b39b1a;
+            margin-top: 20px;
+            text-transform: uppercase;
+        }
+
+        .btn-start:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #b39b1a;
+        }
+
+        #touch-controls {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: 1fr;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="ui-layer">
+        <div class="stat-box">RÉCORD: <span id="high-score">0</span></div>
+        <div class="stat-box">NIVEL: <span id="current-score">0</span></div>
+    </div>
+
+    <div id="overlay">
+        <h1 id="title" style="font-size: 3rem; margin: 0; color: #f1d331; text-shadow: 4px 4px 0 #000;">CHICKEN ADVENTURE</h1>
+        <p id="subtitle">Evita rocas, coches y no caigas al río</p>
+        <button class="btn-start" onclick="initGame()">¡EMPEZAR!</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="touch-controls">
+        <div onclick="moveChicken('left')"></div>
+        <div onclick="moveChicken('up')"></div>
+        <div onclick="moveChicken('right')"></div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('overlay');
+    const scoreEl = document.getElementById('current-score');
+    const highEl = document.getElementById('high-score');
+    const titleEl = document.getElementById('title');
+
+    let score = 0;
+    let highScore = localStorage.getItem('chickenAdventureScore') || 0;
+    highEl.innerText = highScore;
+
+    let gameActive = false;
+    let laneHeight = 0;
+    let chicken = { x: 0, y: 0, size: 0, lane: 8, onLog: null }; 
+    let lanes = []; 
+    let entities = []; // Coches, Troncos, Rocas, Árboles
+
+    const ICONS = {
+        CHICKEN: "🐔",
+        CARS: ["🚗", "🚕", "🚙", "🚌", "🏎️", "🚚"],
+        LOG: "🪵",
+        ROCK: "🪨",
+        TREE: "🌳",
+        WATER: "🌊"
+    };
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        laneHeight = canvas.height / 9;
+        chicken.size = laneHeight * 0.7;
+    }
+
+    function initGame() {
+        resize();
+        score = 0;
+        scoreEl.innerText = score;
+        gameActive = true;
+        overlay.style.display = 'none';
+        resetChicken();
+        generateLevel();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function resetChicken() {
+        chicken.lane = 8;
+        chicken.x = canvas.width / 2;
+        chicken.onLog = null;
+    }
+
+    function generateLevel() {
+        lanes = [];
+        entities = [];
+        for (let i = 0; i < 9; i++) {
+            let type = 'grass';
+            if (i > 0 && i < 8) {
+                const rand = Math.random();
+                if (rand < 0.4) type = 'road';
+                else if (rand < 0.7) type = 'water';
+                else type = 'grass';
+            }
+
+            let speed = (Math.random() * 1.5 + 1.5) * (Math.random() > 0.5 ? 1 : -1);
+            speed += (score * 0.2) * (speed > 0 ? 1 : -1);
+            lanes[i] = { type, speed };
+
+            if (type === 'road') {
+                spawnEntity(i, 'car', 2);
+            } else if (type === 'water') {
+                spawnEntity(i, 'log', 3);
+            } else if (type === 'grass' && i !== 8 && i !== 0) {
+                // Añadir rocas o árboles aleatorios
+                for (let j = 0; j < 3; j++) {
+                    entities.push({
+                        type: Math.random() > 0.5 ? 'rock' : 'tree',
+                        laneIndex: i,
+                        x: Math.random() * canvas.width,
+                        speed: 0
+                    });
+                }
+            }
+        }
+    }
+
+    function spawnEntity(laneIndex, type, count) {
+        const spacing = canvas.width / count;
+        for (let i = 0; i < count; i++) {
+            entities.push({
+                type: type,
+                laneIndex: laneIndex,
+                x: i * spacing + (Math.random() * 50),
+                icon: type === 'car' ? ICONS.CARS[Math.floor(Math.random() * ICONS.CARS.length)] : ICONS.LOG,
+                speed: lanes[laneIndex].speed,
+                width: laneHeight * 1.2
+            });
+        }
+    }
+
+    function moveChicken(dir) {
+        if (!gameActive) return;
+
+        let nextX = chicken.x;
+        let nextLane = chicken.lane;
+
+        if (dir === 'up') nextLane--;
+        else if (dir === 'left') nextX -= canvas.width * 0.15;
+        else if (dir === 'right') nextX += canvas.width * 0.15;
+
+        // Verificar colisión con obstáculos estáticos (rocas/árboles)
+        const obstacle = entities.find(e => 
+            e.laneIndex === nextLane && 
+            (e.type === 'rock' || e.type === 'tree') &&
+            Math.abs(e.x - nextX) < chicken.size * 0.8
+        );
+
+        if (!obstacle) {
+            chicken.x = nextX;
+            chicken.lane = nextLane;
+            chicken.onLog = null; // Al saltar, perdemos el tronco actual hasta validar de nuevo
+        }
+
+        if (chicken.lane < 0) {
+            score++;
+            scoreEl.innerText = score;
+            resetChicken();
+            generateLevel();
+        }
+
+        chicken.x = Math.max(30, Math.min(canvas.width - 30, chicken.x));
+    }
+
+    window.addEventListener('keydown', e => {
+        if (e.key === 'ArrowUp' || e.key === ' ') moveChicken('up');
+        if (e.key === 'ArrowLeft') moveChicken('left');
+        if (e.key === 'ArrowRight') moveChicken('right');
+    });
+
+    function gameOver(reason) {
+        gameActive = false;
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('chickenAdventureScore', highScore);
+            highEl.innerText = highScore;
+        }
+        titleEl.innerText = reason;
+        titleEl.style.color = "#ff4444";
+        overlay.style.display = 'flex';
+    }
+
+    function gameLoop() {
+        if (!gameActive) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Dibujar Carriles
+        lanes.forEach((lane, i) => {
+            if (lane.type === 'grass') ctx.fillStyle = '#4caf50';
+            else if (lane.type === 'road') ctx.fillStyle = '#333';
+            else ctx.fillStyle = '#2196f3';
+            
+            ctx.fillRect(0, i * laneHeight, canvas.width, laneHeight);
+            
+            if (lane.type === 'road') {
+                ctx.strokeStyle = "rgba(255,255,255,0.2)";
+                ctx.setLineDash([20, 20]);
+                ctx.beginPath();
+                ctx.moveTo(0, i * laneHeight + laneHeight/2);
+                ctx.lineTo(canvas.width, i * laneHeight + laneHeight/2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        });
+
+        // 2. Manejar Entidades y Colisiones
+        let chickenInWater = lanes[chicken.lane].type === 'water';
+        let foundLog = false;
+
+        entities.forEach(e => {
+            if (e.speed !== 0) {
+                e.x += e.speed;
+                if (e.x > canvas.width + 100) e.x = -100;
+                if (e.x < -100) e.x = canvas.width + 100;
+            }
+
+            ctx.font = `${laneHeight * 0.8}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            ctx.save();
+            ctx.translate(e.x, e.laneIndex * laneHeight + laneHeight/2);
+            
+            if (e.type === 'car') {
+                // Sentido correcto del coche
+                if (e.speed < 0) ctx.scale(-1, 1);
+                ctx.fillText(e.icon, 0, 0);
+                
+                // Colisión con coche
+                if (e.laneIndex === chicken.lane && Math.abs(e.x - chicken.x) < chicken.size * 0.7) {
+                    gameOver("¡ATROPELLADO!");
+                }
+            } else if (e.type === 'log') {
+                ctx.fillText(ICONS.LOG, 0, 0);
+                // Colisión con tronco
+                if (e.laneIndex === chicken.lane && Math.abs(e.x - chicken.x) < chicken.size * 1.1) {
+                    foundLog = true;
+                    chicken.onLog = e;
+                }
+            } else {
+                // Roca o Árbol
+                ctx.fillText(e.type === 'rock' ? ICONS.ROCK : ICONS.TREE, 0, 0);
+            }
+            ctx.restore();
+        });
+
+        // 3. Lógica de Agua
+        if (chickenInWater) {
+            if (foundLog && chicken.onLog) {
+                // Mover gallina con el tronco
+                chicken.x += chicken.onLog.speed;
+                // Si el tronco se lleva a la gallina fuera de pantalla
+                if (chicken.x < 0 || chicken.x > canvas.width) {
+                    gameOver("¡TE FUISTE LEJOS!");
+                }
+            } else {
+                gameOver("¡AL AGUA!");
+            }
+        }
+
+        // 4. Dibujar Gallina
+        ctx.font = `${chicken.size}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(ICONS.CHICKEN, chicken.x, chicken.lane * laneHeight + laneHeight/2);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+</script>
+
+</body>
+</html>
