@@ -1,16 +1,15 @@
+// exitGame.js
 window.addEventListener("load", function () {
+    const path = window.location.pathname.split("/").pop(); // index.html o juego1.html
 
-    // Añade estado al historial
-    history.pushState({game:true}, "", location.href);
+    // Solo aplicar confirmación en el index
+    if (path === "index.html" || path === "") {
 
-    window.addEventListener("popstate", function () {
+        window.addEventListener("beforeunload", function (e) {
+            // Muestra mensaje de confirmación
+            e.preventDefault();
+            e.returnValue = "¿Seguro que quieres salir del Game Center?";
+        });
 
-        const salir = confirm("¿Seguro que quieres salir del juego?");
-
-        if (!salir) {
-            history.pushState({game:true}, "", location.href);
-        }
-
-    });
-
+    }
 });
