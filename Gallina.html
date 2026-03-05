@@ -330,7 +330,9 @@
             ctx.translate(e.x, e.laneIndex * laneHeight + laneHeight/2);
             
             if (e.type === 'car') {
-                if (e.speed < 0) ctx.scale(-1, 1);
+                // Sentido corregido: los emojis de coches por defecto miran a la izquierda.
+                // Si la velocidad es positiva (va a la derecha), lo volteamos para que mire a la derecha.
+                if (e.speed > 0) ctx.scale(-1, 1);
                 ctx.fillText(e.icon, 0, 0);
                 
                 if (e.laneIndex === chicken.lane && Math.abs(e.x - chicken.x) < chicken.size * 0.65) {
