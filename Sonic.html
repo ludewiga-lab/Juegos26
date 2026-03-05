@@ -91,25 +91,21 @@
             </div>
             <div class="text-xs opacity-60 font-bold uppercase tracking-widest mt-1">RECORD: <span id="highscore">0</span></div>
             
-            <!-- Indicadores de Salto -->
             <div class="mt-4 flex gap-2" id="jump-indicators">
                 <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
                 <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
                 <div class="w-5 h-5 bg-blue-500 rounded-full border-2 border-white"></div>
             </div>
 
-            <!-- Badges de Poder Activo -->
             <div id="active-powers" class="flex flex-col gap-2 mt-4"></div>
         </div>
 
-        <!-- Pantalla de Inicio -->
         <div id="overlay">
             <h1 class="text-5xl font-black text-white mb-2 italic tracking-tighter text-center uppercase">Sonic <span class="text-blue-500">Sphere</span></h1>
             <p class="text-slate-400 mb-8 text-lg text-center px-6">Salta sobre plataformas estilo Mario.<br>¡Cuidado con las puyas!</p>
             <button id="startBtn" class="btn-main">¡JUGAR!</button>
         </div>
 
-        <!-- Modal Anti-Salida (Android/Navegador) -->
         <div id="exit-modal">
             <div class="bg-slate-900 border-2 border-blue-500 p-8 rounded-[2rem] text-center max-w-[85%]">
                 <h2 class="text-3xl font-black text-white mb-2 italic uppercase">¡Atención!</h2>
@@ -147,18 +143,30 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- LÓGICA ANTI-SALIDA ANDROID ---
-        // Empujamos un estado falso al historial para capturar el botón "atrás"
+        // --- LÓGICA REFORZADA DE ANTI-SALIDA ---
         function setupHistoryTrap() {
+            // Empujamos dos estados para asegurar que el botón atrás tenga algo que "sacar" sin cerrar la página
+            window.history.pushState({ noExit: true }, "");
             window.history.pushState({ noExit: true }, "");
         }
 
         window.onpopstate = function(event) {
+            // Si el usuario intenta volver atrás
             if (gameActive) {
-                gameActive = false; // Pausa el juego
+                gameActive = false; // Pausar juego
                 exitModal.style.display = 'flex';
-                // Volvemos a empujar el estado para que el siguiente "atrás" vuelva a disparar esto
+                // Re-inyectamos estados para mantenerlo atrapado
                 setupHistoryTrap();
+            } else if (exitModal.style.display === 'flex') {
+                // Si el modal ya está abierto y le da atrás otra vez, lo mantenemos ahí
+                setupHistoryTrap();
+            }
+        };
+
+        // Bloqueo adicional para evitar recargas accidentales o navegación
+        window.onbeforeunload = function() {
+            if (gameActive || score > 0) {
+                return "¿Seguro que quieres salir?";
             }
         };
 
@@ -168,10 +176,11 @@
         };
 
         confirmExitBtn.onclick = () => {
+            // Aquí permitimos la salida real recargando sin los guards
+            window.onbeforeunload = null;
             window.location.reload();
         };
 
-        // Configuración de Poderes
         const POWER_TYPES = {
             TURBO: { id: 'turbo', icon: '⚡', color: '#fbbf24', duration: 7000 },
             SHIELD: { id: 'shield', icon: '🛡️', color: '#10b981', duration: 8000 },
@@ -280,7 +289,9 @@
             exitModal.style.display = 'none';
             activePowersContainer.innerHTML = '';
             
-            setupHistoryTrap(); // Activa la trampa de historial al empezar
+            // Crucial: Iniciar historial en el primer click
+            setupHistoryTrap(); 
+            
             platforms.push({ x: 0, y: canvas.height * 0.75, w: 800, h: 400 });
             updateJumpUI();
         }
@@ -309,36 +320,30 @@
                 }
             }
 
-            let onGround = false;
             platforms.forEach(p => {
                 p.x -= currentSpeed;
-                
                 if (player.dy >= 0 && 
                     player.x + player.radius*0.7 > p.x && 
                     player.x - player.radius*0.7 < p.x + p.w &&
                     player.y + player.radius >= p.y && 
                     player.y + player.radius <= p.y + player.dy + 10) {
-                    
                     player.y = p.y - player.radius;
                     player.dy = 0;
                     if (player.jumpCount > 0) {
                         player.jumpCount = 0;
                         updateJumpUI();
                     }
-                    onGround = true;
                 }
             });
 
             collectibles.forEach((c, idx) => {
                 c.x -= currentSpeed;
-                
                 if (player.powers.magnet && c.type === 'coin') {
                     const dx = player.x - c.x;
                     const dy = player.y - c.y;
                     c.x += dx * 0.15;
                     c.y += dy * 0.15;
                 }
-
                 const dist = Math.hypot(player.x - c.x, player.y - c.y);
                 if (dist < player.radius + c.radius) {
                     if (c.type === 'coin') {
@@ -357,7 +362,6 @@
                 o.x -= currentSpeed;
                 const distX = Math.abs(player.x - (o.x + o.w/2));
                 const distY = Math.abs(player.y - (o.y - o.h/2));
-                
                 if (distX < player.radius * 0.8 && distY < player.radius * 0.8) {
                     if (player.powers.shield) {
                         delete player.powers.shield;
@@ -370,18 +374,15 @@
             });
 
             if (player.y > canvas.height + 50) gameOver();
-
             platforms = platforms.filter(p => p.x + p.w > -100);
             collectibles = collectibles.filter(c => c.x > -50);
             obstacles = obstacles.filter(o => o.x > -50);
-
             particles.forEach((p, i) => {
                 p.x += p.vx - (currentSpeed * 0.4);
                 p.y += p.vy;
                 p.life -= 0.025;
                 if (p.life <= 0) particles.splice(i, 1);
             });
-
             spawn();
         }
 
@@ -397,7 +398,6 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             platforms.forEach(p => {
                 ctx.fillStyle = '#1e293b';
                 ctx.fillRect(p.x, p.y, p.w, p.h);
@@ -406,7 +406,6 @@
                 ctx.fillStyle = '#334155';
                 ctx.fillRect(p.x + 10, p.y + 15, p.w - 20, 2);
             });
-
             collectibles.forEach(c => {
                 if (c.type === 'coin') {
                     ctx.fillStyle = '#facc15';
@@ -415,62 +414,39 @@
                 } else {
                     ctx.fillStyle = c.pData.color;
                     ctx.beginPath(); ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'white';
-                    ctx.font = '20px Arial';
-                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'white'; ctx.font = '20px Arial'; ctx.textAlign = 'center';
                     ctx.fillText(c.pData.icon, c.x, c.y + 7);
                 }
             });
-
             ctx.fillStyle = '#ef4444';
             obstacles.forEach(o => {
-                ctx.beginPath();
-                ctx.moveTo(o.x, o.y);
+                ctx.beginPath(); ctx.moveTo(o.x, o.y);
                 ctx.lineTo(o.x + o.w/2, o.y - o.h);
                 ctx.lineTo(o.x + o.w, o.y);
-                ctx.fill();
-                ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke();
+                ctx.fill(); ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke();
             });
-
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
                 ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
             });
             ctx.globalAlpha = 1;
-
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.rotate(player.rotation);
-            
+            ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.rotation);
             if (player.powers.shield) {
-                ctx.beginPath();
-                ctx.arc(0, 0, player.radius + 10, 0, Math.PI*2);
-                ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
-                ctx.lineWidth = 4;
-                ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, 0, player.radius + 10, 0, Math.PI*2);
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)'; ctx.lineWidth = 4; ctx.stroke();
             }
-
             const g = ctx.createRadialGradient(-5, -5, 2, 0, 0, player.radius);
             g.addColorStop(0, player.powers.turbo ? '#fde047' : '#60a5fa'); 
             g.addColorStop(1, player.powers.turbo ? '#b45309' : '#1d4ed8');
-            
-            ctx.fillStyle = g;
-            ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
             ctx.restore();
-
-            requestAnimationFrame(() => {
-                update();
-                draw();
-            });
+            requestAnimationFrame(() => { update(); draw(); });
         }
 
         window.addEventListener('touchstart', (e) => {
             if (e.target === startBtn || e.target.closest('#exit-modal')) return;
-            if (gameActive) {
-                e.preventDefault();
-                jump();
-            }
+            if (gameActive) { e.preventDefault(); jump(); }
         }, { passive: false });
 
         startBtn.addEventListener('click', resetGame);
