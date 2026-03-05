@@ -109,7 +109,6 @@
             image-rendering: auto;
         }
 
-        /* Cursor del borrador */
         #eraser-cursor {
             position: absolute;
             width: 30px;
@@ -120,7 +119,8 @@
             display: none;
             transform: translate(-50%, -50%);
             z-index: 10;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.5);
         }
 
         #controls {
@@ -158,6 +158,7 @@
             gap: 4px;
             border: 2px solid transparent;
             transition: 0.2s;
+            cursor: pointer;
         }
         .tool-card.active {
             background: rgba(56, 189, 248, 0.1);
@@ -168,15 +169,16 @@
         .tool-card.active span:last-child { opacity: 1; color: var(--accent); }
 
         .color-dot {
-            min-width: 32px;
-            height: 32px;
+            min-width: 34px;
+            height: 34px;
             border-radius: 50%;
             border: 2px solid rgba(255,255,255,0.2);
             transition: 0.2s;
             position: relative;
+            cursor: pointer;
         }
         .color-dot.active {
-            transform: scale(1.2);
+            transform: scale(1.15);
             border-color: white;
             box-shadow: 0 0 10px rgba(255,255,255,0.4);
         }
@@ -187,12 +189,14 @@
             width: 100%;
             height: 100%;
             cursor: pointer;
+            top: 0;
+            left: 0;
         }
 
         .size-bar {
             display: flex;
             align-items: center;
-            padding: 0 20px 8px;
+            padding: 4px 20px 4px;
             gap: 12px;
         }
         input[type=range] {
@@ -204,8 +208,8 @@
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             background: var(--text);
             border-radius: 50%;
             box-shadow: 0 0 5px rgba(0,0,0,0.5);
@@ -216,15 +220,16 @@
             top: 80px;
             left: 50%;
             transform: translateX(-50%) translateY(20px);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
+            padding: 10px 24px;
+            border-radius: 30px;
             font-size: 0.9rem;
             opacity: 0;
             pointer-events: none;
-            transition: 0.3s;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 100;
+            border: 1px solid var(--border);
         }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
@@ -235,9 +240,9 @@
     <header>
         <div class="logo"><span>🎨</span> Pintura Pro</div>
         <div class="header-actions">
-            <button class="btn-circle" id="undo-btn">↩️</button>
-            <button class="btn-circle" id="clear-btn">🗑️</button>
-            <button class="btn-circle" id="save-btn">💾</button>
+            <button class="btn-circle" id="undo-btn" title="Deshacer">↩️</button>
+            <button class="btn-circle" id="clear-btn" title="Borrar todo">🗑️</button>
+            <button class="btn-circle" id="save-btn" title="Guardar">💾</button>
         </div>
     </header>
 
@@ -247,36 +252,31 @@
     </div>
 
     <div id="controls">
-        <div class="scroll-row" id="tool-row">
-            <!-- Herramientas generadas por JS -->
-        </div>
+        <div class="scroll-row" id="tool-row"></div>
 
         <div class="size-bar">
-            <span style="font-size: 0.8rem; color: #fff; opacity: 0.5;">Tamaño</span>
+            <span style="font-size: 0.75rem; color: #fff; opacity: 0.6; width: 50px;">Grosor</span>
             <input type="range" id="size-slider" min="2" max="100" value="15">
         </div>
 
         <div class="scroll-row" id="color-row">
-            <div class="color-dot" style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);">
+            <div class="color-dot" id="custom-color-dot" style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);">
                 <input type="color" class="custom-color-input" id="custom-color">
             </div>
-            <!-- Colores generados por JS -->
         </div>
     </div>
 </div>
 
-<div id="toast">¡Guardado en galería!</div>
+<div id="toast">¡Guardado!</div>
 
 <script>
-    /**
-     * CONFIGURACIÓN Y ESTADO
-     */
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d', { desynchronized: true });
     const container = document.getElementById('canvas-container');
     const eraserCursor = document.getElementById('eraser-cursor');
     
     let isDrawing = false;
+    let activePointerId = null; // Para control de un solo dedo
     let lastX = 0;
     let lastY = 0;
     let currentTool = 'brush';
@@ -302,9 +302,6 @@
         '#ffffff', '#64748b', '#000000'
     ];
 
-    /**
-     * INICIALIZACIÓN
-     */
     function init() {
         resize();
         renderTools();
@@ -314,16 +311,28 @@
         const saved = localStorage.getItem('magic_paint_last');
         if (saved) {
             const img = new Image();
-            img.onload = () => ctx.drawImage(img, 0, 0);
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
+                saveToHistory();
+            };
             img.src = saved;
+        } else {
+            saveToHistory();
         }
 
-        saveToHistory();
+        // Preguntar antes de salir
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = ''; // Requerido por Chrome para mostrar el diálogo
+        });
     }
 
     function resize() {
         const dpr = window.devicePixelRatio || 1;
         const rect = container.getBoundingClientRect();
+        
+        // Guardar contenido actual antes de redimensionar
+        const tempContent = canvas.toDataURL();
         
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
@@ -332,6 +341,11 @@
         
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, rect.width, rect.height);
+
+        // Restaurar contenido si existía
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        img.src = tempContent;
     }
 
     function renderTools() {
@@ -346,7 +360,6 @@
                 document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('active'));
                 div.classList.add('active');
                 
-                // Actualizar cursor visual
                 if (currentTool === 'eraser') {
                     updateEraserCursorSize();
                 } else {
@@ -367,9 +380,11 @@
                 currentColor = color;
                 document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
                 div.classList.add('active');
+                
+                // Si estaba en borrador, cambiar a pincel automáticamente al elegir color
                 if(currentTool === 'eraser') {
-                    const brushBtn = Array.from(document.querySelectorAll('.tool-card')).find(c => c.innerText.includes('Pincel'));
-                    if(brushBtn) brushBtn.click();
+                    const brushTool = document.querySelector('.tool-card'); 
+                    if(brushTool) brushTool.click();
                 }
             };
             row.appendChild(div);
@@ -377,15 +392,13 @@
     }
 
     function updateEraserCursorSize() {
-        const size = currentSize * 2;
+        const size = currentSize;
         eraserCursor.style.width = size + 'px';
         eraserCursor.style.height = size + 'px';
     }
 
-    /**
-     * LÓGICA DE DIBUJO
-     */
     function setupEventListeners() {
+        // Pointer Events manejan mouse y touch
         canvas.addEventListener('pointerdown', startDrawing);
         canvas.addEventListener('pointermove', draw);
         canvas.addEventListener('pointerup', stopDrawing);
@@ -399,13 +412,21 @@
         document.getElementById('custom-color').oninput = (e) => {
             currentColor = e.target.value;
             document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            document.getElementById('custom-color-dot').classList.add('active');
+            if(currentTool === 'eraser') {
+                const brushTool = document.querySelector('.tool-card');
+                if(brushTool) brushTool.click();
+            }
         };
 
         document.getElementById('clear-btn').onclick = () => {
-            if(confirm('¿Borrar todo el dibujo?')) {
+            // No usamos alert() ni confirm() nativos si es posible, pero para borrar es aceptable.
+            if(window.confirm('¿Quieres borrar todo el dibujo?')) {
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
                 saveToHistory();
+                localStorage.setItem('magic_paint_last', canvas.toDataURL());
+                showToast("Lienzo limpio 🗑️");
             }
         };
 
@@ -414,6 +435,10 @@
     }
 
     function startDrawing(e) {
+        // REGLA: Un solo dedo/puntero a la vez
+        if (activePointerId !== null) return;
+        activePointerId = e.pointerId;
+
         isDrawing = true;
         const pos = getMousePos(e);
         lastX = pos.x;
@@ -432,45 +457,49 @@
     }
 
     function draw(e) {
-        const pos = getMousePos(e);
-
-        // Siempre mover el cursor si es borrador aunque no esté dibujando
-        if (currentTool === 'eraser') {
-            eraserCursor.style.display = 'block';
-            updateCursorPos(pos.x, pos.y);
-        } else {
-            eraserCursor.style.display = 'none';
+        if (!isDrawing || e.pointerId !== activePointerId) {
+            // Mover cursor de borrador incluso sin presionar
+            if (currentTool === 'eraser') {
+                const pos = getMousePos(e);
+                eraserCursor.style.display = 'block';
+                updateCursorPos(pos.x, pos.y);
+            }
+            return;
         }
 
-        if (!isDrawing) return;
+        const pos = getMousePos(e);
+
+        if (currentTool === 'eraser') {
+            updateCursorPos(pos.x, pos.y);
+        }
 
         ctx.lineWidth = currentSize;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        ctx.globalAlpha = 1;
 
-        if (currentTool === 'brush') {
-            ctx.strokeStyle = currentColor;
-            ctx.globalAlpha = 1;
-            drawLine(lastX, lastY, pos.x, pos.y);
-        } 
-        else if (currentTool === 'marker') {
-            ctx.strokeStyle = currentColor;
-            ctx.globalAlpha = 0.2;
-            drawLine(lastX, lastY, pos.x, pos.y);
-        }
-        else if (currentTool === 'eraser') {
-            ctx.strokeStyle = '#ffffff';
-            ctx.globalAlpha = 1;
-            ctx.lineWidth = currentSize * 2;
-            drawLine(lastX, lastY, pos.x, pos.y);
-        }
-        else if (currentTool === 'rainbow') {
-            ctx.strokeStyle = `hsl(${Date.now() % 360}, 80%, 60%)`;
-            ctx.globalAlpha = 1;
-            drawLine(lastX, lastY, pos.x, pos.y);
-        }
-        else if (currentTool === 'spray') {
-            drawSpray(pos.x, pos.y);
+        switch(currentTool) {
+            case 'brush':
+                ctx.strokeStyle = currentColor;
+                drawLine(lastX, lastY, pos.x, pos.y);
+                break;
+            case 'marker':
+                ctx.strokeStyle = currentColor;
+                ctx.globalAlpha = 0.2;
+                drawLine(lastX, lastY, pos.x, pos.y);
+                break;
+            case 'eraser':
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = currentSize;
+                drawLine(lastX, lastY, pos.x, pos.y);
+                break;
+            case 'rainbow':
+                ctx.strokeStyle = `hsl(${Date.now() % 360}, 80%, 60%)`;
+                drawLine(lastX, lastY, pos.x, pos.y);
+                break;
+            case 'spray':
+                drawSpray(pos.x, pos.y);
+                break;
         }
 
         lastX = pos.x;
@@ -486,21 +515,21 @@
 
     function drawSpray(x, y) {
         ctx.fillStyle = currentColor;
-        ctx.globalAlpha = 0.5;
-        for (let i = 0; i < 20; i++) {
-            const offsetX = (Math.random() - 0.5) * currentSize * 2;
-            const offsetY = (Math.random() - 0.5) * currentSize * 2;
+        ctx.globalAlpha = 0.3;
+        const density = 25;
+        for (let i = 0; i < density; i++) {
+            const offsetX = (Math.random() - 0.5) * currentSize * 2.5;
+            const offsetY = (Math.random() - 0.5) * currentSize * 2.5;
             ctx.fillRect(x + offsetX, y + offsetY, 1, 1);
         }
     }
 
     function drawSticker(x, y) {
         ctx.globalAlpha = 1;
-        ctx.font = `${currentSize * 2}px serif`;
+        ctx.font = `${currentSize * 2.5}px serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(STICKERS[currentStickerIndex], x, y);
-        // Rotar sticker para el siguiente click
         currentStickerIndex = (currentStickerIndex + 1) % STICKERS.length;
     }
 
@@ -509,9 +538,10 @@
         eraserCursor.style.top = y + 'px';
     }
 
-    function stopDrawing() {
-        if(isDrawing) {
+    function stopDrawing(e) {
+        if(e.pointerId === activePointerId) {
             isDrawing = false;
+            activePointerId = null;
             saveToHistory();
             localStorage.setItem('magic_paint_last', canvas.toDataURL());
         }
@@ -519,51 +549,59 @@
 
     function getMousePos(e) {
         const rect = canvas.getBoundingClientRect();
-        // Se usa clientX/Y directamente restando el rect para precisión absoluta
         return {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
         };
     }
 
-    /**
-     * HISTORIAL Y GUARDADO
-     */
     function saveToHistory() {
-        if (history.length > 20) history.shift();
+        // Limitar historial para no saturar memoria
+        if (history.length > 30) history.shift();
         history.push(canvas.toDataURL());
     }
 
     function undo() {
         if (history.length > 1) {
-            history.pop();
+            history.pop(); // Sacar el estado actual
             const lastState = history[history.length - 1];
             const img = new Image();
             img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+                // Limpiar antes de redibujar para evitar transparencias acumuladas
+                ctx.clearRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
+                ctx.drawImage(img, 0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
             };
             img.src = lastState;
+        } else {
+            showToast("No hay más para deshacer");
         }
     }
 
     function saveImage() {
-        const link = document.createElement('a');
-        link.download = `mi-obra-${Date.now()}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
-        showToast("¡Imagen guardada! 💾");
+        try {
+            const link = document.createElement('a');
+            link.download = `dibujo-pro-${Date.now()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            showToast("¡Obra guardada! 💾");
+        } catch(e) {
+            showToast("Error al guardar");
+        }
     }
 
     function showToast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg;
         t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2500);
+        setTimeout(() => t.classList.remove('show'), 2000);
     }
 
     window.onload = init;
-    window.addEventListener('touchmove', (e) => {
+
+    // Evitar scroll accidental al dibujar
+    document.addEventListener('touchmove', (e) => {
         if (isDrawing) e.preventDefault();
     }, { passive: false });
 
