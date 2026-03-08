@@ -51,11 +51,14 @@
             z-index: 30;
         }
 
-        /* Transiciones suaves para menús */
-        .ui-panel { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* Panel inferior con margen extra para evitar que la barra de Samsung lo tape */
+        .bottom-panel {
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+        }
+
     </style>
 </head>
-<body class="flex flex-col h-screen w-screen relative">
+<body class="flex flex-col h-[100dvh] w-[100dvw] relative">
 
     <!-- 1. PANTALLA DE INICIO -->
     <div id="home-screen" class="text-white">
@@ -65,7 +68,7 @@
             </div>
         </div>
         <h1 class="text-4xl font-black mb-2 tracking-tight">ProBuilder <span class="text-blue-500">Studio</span></h1>
-        <p class="text-slate-400 mb-10 text-center px-6">Plataforma de Diseño Conceptual y Ensamblaje</p>
+        <p class="text-slate-400 mb-10 text-center px-6">Ensamblaje Preciso (Snap & Collision)</p>
         
         <button onclick="startApp()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-transform active:scale-95">
             Nuevo Proyecto
@@ -97,21 +100,26 @@
             <canvas id="appCanvas" class="absolute inset-0 w-full h-full"></canvas>
             
             <!-- Menú Contextual (Aparece sobre la pieza seleccionada) -->
-            <div id="context-menu" class="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl flex gap-2">
-                <button onclick="deleteSelected()" class="w-10 h-10 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center text-xl active:bg-red-500/30">🗑️</button>
-                <button onclick="bringToFront()" class="w-10 h-10 bg-slate-800 text-white rounded-lg flex items-center justify-center text-xl active:bg-slate-700">⏫</button>
-                <div class="w-px bg-slate-700 mx-1"></div>
+            <div id="context-menu" class="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl flex gap-2 items-center">
+                <button onclick="deleteSelected()" class="w-10 h-10 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center text-xl active:bg-red-500/30" title="Eliminar">🗑️</button>
+                <button onclick="duplicateSelected()" class="w-10 h-10 bg-slate-800 text-white rounded-lg flex items-center justify-center text-xl active:bg-slate-700" title="Duplicar">📑</button>
+                <div class="w-px bg-slate-700 mx-1 h-8"></div>
                 <!-- Paleta de colores rápida -->
                 <button onclick="changeColor('#ef4444')" class="w-8 h-8 rounded-full bg-red-500 border-2 border-slate-900"></button>
                 <button onclick="changeColor('#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 border-2 border-slate-900"></button>
                 <button onclick="changeColor('#22c55e')" class="w-8 h-8 rounded-full bg-green-500 border-2 border-slate-900"></button>
                 <button onclick="changeColor('#eab308')" class="w-8 h-8 rounded-full bg-yellow-500 border-2 border-slate-900"></button>
                 <button onclick="changeColor('#64748b')" class="w-8 h-8 rounded-full bg-slate-500 border-2 border-slate-900"></button>
+                <div class="w-px bg-slate-700 mx-1 h-8"></div>
+                <!-- Color Personalizado -->
+                <div class="relative w-8 h-8 rounded-full border-2 border-slate-900 overflow-hidden" title="Color Personalizado">
+                    <input type="color" id="customColor" onchange="changeColor(this.value)" value="#ffffff" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer">
+                </div>
             </div>
         </div>
 
         <!-- Panel Inferior: Categorías y Elementos -->
-        <div class="bg-slate-900 z-20 shrink-0 pb-[env(safe-area-inset-bottom)] border-t border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+        <div class="bg-slate-900 z-20 shrink-0 border-t border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.3)] bottom-panel">
             <!-- Pestañas -->
             <div class="flex border-b border-slate-800">
                 <button onclick="switchTab('blocks')" id="tab-blocks" class="flex-1 py-3 text-sm font-bold border-b-2 border-blue-500 text-blue-400">BLOQUES</button>
@@ -120,7 +128,6 @@
             
             <!-- Contenedor de Items (Scroll Horizontal) -->
             <div id="tray-blocks" class="flex gap-4 p-4 overflow-x-auto no-scrollbar items-center">
-                <!-- Los botones llaman a addBlock(columnas, filas) -->
                 <button onclick="addBlock(1,1)" class="w-14 h-14 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 hover:border-blue-500 active:scale-95 shrink-0">
                     <div class="w-6 h-6 bg-red-500 rounded-sm shadow-inner flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-red-600/50"></div></div>
                 </button>
@@ -153,9 +160,16 @@
                 <button onclick="addSticker('🛞')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Rueda">🛞</button>
                 <button onclick="addSticker('🏠')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Casa">🏠</button>
                 <button onclick="addSticker('🪟')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Ventana">🪟</button>
+                <button onclick="addSticker('🚧')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Valla">🚧</button>
                 <button onclick="addSticker('🚦')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Semáforo">🚦</button>
                 <button onclick="addSticker('🏁')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Meta">🏁</button>
+                <button onclick="addSticker('⚡')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Rayo">⚡</button>
+                <button onclick="addSticker('❤️')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Corazón">❤️</button>
+                <button onclick="addSticker('🔋')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Batería">🔋</button>
                 <button onclick="addSticker('🔧')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Herramienta">🔧</button>
+                <button onclick="addSticker('🌳')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Árbol">🌳</button>
+                <button onclick="addSticker('🐶')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Perro">🐶</button>
+                <button onclick="addSticker('🚀')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Cohete">🚀</button>
             </div>
         </div>
     </div>
@@ -172,14 +186,12 @@
         const container = document.getElementById('canvas-container');
         const contextMenu = document.getElementById('context-menu');
         
-        // Constantes del sistema
-        const UNIT = 30; // Tamaño base de un "stud" o muesca de Lego
-        const HANDLE_RADIUS = 16; // Radio del botón de rotación
+        const UNIT = 30; // Tamaño base de un "stud"
+        const HANDLE_RADIUS = 16; 
         
         let objects = [];
         let selectedObj = null;
         
-        // Estado del puntero
         let isDragging = false;
         let isRotating = false;
         let startX = 0, startY = 0;
@@ -192,8 +204,6 @@
         }
         window.addEventListener('resize', resizeCanvas);
 
-        // --- DEFINICIÓN DE CLASES ---
-
         class BaseObject {
             constructor(x, y) {
                 this.id = Date.now() + Math.random();
@@ -201,7 +211,6 @@
                 this.y = y;
                 this.rotation = 0;
             }
-            // Álgebra: Convertir un toque en la pantalla al espacio local del objeto rotado
             localPoint(px, py) {
                 const tx = px - this.x;
                 const ty = py - this.y;
@@ -211,6 +220,14 @@
                     x: tx * cos - ty * sin,
                     y: tx * sin + ty * cos
                 };
+            }
+            
+            // Ayudante matemático avanzado para calcular el AABB (Alineado a 90 grados)
+            getEffectiveBounds() {
+                const isRotated90 = Math.abs(Math.sin(this.rotation)) > 0.5;
+                const effW = isRotated90 ? this.h : this.w;
+                const effH = isRotated90 ? this.w : this.h;
+                return { w: effW, h: effH };
             }
         }
 
@@ -230,28 +247,22 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
 
-                // Dibujar base del bloque con sombra/profundidad
                 ctx.fillStyle = this.color;
                 ctx.shadowColor = 'rgba(0,0,0,0.4)';
                 ctx.shadowBlur = 6;
                 ctx.shadowOffsetY = 4;
                 
-                // Rectángulo principal
                 const rx = -this.w / 2;
                 const ry = -this.h / 2;
                 ctx.beginPath();
-                ctx.roundRect(rx, ry, this.w, this.h, 4); // Borde ligeramente redondeado
+                ctx.roundRect(rx, ry, this.w, this.h, 4);
                 ctx.fill();
 
-                // Quitar sombra exterior para los detalles internos
                 ctx.shadowColor = 'transparent';
-
-                // Borde interno (para darle efecto biselado o 3D)
                 ctx.strokeStyle = 'rgba(255,255,255,0.2)';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(rx + 2, ry + 2, this.w - 4, this.h - 4);
 
-                // Dibujar los "Studs" (cilindros superiores)
                 ctx.fillStyle = this.color;
                 ctx.lineWidth = 1.5;
                 for (let c = 0; c < this.cols; c++) {
@@ -259,19 +270,16 @@
                         const sx = rx + (c * UNIT) + (UNIT / 2);
                         const sy = ry + (r * UNIT) + (UNIT / 2);
                         
-                        // Sombra del stud
                         ctx.beginPath();
                         ctx.arc(sx, sy + 1, UNIT * 0.3, 0, Math.PI * 2);
                         ctx.fillStyle = 'rgba(0,0,0,0.2)';
                         ctx.fill();
 
-                        // Stud real
                         ctx.beginPath();
                         ctx.arc(sx, sy, UNIT * 0.3, 0, Math.PI * 2);
                         ctx.fillStyle = this.color;
                         ctx.fill();
                         
-                        // Brillo superior del stud (Reflejo)
                         ctx.strokeStyle = 'rgba(255,255,255,0.4)';
                         ctx.beginPath();
                         ctx.arc(sx, sy, UNIT * 0.2, Math.PI, Math.PI * 1.5);
@@ -306,12 +314,10 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 
-                // Efecto de pegatina (borde blanco grueso)
                 ctx.shadowColor = 'rgba(0,0,0,0.3)';
                 ctx.shadowBlur = 8;
                 ctx.shadowOffsetY = 4;
                 
-                // Hack para borde blanco en Emojis: dibujarlo desplazado ligeramente
                 ctx.fillStyle = 'white';
                 for(let i=0; i<8; i++) {
                     ctx.fillText(this.emoji, Math.cos(i)*3, Math.sin(i)*3);
@@ -325,48 +331,39 @@
 
             hitTest(px, py) {
                 const loc = this.localPoint(px, py);
-                // Aproximación de colisión para el sticker
                 return loc.x >= -this.w/2 && loc.x <= this.w/2 && loc.y >= -this.h/2 && loc.y <= this.h/2;
             }
         }
 
-        // --- LÓGICA DE RENDERIZADO (Event-Driven, no bucle continuo) ---
         function render() {
-            // Limpiar canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Dibujar objetos
             objects.forEach(obj => {
                 obj.draw(ctx, obj === selectedObj);
             });
 
-            // Dibujar UI de Selección (Bounding Box y Handle de Rotación)
             if (selectedObj) {
                 ctx.save();
                 ctx.translate(selectedObj.x, selectedObj.y);
                 ctx.rotate(selectedObj.rotation);
 
-                // Caja punteada
                 ctx.strokeStyle = '#3b82f6';
                 ctx.lineWidth = 2;
                 ctx.setLineDash([5, 5]);
                 ctx.strokeRect(-selectedObj.w/2 - 4, -selectedObj.h/2 - 4, selectedObj.w + 8, selectedObj.h + 8);
                 
-                // Línea hacia el tirador de rotación
                 ctx.setLineDash([]);
                 ctx.beginPath();
                 ctx.moveTo(0, -selectedObj.h/2 - 4);
                 ctx.lineTo(0, -selectedObj.h/2 - 30);
                 ctx.stroke();
 
-                // Tirador de rotación (círculo azul)
                 ctx.beginPath();
                 ctx.arc(0, -selectedObj.h/2 - 30, HANDLE_RADIUS, 0, Math.PI * 2);
                 ctx.fillStyle = 'white';
                 ctx.fill();
                 ctx.stroke();
                 
-                // Icono de rotar dibujado a mano
                 ctx.fillStyle = '#3b82f6';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
@@ -374,8 +371,6 @@
                 ctx.fillText('↻', 0, -selectedObj.h/2 - 30);
 
                 ctx.restore();
-                
-                // Posicionar el menú contextual en HTML sobre la pieza
                 updateContextMenu();
             } else {
                 contextMenu.style.display = 'none';
@@ -384,53 +379,76 @@
 
         function updateContextMenu() {
             if (!selectedObj) return;
-            // Solo actualizamos si no estamos arrastrando para que no vibre
             if (isDragging || isRotating) {
                 contextMenu.style.display = 'none';
                 return;
             }
             contextMenu.style.display = 'flex';
-            
-            // Obtener coordenadas de pantalla
-            const rect = canvas.getBoundingClientRect();
-            // Calcular el punto más alto de la pieza considerando su rotación
             const radius = Math.max(selectedObj.w, selectedObj.h) / 2 + 50; 
-            
-            // Colocar arriba de la pieza
             contextMenu.style.left = `${selectedObj.x}px`;
             contextMenu.style.top = `${selectedObj.y - radius}px`;
+
+            // Actualizar el selector de color personalizado si es un bloque
+            if (selectedObj.type === 'block') {
+                document.getElementById('customColor').value = selectedObj.color;
+            }
         }
 
-        // --- SISTEMA DE EVENTOS TÁCTILES / PUNTERO ---
+        // --- SISTEMA MATEMÁTICO DE COLISIÓN (AABB para 90°) ---
+        function checkCollision(testObj, newX, newY, newRot) {
+            if (testObj.type !== 'block') return false; 
+            
+            // Calculamos la caja delimitadora (AABB) considerando ángulos de 90 grados
+            const isRotated90 = Math.abs(Math.sin(newRot)) > 0.5;
+            const w1 = isRotated90 ? testObj.h : testObj.w;
+            const h1 = isRotated90 ? testObj.w : testObj.h;
+            
+            // Restamos 2 píxeles de tolerancia 
+            const r1 = { x: newX - w1/2 + 1, y: newY - h1/2 + 1, w: w1 - 2, h: h1 - 2 };
+
+            for (let obj of objects) {
+                if (obj === testObj || obj.type !== 'block') continue;
+                
+                const bounds2 = obj.getEffectiveBounds();
+                const r2 = { x: obj.x - bounds2.w/2, y: obj.y - bounds2.h/2, w: bounds2.w, h: bounds2.h };
+
+                // Intersección de rectángulos
+                if (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x &&
+                    r1.y < r2.y + r2.h && r1.y + r1.h > r2.y) {
+                    return true; 
+                }
+            }
+            return false;
+        }
+
         canvas.addEventListener('pointerdown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const px = e.clientX - rect.left;
             const py = e.clientY - rect.top;
 
-            // 1. Chequear si tocó el tirador de rotación del objeto seleccionado
             if (selectedObj) {
                 const loc = selectedObj.localPoint(px, py);
                 const handleY = -selectedObj.h/2 - 30;
                 const distToHandle = Math.hypot(loc.x, loc.y - handleY);
                 
-                if (distToHandle <= HANDLE_RADIUS + 10) { // +10 de tolerancia táctil
+                if (distToHandle <= HANDLE_RADIUS + 10) { 
                     isRotating = true;
                     startX = px;
                     startY = py;
                     initialObjRot = selectedObj.rotation;
+                    initialObjX = selectedObj.x;
+                    initialObjY = selectedObj.y;
                     canvas.setPointerCapture(e.pointerId);
                     contextMenu.style.display = 'none';
                     return;
                 }
             }
 
-            // 2. Chequear si tocó alguna pieza (Iteramos en reversa para seleccionar la de más arriba)
             let hit = false;
             for (let i = objects.length - 1; i >= 0; i--) {
                 if (objects[i].hitTest(px, py)) {
                     selectedObj = objects[i];
                     
-                    // Mover al frente (Z-Index)
                     objects.splice(i, 1);
                     objects.push(selectedObj);
                     
@@ -439,6 +457,7 @@
                     startY = py;
                     initialObjX = selectedObj.x;
                     initialObjY = selectedObj.y;
+                    initialObjRot = selectedObj.rotation;
                     
                     hit = true;
                     canvas.setPointerCapture(e.pointerId);
@@ -448,7 +467,6 @@
                 }
             }
 
-            // 3. Si no tocó nada, deseleccionar
             if (!hit) {
                 selectedObj = null;
                 render();
@@ -463,51 +481,75 @@
             const py = e.clientY - rect.top;
 
             if (isDragging && selectedObj) {
-                // Movimiento libre (Free Drag)
                 const dx = px - startX;
                 const dy = py - startY;
                 selectedObj.x = initialObjX + dx;
                 selectedObj.y = initialObjY + dy;
             } 
             else if (isRotating && selectedObj) {
-                // Matemáticas de rotación (Ángulo hacia el puntero)
                 const cx = selectedObj.x;
                 const cy = selectedObj.y;
                 const angle = Math.atan2(py - cy, px - cx);
-                
-                // Como el tirador está a -90 grados (arriba), compensamos sumando Math.PI/2
                 let finalAngle = angle + Math.PI / 2;
                 
-                // Funcionalidad "Snap": Anclar a ángulos exactos de 45 grados (Math.PI / 4)
-                // Esto facilita enormemente construir con precisión en pantallas táctiles
-                const snapAngle = Math.PI / 4; 
+                // RESTRICCIÓN LEGO: Solo giros de 90° exactos (Math.PI / 2) para encaje perfecto
+                const snapAngle = Math.PI / 2; 
                 selectedObj.rotation = Math.round(finalAngle / snapAngle) * snapAngle;
             }
-            
             render();
         });
 
         canvas.addEventListener('pointerup', (e) => {
+            if (isDragging || isRotating) {
+                if (selectedObj) {
+                    const bounds = selectedObj.getEffectiveBounds();
+                    
+                    let topLeftX = Math.round((selectedObj.x - bounds.w/2) / UNIT) * UNIT;
+                    let topLeftY = Math.round((selectedObj.y - bounds.h/2) / UNIT) * UNIT;
+                    
+                    let targetX = topLeftX + bounds.w/2;
+                    let targetY = topLeftY + bounds.h/2;
+
+                    if (checkCollision(selectedObj, targetX, targetY, selectedObj.rotation)) {
+                        selectedObj.x = initialObjX;
+                        selectedObj.y = initialObjY;
+                        selectedObj.rotation = initialObjRot;
+                        showToast("Espacio Ocupado 🚫");
+                    } else {
+                        selectedObj.x = targetX;
+                        selectedObj.y = targetY;
+                        if(isDragging) {
+                            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                            ctx.fillRect(topLeftX, topLeftY, bounds.w, bounds.h);
+                        }
+                    }
+                }
+            }
+
             isDragging = false;
             isRotating = false;
             canvas.releasePointerCapture(e.pointerId);
-            render(); // Llama render final para mostrar el menú contextual
+            render(); 
         });
 
         // --- ACCIONES DE UI ---
 
         function addBlock(cols, rows) {
             const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#64748b'];
-            // Determinar color basado en el botón (simplificado)
             let color = colors[cols % colors.length]; 
-            if(cols===2 && rows===2) color = '#64748b'; // gris
-            if(cols===4) color = '#eab308'; // amarillo
+            if(cols===2 && rows===2) color = '#64748b'; 
+            if(cols===4) color = '#eab308'; 
             
-            // Aparecer en el centro
-            const x = canvas.width / 2;
-            const y = canvas.height / 2;
+            let x = Math.round((canvas.width / 2) / UNIT) * UNIT;
+            let y = Math.round((canvas.height / 2) / UNIT) * UNIT;
             
             const block = new LegoBlock(x, y, cols, rows, color);
+            
+            while(checkCollision(block, block.x, block.y, block.rotation)) {
+                block.x += UNIT;
+                block.y -= UNIT;
+            }
+
             objects.push(block);
             selectedObj = block;
             render();
@@ -532,12 +574,31 @@
             showToast("Elemento eliminado");
         }
 
-        function bringToFront() {
+        function duplicateSelected() {
             if (!selectedObj) return;
-            objects = objects.filter(o => o !== selectedObj);
-            objects.push(selectedObj);
+            
+            let newObj;
+            let spawnX = selectedObj.x + UNIT;
+            let spawnY = selectedObj.y + UNIT;
+
+            if (selectedObj.type === 'block') {
+                newObj = new LegoBlock(spawnX, spawnY, selectedObj.cols, selectedObj.rows, selectedObj.color);
+                newObj.rotation = selectedObj.rotation;
+                
+                // Buscar espacio libre si hay colisión
+                while(checkCollision(newObj, newObj.x, newObj.y, newObj.rotation)) {
+                    newObj.x += UNIT;
+                    newObj.y -= UNIT;
+                }
+            } else if (selectedObj.type === 'sticker') {
+                newObj = new Sticker(spawnX, spawnY, selectedObj.emoji);
+                newObj.rotation = selectedObj.rotation;
+            }
+
+            objects.push(newObj);
+            selectedObj = newObj;
             render();
-            showToast("Movido al frente");
+            showToast("Elemento duplicado 📑");
         }
 
         function changeColor(color) {
@@ -557,19 +618,15 @@
         }
 
         function exportCanvas() {
-            // Deseleccionar temporalmente para que no salga el recuadro azul en la foto
             const tempSelected = selectedObj;
             selectedObj = null;
             render();
 
-            // Exportar a Data URL
             const dataURL = canvas.toDataURL('image/png');
             
-            // Restaurar selección
             selectedObj = tempSelected;
             render();
 
-            // Crear un enlace falso para forzar la descarga
             const link = document.createElement('a');
             link.download = 'ProBuilder_Project.png';
             link.href = dataURL;
@@ -597,11 +654,9 @@
         function startApp() {
             document.getElementById('home-screen').style.display = 'none';
             document.getElementById('workspace').classList.remove('hidden');
-            // Retrasar resize un frame para asegurar que el contenedor tenga dimensiones
             setTimeout(() => {
                 resizeCanvas();
                 if(objects.length === 0) {
-                    // Inicializar con un bloque de muestra
                     addBlock(4,2); 
                 }
             }, 50);
