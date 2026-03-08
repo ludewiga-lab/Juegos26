@@ -143,27 +143,21 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- LÓGICA REFORZADA DE ANTI-SALIDA ---
         function setupHistoryTrap() {
-            // Empujamos dos estados para asegurar que el botón atrás tenga algo que "sacar" sin cerrar la página
             window.history.pushState({ noExit: true }, "");
             window.history.pushState({ noExit: true }, "");
         }
 
         window.onpopstate = function(event) {
-            // Si el usuario intenta volver atrás
             if (gameActive) {
-                gameActive = false; // Pausar juego
+                gameActive = false; 
                 exitModal.style.display = 'flex';
-                // Re-inyectamos estados para mantenerlo atrapado
                 setupHistoryTrap();
             } else if (exitModal.style.display === 'flex') {
-                // Si el modal ya está abierto y le da atrás otra vez, lo mantenemos ahí
                 setupHistoryTrap();
             }
         };
 
-        // Bloqueo adicional para evitar recargas accidentales o navegación
         window.onbeforeunload = function() {
             if (gameActive || score > 0) {
                 return "¿Seguro que quieres salir?";
@@ -173,10 +167,11 @@
         resumeBtn.onclick = () => {
             exitModal.style.display = 'none';
             gameActive = true;
+            // Evita un salto gigante de DT al reanudar
+            lastTime = performance.now();
         };
 
         confirmExitBtn.onclick = () => {
-            // Aquí permitimos la salida real recargando sin los guards
             window.onbeforeunload = null;
             window.location.reload();
         };
@@ -206,12 +201,13 @@
         
         const gravity = 0.65;
         let baseSpeed = 8; 
+        let lastTime = 0; // Agregado para Control Delta Time
 
         function jump() {
             if (!gameActive) return;
             if (player.jumpCount < player.maxJumps) {
                 const boost = player.powers.turbo ? 1.2 : 1.0;
-                player.dy = player.baseJumpForce * boost;
+                player.dy = player.baseJumpForce * boost; // El impulso es instantáneo, no usa dt
                 player.jumpCount++;
                 updateJumpUI();
                 createParticles(player.x, player.y, player.powers.turbo ? '#fbbf24' : '#60a5fa', 12);
@@ -289,25 +285,25 @@
             exitModal.style.display = 'none';
             activePowersContainer.innerHTML = '';
             
-            // Crucial: Iniciar historial en el primer click
             setupHistoryTrap(); 
-            
             platforms.push({ x: 0, y: canvas.height * 0.75, w: 800, h: 400 });
             updateJumpUI();
+            lastTime = performance.now(); // Resetear el reloj
         }
 
-        function update() {
+        // --- MOTOR DE FÍSICA SEPARADO Y PROTEGIDO POR DELTA TIME (dt) ---
+        function update(dt) {
             if (!gameActive) return;
 
             const currentSpeed = baseSpeed * (player.powers.turbo ? 1.5 : 1);
             
-            player.dy += gravity;
-            player.y += player.dy;
-            player.rotation += currentSpeed * 0.12;
+            player.dy += gravity * dt;
+            player.y += player.dy * dt;
+            player.rotation += currentSpeed * 0.12 * dt;
 
             activePowersContainer.innerHTML = '';
             for (let key in player.powers) {
-                player.powers[key] -= 16;
+                player.powers[key] -= 16.666 * dt; // Ajuste basado en el tiempo transcurrido
                 if (player.powers[key] <= 0) {
                     delete player.powers[key];
                 } else {
@@ -321,12 +317,13 @@
             }
 
             platforms.forEach(p => {
-                p.x -= currentSpeed;
+                p.x -= currentSpeed * dt;
+                
                 if (player.dy >= 0 && 
                     player.x + player.radius*0.7 > p.x && 
                     player.x - player.radius*0.7 < p.x + p.w &&
                     player.y + player.radius >= p.y && 
-                    player.y + player.radius <= p.y + player.dy + 10) {
+                    player.y + player.radius <= p.y + (player.dy * dt) + 15) { // Precisión en altas velocidades
                     player.y = p.y - player.radius;
                     player.dy = 0;
                     if (player.jumpCount > 0) {
@@ -337,12 +334,12 @@
             });
 
             collectibles.forEach((c, idx) => {
-                c.x -= currentSpeed;
+                c.x -= currentSpeed * dt;
                 if (player.powers.magnet && c.type === 'coin') {
                     const dx = player.x - c.x;
                     const dy = player.y - c.y;
-                    c.x += dx * 0.15;
-                    c.y += dy * 0.15;
+                    c.x += dx * 0.15 * dt;
+                    c.y += dy * 0.15 * dt;
                 }
                 const dist = Math.hypot(player.x - c.x, player.y - c.y);
                 if (dist < player.radius + c.radius) {
@@ -359,7 +356,7 @@
             });
 
             obstacles.forEach(o => {
-                o.x -= currentSpeed;
+                o.x -= currentSpeed * dt;
                 const distX = Math.abs(player.x - (o.x + o.w/2));
                 const distY = Math.abs(player.y - (o.y - o.h/2));
                 if (distX < player.radius * 0.8 && distY < player.radius * 0.8) {
@@ -377,10 +374,11 @@
             platforms = platforms.filter(p => p.x + p.w > -100);
             collectibles = collectibles.filter(c => c.x > -50);
             obstacles = obstacles.filter(o => o.x > -50);
+            
             particles.forEach((p, i) => {
-                p.x += p.vx - (currentSpeed * 0.4);
-                p.y += p.vy;
-                p.life -= 0.025;
+                p.x += (p.vx - (currentSpeed * 0.4)) * dt;
+                p.y += p.vy * dt;
+                p.life -= 0.025 * dt;
                 if (p.life <= 0) particles.splice(i, 1);
             });
             spawn();
@@ -396,7 +394,8 @@
             }
         }
 
-        function draw() {
+        // --- SISTEMA DE RENDERIZADO SEPARADO ---
+        function drawElements() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             platforms.forEach(p => {
                 ctx.fillStyle = '#1e293b';
@@ -441,7 +440,19 @@
             g.addColorStop(1, player.powers.turbo ? '#b45309' : '#1d4ed8');
             ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
             ctx.restore();
-            requestAnimationFrame(() => { update(); draw(); });
+        }
+
+        // --- CICLO PRINCIPAL SEGURO CONTRA LTPO/120Hz ---
+        function gameLoop(time = 0) {
+            let dt = (time - lastTime) / 16.666; // Normaliza a la base de 60fps
+            if (dt > 3) dt = 3; // Protege de los saltos grandes al minimizar la app
+            if (!lastTime) dt = 1; // Para el primer frame
+            lastTime = time;
+
+            update(dt);
+            drawElements();
+
+            requestAnimationFrame(gameLoop);
         }
 
         window.addEventListener('touchstart', (e) => {
@@ -450,7 +461,9 @@
         }, { passive: false });
 
         startBtn.addEventListener('click', resetGame);
-        draw();
+        
+        // Arrancar el motor en "neutro" para mostrar la pantalla de inicio
+        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
