@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <!-- Regla de Oro del Viewport para móviles -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Animal Adventure World 🦖</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
@@ -17,7 +18,7 @@
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent;
-            touch-action: none; 
+            touch-action: none; /* Previene scroll táctil no deseado */
             user-select: none;
         }
 
@@ -45,28 +46,34 @@
 
         #header {
             position: absolute;
-            top: 20px; left: 0; width: 100%;
-            padding: 0 20px; z-index: 10;
+            top: env(safe-area-inset-top, 20px); /* Adaptación a Notch de iOS/Android */
+            left: 0; width: 100%;
+            padding: 10px 20px 0; z-index: 10;
             display: flex; flex-direction: column;
             align-items: center; pointer-events: none;
         }
 
         #title {
             font-family: 'Fredoka One', cursive;
-            color: white; font-size: 24px;
+            color: white; font-size: clamp(20px, 5vw, 24px);
             text-shadow: 0 3px 6px rgba(0,0,0,0.3);
             text-transform: uppercase;
         }
 
         #score-board {
-            display: flex; gap: 20px;
+            display: flex; gap: 15px;
             font-weight: 800; color: #2c3e50;
-            font-size: 18px; margin-top: 5px;
+            font-size: clamp(14px, 4vw, 18px); 
+            margin-top: 5px;
+            background: rgba(255,255,255,0.4);
+            padding: 5px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
         }
 
         #power-icons {
             position: absolute;
-            top: 20px; right: 20px;
+            top: 60px; right: 20px;
             display: flex; flex-direction: column;
             gap: 10px; z-index: 20;
         }
@@ -84,7 +91,7 @@
         }
 
         #selector {
-            position: absolute; top: 90px; left: 50%;
+            position: absolute; top: 100px; left: 50%;
             transform: translateX(-50%);
             display: flex; gap: 8px;
             background: var(--ui-bg); padding: 8px;
@@ -93,7 +100,7 @@
         }
 
         .char-option {
-            width: 42px; height: 42px;
+            width: 44px; height: 44px; /* Tamaño mínimo táctil recomendado (44x44) */
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; border-radius: 50%;
             cursor: pointer; transition: 0.3s;
@@ -102,6 +109,7 @@
         .char-option.active {
             background: var(--accent); 
             transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         canvas { 
@@ -117,8 +125,8 @@
     <div id="header">
         <div id="title">ANIMAL JUMP PRO</div>
         <div id="score-board">
-            <span id="scoreDisplay">Tiempo: 0s</span>
-            <span id="highScoreDisplay">🏆 0s</span>
+            <span id="coinDisplay">🪙 0</span>
+            <span id="highScoreDisplay">🏆 0</span>
         </div>
     </div>
 
@@ -140,9 +148,17 @@
 </div>
 
 <script>
+    // --- PREVENCIÓN DE PÉRDIDA DE DATOS ---
+    window.addEventListener('beforeunload', (e) => {
+        if (isGameStarted && !isGameOver && coinsCollected > 0) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('scoreDisplay');
+    const coinEl = document.getElementById('coinDisplay');
     const hiEl = document.getElementById('highScoreDisplay');
     const appContainer = document.getElementById('app');
     
@@ -163,14 +179,18 @@
 
     function getScale() { return canvas.width / LOGICAL_W; }
 
-    let score = 0, highScore = 0;
-    let startTime = 0;
+    let highScore = parseInt(localStorage.getItem('jumpCoinHighScore')) || 0;
+    hiEl.innerText = `🏆 ${highScore}`;
+    
+    let coinsCollected = 0;
     let baseSpeed = 3.6;
     let gameSpeed = baseSpeed;
-    let isGameOver = false;
+    let isGameOver = true;
+    let isGameStarted = false; // Estado para la pantalla de bienvenida
     let isPressing = false;
     let lastTime = 0;
     let frameCount = 0;
+    let animationId = null; // Para prevenir múltiples bucles de animación
     
     const groundY = LOGICAL_H - 60;
     const blockSize = 40;
@@ -192,7 +212,7 @@
         flyingTime: 0,
 
         getCurrentHeight() {
-            return this.isBig ? 58 : 34; // Reducido un poco para evitar que se hunda
+            return this.isBig ? 58 : 34;
         },
 
         draw() {
@@ -202,11 +222,9 @@
             const currentSize = this.isBig ? 65 : 45;
             ctx.font = `${currentSize * scale}px Arial`;
             ctx.textAlign = 'center';
-            // Cambiado a ideographic para que los pies del emoji queden justo sobre la línea
             ctx.textBaseline = 'ideographic'; 
             
             const drawX = (this.x + this.width / 2) * scale;
-            // Ajuste de 2px hacia arriba para que camine sobre la grama y no dentro
             const drawY = (this.y + this.getCurrentHeight() - 2) * scale;
 
             ctx.translate(drawX, drawY);
@@ -253,7 +271,7 @@
                 if (this.invincibleTime <= 0) {
                     this.isInvincible = false;
                     iconStar.style.display = 'none';
-                    if (!this.isFlying) gameSpeed = baseSpeed + (Math.floor(score / 20) * 0.2);
+                    if (!this.isFlying) gameSpeed = baseSpeed + (Math.floor(frameCount / 600) * 0.1);
                 }
             }
 
@@ -269,12 +287,13 @@
     let clouds = [];
     let birds = [];
     let drops = [];
+    let coins = []; // Nueva entidad: Monedas
 
     function initMap() {
-        platforms = []; obstacles = []; items = []; birds = []; drops = [];
+        platforms = []; obstacles = []; items = []; birds = []; drops = []; coins = [];
         baseSpeed = 3.6; gameSpeed = baseSpeed;
-        score = 0;
-        startTime = Date.now();
+        coinsCollected = 0;
+        coinEl.innerText = `🪙 ${coinsCollected}`;
         for(let i=0; i<15; i++) {
             platforms.push({ x: i * blockSize, y: groundY, type: 'grass' });
         }
@@ -285,7 +304,8 @@
         const nextX = lastP ? lastP.x + blockSize : 0;
         const rand = Math.random();
         
-        if (rand < 0.14 && score > 15) {
+        // Spawn de plataformas y obstáculos
+        if (rand < 0.14 && frameCount > 900) {
             if (Math.random() < 0.75) {
                 let length = Math.floor(Math.random() * 6) + 6; 
                 for(let j=0; j<length; j++) {
@@ -302,6 +322,14 @@
             }
             if (Math.random() < 0.035) spawnRandomItem(nextX, groundY - 60);
         }
+
+        // Spawn de Monedas (Estilo Mario - menos cantidad, flotan sobre saltos)
+        if (Math.random() < 0.12) {
+            let coinCount = Math.floor(Math.random() * 2) + 1; // 1 o 2 monedas juntas máximo
+            for(let c = 0; c < coinCount; c++) {
+                coins.push({ x: nextX + (c * 40), y: groundY - 80, emoji: '🪙' });
+            }
+        }
     }
 
     function spawnObstacle(x, y) {
@@ -317,7 +345,7 @@
     }
 
     function spawnBird() {
-        if (birds.length > 0 || score < 40) return; 
+        if (birds.length > 0 || frameCount < 2400) return; 
         birds.push({ x: LOGICAL_W + 150, y: 80, speed: gameSpeed + 1.2, emoji: '🐦', hasDropped: false, dropX: player.x + 200 });
     }
 
@@ -328,7 +356,6 @@
         const pw = player.width - 16;
 
         platforms.forEach(p => {
-            // Colisión vertical precisa
             if (player.dy >= 0 && 
                 px + pw > p.x && 
                 px < p.x + blockSize && 
@@ -343,10 +370,38 @@
         });
         if (!onAnyPlatform) player.grounded = false;
 
-        items.forEach((it, i) => {
+        const handleHit = () => {
+            if (player.isInvincible) return;
+            if (player.isBig) {
+                player.isBig = false;
+                player.isInvincible = true;
+                player.invincibleTime = 2000; 
+                iconMushroom.style.display = 'none';
+            } else {
+                gameOver();
+            }
+        };
+
+        // Bucle Inverso para Obstáculos (Prevención de bugs de splice)
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let o = obstacles[i];
+            const hitX = player.x + 10;
+            const hitY = player.y + (player.isBig ? 10 : 5);
+            const hitH = player.getCurrentHeight() - 10;
+            if (hitX < o.x + 25 && hitX + 15 > o.x && hitY < o.y && hitY + hitH > o.y - 25) handleHit();
+        }
+
+        // Bucle Inverso para Gotas/Peligros
+        for (let i = drops.length - 1; i >= 0; i--) {
+            let d = drops[i];
+            if (Math.abs(player.x + 15 - d.x) < 25 && Math.abs(player.y + 15 - d.y) < 25) handleHit();
+        }
+
+        // Bucle Inverso para Power-Ups (BUG SOLUCIONADO)
+        for (let i = items.length - 1; i >= 0; i--) {
+            let it = items[i];
             if (Math.abs(player.x - it.x) < 40 && Math.abs(player.y - it.y) < 65) {
                 if (it.type === 'mushroom') {
-                    // FIX CRÍTICO: Recalcular Y antes de crecer para evitar caer al vacío
                     if (!player.isBig) {
                         const heightDiff = 58 - 34;
                         player.y -= heightDiff;
@@ -365,36 +420,15 @@
                 }
                 items.splice(i, 1);
             }
-        });
-
-        const handleHit = () => {
-            if (player.isInvincible) return;
-            if (player.isBig) {
-                player.isBig = false;
-                player.isInvincible = true;
-                player.invincibleTime = 2000; 
-                iconMushroom.style.display = 'none';
-            } else {
-                gameOver();
-            }
-        };
-
-        obstacles.forEach(o => {
-            const hitX = player.x + 10;
-            const hitY = player.y + (player.isBig ? 10 : 5);
-            const hitH = player.getCurrentHeight() - 10;
-            if (hitX < o.x + 25 && hitX + 15 > o.x && hitY < o.y && hitY + hitH > o.y - 25) handleHit();
-        });
-
-        drops.forEach(d => {
-            if (Math.abs(player.x + 15 - d.x) < 25 && Math.abs(player.y + 15 - d.y) < 25) handleHit();
-        });
+        }
     }
 
     function updateEntities(dt) {
         const scale = getScale();
         
-        platforms.forEach((p, i) => {
+        // Plataformas
+        for (let i = platforms.length - 1; i >= 0; i--) {
+            let p = platforms[i];
             p.x -= gameSpeed * dt;
             const dX = p.x * scale, dY = p.y * scale, dW = (blockSize + 0.5) * scale;
             const dH = canvas.height - dY;
@@ -411,93 +445,179 @@
                 ctx.fillRect(dX + dW - 9*scale, dY + blockSize*scale - 9*scale, 4*scale, 4*scale);
             }
             if (p.x < -blockSize * 10) platforms.splice(i, 1);
-        });
+        }
 
         if (platforms.length < 25) spawnMapElement();
 
+        // Nubes
         ctx.save(); ctx.globalAlpha = 0.3;
-        clouds.forEach((c, i) => {
+        for (let i = clouds.length - 1; i >= 0; i--) {
+            let c = clouds[i];
             c.x -= c.speed * dt;
             ctx.font = `${40 * scale}px Arial`; ctx.fillText('☁️', c.x * scale, c.y * scale);
             if (c.x < -100) clouds.splice(i, 1);
-        });
+        }
         ctx.restore();
         if (Math.random() < 0.005) clouds.push({x:LOGICAL_W + 100, y:Math.random()*150+40, speed: 0.3});
 
-        obstacles.forEach((o, i) => {
+        // Obstáculos
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let o = obstacles[i];
             o.x -= gameSpeed * dt;
             ctx.font = `${40 * scale}px Arial`; ctx.fillText(o.emoji, o.x * scale, o.y * scale);
             if (o.x < -100) obstacles.splice(i, 1);
-        });
+        }
 
-        items.forEach((it, i) => {
+        // Power-Ups
+        for (let i = items.length - 1; i >= 0; i--) {
+            let it = items[i];
             it.x -= gameSpeed * dt;
             const h = Math.sin(Date.now() / 200) * 8;
             ctx.font = `${35 * scale}px Arial`; ctx.fillText(it.emoji, it.x * scale, (it.y + h) * scale);
             if (it.x < -100) items.splice(i, 1);
-        });
+        }
 
-        birds.forEach((b, i) => {
+        // Monedas (NUEVO)
+        for (let i = coins.length - 1; i >= 0; i--) {
+            let c = coins[i];
+            c.x -= gameSpeed * dt;
+            
+            // Animación suave de flotación (Se corrigió la vibración excesiva)
+            const floatH = Math.sin(Date.now() / 300 + (c.x * 0.02)) * 3;
+            ctx.font = `${28 * scale}px Arial`; 
+            ctx.fillText(c.emoji, c.x * scale, (c.y + floatH) * scale);
+            
+            // Recolectar moneda
+            if (Math.abs(player.x - c.x) < 35 && Math.abs(player.y - c.y) < 40) {
+                coinsCollected++;
+                coinEl.innerText = `🪙 ${coinsCollected}`;
+                coins.splice(i, 1);
+            } else if (c.x < -100) {
+                coins.splice(i, 1);
+            }
+        }
+
+        // Pájaros
+        for (let i = birds.length - 1; i >= 0; i--) {
+            let b = birds[i];
             b.x -= b.speed * dt;
-            if (!b.hasDropped && Math.abs(b.x - b.dropX) < 50) { ctx.font = `${20 * scale}px Arial`; ctx.fillText('❗', b.x * scale, (b.y - 20) * scale); }
+            if (!b.hasDropped && Math.abs(b.x - b.dropX) < 50) { 
+                ctx.font = `${20 * scale}px Arial`; ctx.fillText('❗', b.x * scale, (b.y - 20) * scale); 
+            }
             ctx.font = `${35 * scale}px Arial`; ctx.fillText(b.emoji, b.x * scale, b.y * scale);
-            if (!b.hasDropped && b.x < b.dropX) { drops.push({ x: b.x, y: b.y, speedY: 5.5, landed: false }); b.hasDropped = true; }
+            if (!b.hasDropped && b.x < b.dropX) { 
+                drops.push({ x: b.x, y: b.y, speedY: 5.5, landed: false }); 
+                b.hasDropped = true; 
+            }
             if (b.x < -100) birds.splice(i, 1);
-        });
+        }
 
-        drops.forEach((d, i) => {
+        // Gotas / Enemigos cayendo
+        for (let i = drops.length - 1; i >= 0; i--) {
+            let d = drops[i];
             if (!d.landed) {
                 d.y += d.speedY * dt;
-                platforms.forEach(p => { if (d.x > p.x && d.x < p.x + blockSize && d.y > p.y && d.y < p.y + 10) { d.landed = true; d.y = p.y; } });
+                platforms.forEach(p => { 
+                    if (d.x > p.x && d.x < p.x + blockSize && d.y > p.y && d.y < p.y + 10) { 
+                        d.landed = true; d.y = p.y; 
+                    } 
+                });
                 if (d.y > LOGICAL_H) drops.splice(i, 1);
-            } else { d.x -= gameSpeed * dt; }
-            ctx.font = `${25 * scale}px Arial`; ctx.fillText('💩', d.x * scale, d.y * scale);
-            if (d.x < -100) drops.splice(i, 1);
-        });
+            } else { 
+                d.x -= gameSpeed * dt; 
+            }
+            
+            if (drops[i]) { // Asegurar que no haya sido eliminado
+                ctx.font = `${25 * scale}px Arial`; ctx.fillText('💩', d.x * scale, d.y * scale);
+                if (d.x < -100) drops.splice(i, 1);
+            }
+        }
     }
 
     function animate(time = 0) {
         if (isGameOver) return;
-        const dt = (time - lastTime) / 16.666;
+        
+        // BUG CORREGIDO: Evita saltos temporales gigantes si el usuario cambia de pestaña
+        let dt = (time - lastTime) / 16.666;
+        if (dt > 3) dt = 3; 
         lastTime = time;
         frameCount += dt;
         
-        score = Math.floor((Date.now() - startTime) / 1000);
-        scoreEl.innerText = `Tiempo: ${score}s`;
+        // Aumentar dificultad gradualmente basada en los frames
+        if (frameCount % 600 < 1 && !player.isFlying) gameSpeed += 0.05;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (frameCount % 700 < 1) spawnBird();
         updateEntities(dt);
         player.update(dt);
         checkCollisions(dt);
-        requestAnimationFrame(animate);
+        
+        animationId = requestAnimationFrame(animate);
+    }
+
+    function showWelcome() {
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        const s = getScale();
+        
+        ctx.font = `bold ${32 * s}px Nunito`;
+        ctx.fillText('¡BIENVENIDO!', canvas.width/2, canvas.height/2 - 40);
+        
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = `bold ${18 * s}px Nunito`;
+        ctx.fillText('Elige tu personaje arriba 👆', canvas.width/2, canvas.height/2 + 10);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = `${16 * s}px Nunito`;
+        ctx.fillText('Atrapa 🪙, evita obstáculos y usa poderes.', canvas.width/2, canvas.height/2 + 50);
+        
+        ctx.font = `bold ${22 * s}px Nunito`;
+        ctx.fillText('¡TOCA PARA INICIAR!', canvas.width/2, canvas.height/2 + 100);
     }
 
     function gameOver() {
-        if (isGameOver) return;
+        if (isGameOver && isGameStarted) return;
         isGameOver = true;
-        if (score > highScore) { highScore = score; hiEl.innerText = `🏆 ${highScore}s`; }
+        if (animationId) cancelAnimationFrame(animationId);
+
+        if (coinsCollected > highScore) { 
+            highScore = coinsCollected; 
+            localStorage.setItem('jumpCoinHighScore', highScore); // Persistencia de datos por monedas
+            hiEl.innerText = `🏆 ${highScore}`; 
+        }
+        
+        if (!isGameStarted) return; // Si no ha iniciado, no mostrar pantalla de Game Over
+
         ctx.fillStyle = 'rgba(0,0,0,0.85)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         const s = getScale();
         ctx.font = `bold ${32 * s}px Nunito`;
-        ctx.fillText('FIN DE LA PARTIDA', canvas.width/2, canvas.height/2 - 20);
-        ctx.font = `${20 * s}px Nunito`;
-        ctx.fillText(`Tiempo Sobrevivido: ${score}s`, canvas.width/2, canvas.height/2 + 30);
+        ctx.fillText('FIN DE LA PARTIDA', canvas.width/2, canvas.height/2 - 30);
+        
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = `bold ${36 * s}px Nunito`;
+        ctx.fillText(`🪙 ${coinsCollected}`, canvas.width/2, canvas.height/2 + 20);
+        
+        ctx.fillStyle = 'white';
         ctx.font = `${16 * s}px Nunito`;
         ctx.fillText('Toca para reiniciar', canvas.width/2, canvas.height/2 + 80);
     }
 
     function reset() {
-        score = 0; isGameOver = false; isPressing = false; frameCount = 0;
+        if (animationId) cancelAnimationFrame(animationId);
+        isGameOver = false; 
+        isGameStarted = true;
+        isPressing = false; 
+        frameCount = 0;
         player.y = groundY - 100; player.dy = 0; player.isInvincible = false;
         player.isBig = false; player.isFlying = false;
         iconStar.style.display = 'none';
         iconFeather.style.display = 'none';
         iconMushroom.style.display = 'none';
-        scoreEl.innerText = 'Tiempo: 0s';
         initMap(); 
         lastTime = performance.now(); 
         animate(lastTime);
@@ -506,16 +626,26 @@
     function start(e) {
         if (e.target.closest('#selector')) return;
         if (e.cancelable) e.preventDefault();
-        if (isGameOver) { reset(); return; }
+        
+        if (!isGameStarted) {
+            reset();
+            return;
+        }
+
+        if (isGameOver) { 
+            reset(); 
+            return; 
+        }
+        
         isPressing = true;
         if (player.grounded && !player.isFlying) player.dy = player.jumpForce;
     }
+    
     function end() { isPressing = false; }
 
-    canvas.addEventListener('mousedown', start);
-    window.addEventListener('mouseup', end);
-    canvas.addEventListener('touchstart', start, { passive: false });
-    canvas.addEventListener('touchend', end, { passive: false });
+    // BUG CORREGIDO: Usando Pointer Events para evitar duplicación de eventos de toque/ratón
+    canvas.addEventListener('pointerdown', start, { passive: false });
+    window.addEventListener('pointerup', end, { passive: false });
 
     document.querySelectorAll('.char-option').forEach(opt => {
         const select = (e) => {
@@ -524,12 +654,17 @@
             opt.classList.add('active');
             player.emoji = opt.dataset.emoji;
         };
-        opt.addEventListener('mousedown', select);
-        opt.addEventListener('touchstart', select);
+        // Pointerdown reemplaza a mousedown/touchstart
+        opt.addEventListener('pointerdown', select);
     });
 
-    reset();
+    // Pantalla de inicio
+    setTimeout(() => {
+        initMap();
+        updateEntities(0);
+        player.draw();
+        showWelcome();
+    }, 150); // Pequeño retraso para asegurar que el canvas tome sus dimensiones correctas
 </script>
-    <script src="exitGame.js"></script>
 </body>
 </html>
