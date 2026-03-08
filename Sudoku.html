@@ -2,30 +2,117 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Sudoku Pro - Lógica Corregida</title>
+    <!-- 1. LA REGLA DE ORO: El Viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sudoku Pro - Responsive Edition</title>
     <style>
         :root {
             --primary: #2c3e50;
             --accent: #27ae60;
             --bg: #f8f9fa;
-            --cell-size: 50px;
         }
-        body { font-family: sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; }
-        .menu { margin: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; gap: 10px; }
-        #grid { display: grid; border: 3px solid var(--primary); background: white; }
+        
+        /* Aseguramos que el body no tenga márgenes que rompan el cálculo en móviles */
+        body { 
+            font-family: sans-serif; 
+            background: var(--bg); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0;
+            padding: 10px; /* Un poco de respiro en los bordes */
+            box-sizing: border-box;
+            min-height: 100vh;
+        }
+
+        /* 2. MENU FLEXIBLE: Permitimos que los elementos pasen a la línea de abajo (wrap) */
+        .menu { 
+            width: 100%;
+            max-width: 500px; /* No queremos que sea larguísimo en el monitor de tu PC */
+            margin: 10px 0 20px 0; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            display: flex; 
+            flex-wrap: wrap; /* Magia para móviles */
+            justify-content: center;
+            gap: 10px; 
+            box-sizing: border-box;
+        }
+
+        select, button {
+            padding: 10px;
+            font-size: 1rem;
+            /* En celulares muy pequeños, los botones crecerán para llenar el espacio */
+            flex-grow: 1; 
+        }
+
+        /* 3. GRID FLUIDO: Ocupa el 100% del espacio disponible, hasta un tope */
+        #grid { 
+            display: grid; 
+            border: 3px solid var(--primary); 
+            background: white; 
+            width: 100%;
+            max-width: 500px; /* Tamaño máximo en escritorio */
+            box-sizing: border-box;
+        }
+
+        /* 4. CELDAS INTELIGENTES: Sin px fijos */
         .cell {
-            width: var(--cell-size); height: var(--cell-size);
-            border: 1px solid #ddd; text-align: center;
-            font-size: 1.2rem; line-height: var(--cell-size);
-            outline: none; box-sizing: border-box;
+            /* aspect-ratio: 1/1 asegura que siempre sean cuadrados perfectos sin importar el ancho */
+            aspect-ratio: 1 / 1; 
+            width: 100%; 
+            border: 1px solid #ddd; 
+            
+            /* Usamos Flexbox dentro de la celda para centrar el número perfectamente */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* clamp() es genial: fuente adaptable. Mínimo 1rem, preferido 5vw (fluido), máximo 1.5rem */
+            font-size: clamp(1rem, 5vw, 1.5rem); 
+            outline: none; 
+            box-sizing: border-box;
         }
+
         .fixed { background: #f0f0f0; font-weight: bold; color: #555; cursor: default; }
         .error { color: #e74c3c; background: #fdf2f2; }
         .border-right { border-right: 3px solid var(--primary); }
         .border-bottom { border-bottom: 3px solid var(--primary); }
-        .controls { margin-top: 20px; }
-        button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
-        #msg { margin-top: 15px; font-weight: bold; color: var(--accent); }
+        
+        button { background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        #msg { margin-top: 15px; font-weight: bold; color: var(--accent); text-align: center; min-height: 24px;}
+        
+        h1 { font-size: 1.5rem; text-align: center; color: var(--primary); margin-top: 10px;}
+
+        /* ESTILOS PARA EL MODAL (NUEVO) */
+        #modalOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none; /* Oculto por defecto */
+            align-items: center;
+            justify-content: center;
+            z-index: 1000; /* Asegura que esté por encima de todo */
+        }
+        .modal {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 90%;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-yes { background: var(--accent); }
+        .btn-no { background: #e74c3c; }
     </style>
 </head>
 <body>
@@ -43,11 +130,63 @@
         </select>
         <button onclick="startNewGame()">Nuevo Juego</button>
         <button onclick="giveHint()">Pista</button>
+        <button onclick="confirmExit()" style="background: #e74c3c;">Salir</button>
     </div>
+    
     <div id="grid"></div>
     <div id="msg"></div>
+
+    <!-- HTML DEL MODAL (NUEVO) -->
+    <div id="modalOverlay">
+        <div class="modal">
+            <p id="modalText">Mensaje</p>
+            <div class="modal-buttons">
+                <button id="modalBtnYes" class="btn-yes">Sí</button>
+                <button id="modalBtnNo" class="btn-no">No</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let size, subSize, board = [], solution = [], playerCorrect = 0;
+
+        // --- CONTROL DE MODAL ---
+        function showModal(text, yesLabel, noLabel, onYes, onNo) {
+            const overlay = document.getElementById('modalOverlay');
+            document.getElementById('modalText').innerText = text;
+            const btnYes = document.getElementById('modalBtnYes');
+            const btnNo = document.getElementById('modalBtnNo');
+            
+            btnYes.innerText = yesLabel;
+            btnNo.innerText = noLabel;
+            
+            overlay.style.display = 'flex';
+            
+            btnYes.onclick = () => {
+                overlay.style.display = 'none';
+                if(onYes) onYes();
+            };
+            btnNo.onclick = () => {
+                overlay.style.display = 'none';
+                if(onNo) onNo();
+            };
+        }
+
+        // --- BOTÓN SALIR ---
+        function confirmExit() {
+            showModal("¿Seguro que quieres abandonar la partida actual?", "Sí, salir", "Cancelar", () => {
+                // Acción al confirmar la salida
+                document.getElementById('grid').innerHTML = '';
+                document.getElementById('msg').innerText = "Has salido del juego. Usa 'Nuevo Juego' para volver a empezar.";
+            });
+        }
+
+        // --- PREVENIR CIERRE DE PESTAÑA ACCIDENTAL ---
+        window.addEventListener('beforeunload', (e) => {
+            // Activa la advertencia nativa del navegador al intentar cerrar/recargar la página
+            e.preventDefault();
+            e.returnValue = '';
+        });
         
         function swapRows(b, r1, r2) {
             [b[r1], b[r2]] = [b[r2], b[r1]];
@@ -76,7 +215,6 @@
         }
         
         function randomizeSolution() {
-            // Intercambios de filas dentro de bandas
             for (let band = 0; band < subSize; band++) {
                 for (let s = 0; s < subSize * 2; s++) {
                     let row1 = band * subSize + Math.floor(Math.random() * subSize);
@@ -84,7 +222,6 @@
                     if (row1 !== row2) swapRows(solution, row1, row2);
                 }
             }
-            // Intercambios de columnas dentro de stacks
             for (let stack = 0; stack < subSize; stack++) {
                 for (let s = 0; s < subSize * 2; s++) {
                     let col1 = stack * subSize + Math.floor(Math.random() * subSize);
@@ -92,21 +229,18 @@
                     if (col1 !== col2) swapCols(solution, col1, col2);
                 }
             }
-            // Intercambio de bandas
             let numBandSwaps = Math.floor(Math.random() * 2) + 1;
             for (let s = 0; s < numBandSwaps; s++) {
                 let b1 = Math.floor(Math.random() * subSize);
                 let b2 = Math.floor(Math.random() * subSize);
                 if (b1 !== b2) swapBands(solution, b1, b2);
             }
-            // Intercambio de stacks
             let numStackSwaps = Math.floor(Math.random() * 2) + 1;
             for (let s = 0; s < numStackSwaps; s++) {
                 let s1 = Math.floor(Math.random() * subSize);
                 let s2 = Math.floor(Math.random() * subSize);
                 if (s1 !== s2) swapStacks(solution, s1, s2);
             }
-            // Transposición aleatoria (50% chance)
             if (Math.random() < 0.5) {
                 let newBoard = Array.from({ length: size }, () => Array(size).fill(0));
                 for (let r = 0; r < size; r++) {
@@ -127,17 +261,13 @@
             renderBoard();
         }
         
-        // --- LÓGICA DE VALIDACIÓN (BACKTRACKING) ---
         function isValid(b, row, col, num) {
-            // Verificar fila (saltar la celda actual)
             for (let i = 0; i < size; i++) {
                 if (i !== col && b[row][i] === num) return false;
             }
-            // Verificar columna (saltar la celda actual)
             for (let i = 0; i < size; i++) {
                 if (i !== row && b[i][col] === num) return false;
             }
-            // Verificar subcuadrícula (saltar la celda actual)
             let startRow = row - (row % subSize);
             let startCol = col - (col % subSize);
             for (let i = 0; i < subSize; i++) {
@@ -187,7 +317,7 @@
             for (let row = 0; row < size; row++) {
                 for (let col = 0; col < size; col++) {
                     if (b[row][col] === 0) {
-                        for (let num = 1; num <= size; num++) {  // Sin shuffle para velocidad
+                        for (let num = 1; num <= size; num++) {  
                             if (isValid(b, row, col, num)) {
                                 b[row][col] = num;
                                 if (solve(b)) return true;
@@ -203,17 +333,15 @@
         
         function generateValidSudoku() {
             solution = Array.from({ length: size }, () => Array(size).fill(0));
-            solve(solution); // Generamos tablero completo resuelto
-            randomizeSolution(); // Aleatorizamos para variedad
+            solve(solution); 
+            randomizeSolution(); 
             
             board = solution.map(row => [...row]);
             const difficulty = parseInt(document.getElementById('diffSelect').value);
             
-            // Calcular cuántas celdas eliminar según dificultad (máximo)
             const totalCells = size * size;
             const targetRemove = Math.floor(totalCells * (0.2 + difficulty * 0.2));
             
-            // Lista de posiciones para intentar eliminar en orden aleatorio
             let positions = [];
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
@@ -237,14 +365,13 @@
                     board[r][c] = temp;
                 }
             }
-            
-            // Inicializar contadores
             playerCorrect = 0;
         }
         
         function renderBoard() {
             const grid = document.getElementById('grid');
-            grid.style.gridTemplateColumns = `repeat(${size}, var(--cell-size))`;
+            /* CAMBIO CRÍTICO: Usar 1fr (fracción) en lugar de pixeles fijos */
+            grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
             grid.innerHTML = '';
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
@@ -258,7 +385,9 @@
                         cell.innerText = board[r][c];
                         cell.classList.add('fixed');
                     } else {
+                        /* Para móviles, inputmode="numeric" es excelente porque levanta el teclado numérico en lugar del alfanumérico */
                         cell.contentEditable = "true";
+                        cell.setAttribute("inputmode", "numeric"); 
                         cell.oninput = (e) => handleInput(e, r, c);
                     }
                     grid.appendChild(cell);
@@ -278,22 +407,19 @@
                 return;
             }
             let wasEmpty = oldVal === 0;
-            board[r][c] = val;
-            e.target.innerText = val;
-            e.target.classList.remove('error');
-            if (!isValid(board, r, c, val)) {
-                e.target.classList.add('error');
-            } else if (wasEmpty && val === solution[r][c]) {
-                playerCorrect++;
-                if (playerCorrect % 3 === 0 && playerCorrect > 0) {
-                    giveHint();
-                }
-            }
-            checkWin();
+        board[r][c] = val;
+        e.target.innerText = val;
+        e.target.classList.remove('error');
+        if (!isValid(board, r, c, val)) {
+            e.target.classList.add('error');
+        } else if (wasEmpty && val === solution[r][c]) {
+            playerCorrect++;
         }
-        
-        function giveHint() {
-            let empties = [];
+        checkWin();
+    }
+    
+    function giveHint() {
+        let empties = [];
             for (let rr = 0; rr < size; rr++) {
                 for (let cc = 0; cc < size; cc++) {
                     if (board[rr][cc] === 0) empties.push({ rr, cc });
@@ -302,28 +428,34 @@
             if (empties.length === 0) return;
             let idx = Math.floor(Math.random() * empties.length);
             let { rr, cc } = empties[idx];
-            let cell = document.querySelector(`[data-row="${rr}"][data-col="${cc}"]`);
-            if (cell) {
-                cell.innerText = solution[rr][cc];
-                cell.classList.add('fixed');
-                cell.contentEditable = false;
-                board[rr][cc] = solution[rr][cc];
-                document.getElementById('msg').innerText = "¡Pista revelada automáticamente!";
-                setTimeout(() => document.getElementById('msg').innerText = "", 2000);
-                checkWin();
-            }
+        let cell = document.querySelector(`[data-row="${rr}"][data-col="${cc}"]`);
+        if (cell) {
+            cell.innerText = solution[rr][cc];
+            cell.classList.add('fixed');
+            cell.contentEditable = false;
+            board[rr][cc] = solution[rr][cc];
+            document.getElementById('msg').innerText = "¡Pista revelada!";
+            setTimeout(() => document.getElementById('msg').innerText = "", 2000);
+            checkWin();
         }
-        
-        function checkWin() {
+    }
+    
+    function checkWin() {
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c < size; c++) {
                     if (board[r][c] !== solution[r][c]) return;
                 }
             }
-            document.getElementById('msg').innerText = "¡Nivel Completado! Cargando siguiente...";
-            setTimeout(() => {
-                startNewGame();
-            }, 2000);
+            
+            // Reemplazamos el inicio automático por nuestra pregunta personalizada
+            showModal("¡Excelente lógica! Has completado el Sudoku. ¿Quieres jugar otro nivel?", "Sí, jugar otro", "No, ya terminé", 
+                () => {
+                    startNewGame();
+                }, 
+                () => {
+                    document.getElementById('msg').innerText = "¡Juego completado! Muy bien hecho.";
+                }
+            );
         }
         
         startNewGame();
