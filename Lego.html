@@ -103,17 +103,39 @@
             <div id="context-menu" class="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl flex gap-2 items-center">
                 <button onclick="deleteSelected()" class="w-10 h-10 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center text-xl active:bg-red-500/30" title="Eliminar">🗑️</button>
                 <button onclick="duplicateSelected()" class="w-10 h-10 bg-slate-800 text-white rounded-lg flex items-center justify-center text-xl active:bg-slate-700" title="Duplicar">📑</button>
-                <div class="w-px bg-slate-700 mx-1 h-8"></div>
-                <!-- Paleta de colores rápida -->
-                <button onclick="changeColor('#ef4444')" class="w-8 h-8 rounded-full bg-red-500 border-2 border-slate-900"></button>
-                <button onclick="changeColor('#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 border-2 border-slate-900"></button>
-                <button onclick="changeColor('#22c55e')" class="w-8 h-8 rounded-full bg-green-500 border-2 border-slate-900"></button>
-                <button onclick="changeColor('#eab308')" class="w-8 h-8 rounded-full bg-yellow-500 border-2 border-slate-900"></button>
-                <button onclick="changeColor('#64748b')" class="w-8 h-8 rounded-full bg-slate-500 border-2 border-slate-900"></button>
-                <div class="w-px bg-slate-700 mx-1 h-8"></div>
-                <!-- Color Personalizado -->
-                <div class="relative w-8 h-8 rounded-full border-2 border-slate-900 overflow-hidden" title="Color Personalizado">
-                    <input type="color" id="customColor" onchange="changeColor(this.value)" value="#ffffff" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer">
+                
+                <!-- Controles exclusivos para bloques (Color y Tamaño) -->
+                <div id="block-controls" class="flex gap-2 items-center">
+                    <div class="w-px bg-slate-700 mx-1 h-8"></div>
+                    
+                    <!-- Paleta de colores rápida -->
+                    <div class="flex gap-1 items-center">
+                        <button onclick="changeColor('#ef4444')" class="w-8 h-8 rounded-full bg-red-500 border-2 border-slate-900"></button>
+                        <button onclick="changeColor('#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 border-2 border-slate-900"></button>
+                        <button onclick="changeColor('#22c55e')" class="w-8 h-8 rounded-full bg-green-500 border-2 border-slate-900"></button>
+                        <button onclick="changeColor('#eab308')" class="w-8 h-8 rounded-full bg-yellow-500 border-2 border-slate-900"></button>
+                        <button onclick="changeColor('#64748b')" class="w-8 h-8 rounded-full bg-slate-500 border-2 border-slate-900"></button>
+                        <!-- Color Personalizado -->
+                        <div class="relative w-8 h-8 rounded-full border-2 border-slate-900 overflow-hidden ml-1" title="Color Personalizado">
+                            <input type="color" id="customColor" onchange="changeColor(this.value)" value="#ffffff" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div class="w-px bg-slate-700 mx-1 h-8"></div>
+
+                    <!-- Controles de Tamaño (Resize) -->
+                    <div class="flex flex-col gap-1">
+                        <div class="flex gap-1 items-center" title="Ancho (Max 5)">
+                            <span class="text-xs text-slate-400 w-4 text-center">↔️</span>
+                            <button onclick="resizeSelected(-1, 0)" class="w-7 h-6 bg-slate-800 text-white rounded flex items-center justify-center active:bg-slate-700 font-bold">-</button>
+                            <button onclick="resizeSelected(1, 0)" class="w-7 h-6 bg-slate-800 text-white rounded flex items-center justify-center active:bg-slate-700 font-bold">+</button>
+                        </div>
+                        <div class="flex gap-1 items-center" title="Alto (Max 5)">
+                            <span class="text-xs text-slate-400 w-4 text-center">↕️</span>
+                            <button onclick="resizeSelected(0, -1)" class="w-7 h-6 bg-slate-800 text-white rounded flex items-center justify-center active:bg-slate-700 font-bold">-</button>
+                            <button onclick="resizeSelected(0, 1)" class="w-7 h-6 bg-slate-800 text-white rounded flex items-center justify-center active:bg-slate-700 font-bold">+</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -384,13 +406,21 @@
                 return;
             }
             contextMenu.style.display = 'flex';
-            const radius = Math.max(selectedObj.w, selectedObj.h) / 2 + 50; 
+            
+            // Calculamos la posición del menú dependiendo de la rotación y tamaño para que no se superponga
+            const bounds = selectedObj.getEffectiveBounds();
+            const radius = (bounds.h / 2) + 50; 
+            
             contextMenu.style.left = `${selectedObj.x}px`;
             contextMenu.style.top = `${selectedObj.y - radius}px`;
 
-            // Actualizar el selector de color personalizado si es un bloque
+            // Mostrar u ocultar controles específicos si es bloque o sticker
+            const blockControls = document.getElementById('block-controls');
             if (selectedObj.type === 'block') {
+                blockControls.style.display = 'flex';
                 document.getElementById('customColor').value = selectedObj.color;
+            } else {
+                blockControls.style.display = 'none';
             }
         }
 
@@ -532,7 +562,7 @@
             render(); 
         });
 
-        // --- ACCIONES DE UI ---
+        // --- ACCIONES DE UI Y TRANSFORMACIONES ---
 
         function addBlock(cols, rows) {
             const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#64748b'];
@@ -554,6 +584,56 @@
             selectedObj = block;
             render();
             showToast("Bloque añadido");
+        }
+
+        // Nueva función de Ingeniería: Redimensionamiento dinámico
+        function resizeSelected(dCols, dRows) {
+            if (!selectedObj || selectedObj.type !== 'block') return;
+
+            let newCols = selectedObj.cols + dCols;
+            let newRows = selectedObj.rows + dRows;
+
+            // Límite estricto de proporción: Mínimo 1, Máximo 5
+            if (newCols < 1 || newCols > 5 || newRows < 1 || newRows > 5) {
+                showToast("Límite de tamaño alcanzado (Max 5x5)");
+                return;
+            }
+
+            // Guardamos estado anterior para revertir si choca
+            const oldCols = selectedObj.cols;
+            const oldRows = selectedObj.rows;
+            const oldW = selectedObj.w;
+            const oldH = selectedObj.h;
+            const oldX = selectedObj.x;
+            const oldY = selectedObj.y;
+
+            // Aplicamos nuevo tamaño temporal
+            selectedObj.cols = newCols;
+            selectedObj.rows = newRows;
+            selectedObj.w = newCols * UNIT;
+            selectedObj.h = newRows * UNIT;
+
+            // Re-calculamos el anclaje perfecto a la cuadrícula (Snap to Grid)
+            const bounds = selectedObj.getEffectiveBounds();
+            let topLeftX = Math.round((selectedObj.x - bounds.w/2) / UNIT) * UNIT;
+            let topLeftY = Math.round((selectedObj.y - bounds.h/2) / UNIT) * UNIT;
+            selectedObj.x = topLeftX + bounds.w/2;
+            selectedObj.y = topLeftY + bounds.h/2;
+
+            // Comprobación de integridad estructural (Colisiones)
+            if (checkCollision(selectedObj, selectedObj.x, selectedObj.y, selectedObj.rotation)) {
+                // Revertir
+                selectedObj.cols = oldCols;
+                selectedObj.rows = oldRows;
+                selectedObj.w = oldW;
+                selectedObj.h = oldH;
+                selectedObj.x = oldX;
+                selectedObj.y = oldY;
+                showToast("No hay espacio para expandir 🚫");
+            } else {
+                render();
+                showToast(`Pieza ajustada: ${newCols}x${newRows}`);
+            }
         }
 
         function addSticker(emoji) {
