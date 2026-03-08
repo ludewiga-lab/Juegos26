@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ProBuilder Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-cad: #f0f4f8;
+            --grid-color: #cbd5e1;
+        }
+        body {
+            margin: 0; padding: 0;
+            overflow: hidden;
+            background: #0f172a;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+            touch-action: none; /* Bloqueo estricto de gestos del navegador */
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Cuadrícula estilo Blueprint/CAD */
+        .cad-background {
+            background-color: var(--bg-cad);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px; /* Unidad base = 30px */
+            background-position: center center;
+        }
+
+        /* Ocultar barra de scroll en categorías */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Pantalla de inicio */
+        #home-screen {
+            position: fixed; inset: 0;
+            background: #0f172a; z-index: 50;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
+        /* UI Flotante para piezas seleccionadas */
+        #context-menu {
+            position: absolute;
+            transform: translate(-50%, -120%);
+            display: none;
+            pointer-events: auto;
+            z-index: 30;
+        }
+
+        /* Transiciones suaves para menús */
+        .ui-panel { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen relative">
+
+    <!-- 1. PANTALLA DE INICIO -->
+    <div id="home-screen" class="text-white">
+        <div class="mb-8 flex justify-center">
+            <div class="w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/50 transform rotate-12">
+                <span class="text-5xl">🧱</span>
+            </div>
+        </div>
+        <h1 class="text-4xl font-black mb-2 tracking-tight">ProBuilder <span class="text-blue-500">Studio</span></h1>
+        <p class="text-slate-400 mb-10 text-center px-6">Plataforma de Diseño Conceptual y Ensamblaje</p>
+        
+        <button onclick="startApp()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transition-transform active:scale-95">
+            Nuevo Proyecto
+        </button>
+        <p class="mt-6 text-sm text-slate-500">Ingeniería & Diseño</p>
+    </div>
+
+    <!-- 2. ESPACIO DE TRABAJO (WORKSPACE) -->
+    <div id="workspace" class="flex-1 relative hidden w-full h-full flex flex-col">
+        
+        <!-- Header / Toolbar Superior -->
+        <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 shrink-0 mt-[env(safe-area-inset-top)]">
+            <button onclick="goHome()" class="p-2 bg-slate-800 rounded-lg text-slate-300 active:bg-slate-700 flex items-center gap-2">
+                <span>🏠</span> <span class="hidden sm:inline font-semibold">Inicio</span>
+            </button>
+            <div class="text-slate-200 font-bold tracking-wider">MESA DE TRABAJO</div>
+            <div class="flex gap-2">
+                <button onclick="clearCanvas()" class="p-2 bg-red-900/50 text-red-400 rounded-lg active:bg-red-800/50" title="Limpiar Todo">
+                    🗑️
+                </button>
+                <button onclick="exportCanvas()" class="p-2 bg-blue-600 text-white rounded-lg active:bg-blue-500 flex items-center gap-2" title="Exportar PNG">
+                    <span>💾</span> <span class="hidden sm:inline font-semibold">Guardar</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Contenedor del Canvas -->
+        <div id="canvas-container" class="flex-1 relative overflow-hidden cad-background">
+            <canvas id="appCanvas" class="absolute inset-0 w-full h-full"></canvas>
+            
+            <!-- Menú Contextual (Aparece sobre la pieza seleccionada) -->
+            <div id="context-menu" class="bg-slate-900 border border-slate-700 p-2 rounded-xl shadow-2xl flex gap-2">
+                <button onclick="deleteSelected()" class="w-10 h-10 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center text-xl active:bg-red-500/30">🗑️</button>
+                <button onclick="bringToFront()" class="w-10 h-10 bg-slate-800 text-white rounded-lg flex items-center justify-center text-xl active:bg-slate-700">⏫</button>
+                <div class="w-px bg-slate-700 mx-1"></div>
+                <!-- Paleta de colores rápida -->
+                <button onclick="changeColor('#ef4444')" class="w-8 h-8 rounded-full bg-red-500 border-2 border-slate-900"></button>
+                <button onclick="changeColor('#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 border-2 border-slate-900"></button>
+                <button onclick="changeColor('#22c55e')" class="w-8 h-8 rounded-full bg-green-500 border-2 border-slate-900"></button>
+                <button onclick="changeColor('#eab308')" class="w-8 h-8 rounded-full bg-yellow-500 border-2 border-slate-900"></button>
+                <button onclick="changeColor('#64748b')" class="w-8 h-8 rounded-full bg-slate-500 border-2 border-slate-900"></button>
+            </div>
+        </div>
+
+        <!-- Panel Inferior: Categorías y Elementos -->
+        <div class="bg-slate-900 z-20 shrink-0 pb-[env(safe-area-inset-bottom)] border-t border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+            <!-- Pestañas -->
+            <div class="flex border-b border-slate-800">
+                <button onclick="switchTab('blocks')" id="tab-blocks" class="flex-1 py-3 text-sm font-bold border-b-2 border-blue-500 text-blue-400">BLOQUES</button>
+                <button onclick="switchTab('stickers')" id="tab-stickers" class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500">STICKERS</button>
+            </div>
+            
+            <!-- Contenedor de Items (Scroll Horizontal) -->
+            <div id="tray-blocks" class="flex gap-4 p-4 overflow-x-auto no-scrollbar items-center">
+                <!-- Los botones llaman a addBlock(columnas, filas) -->
+                <button onclick="addBlock(1,1)" class="w-14 h-14 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 hover:border-blue-500 active:scale-95 shrink-0">
+                    <div class="w-6 h-6 bg-red-500 rounded-sm shadow-inner flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-red-600/50"></div></div>
+                </button>
+                <button onclick="addBlock(2,1)" class="w-16 h-14 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 hover:border-blue-500 active:scale-95 shrink-0">
+                    <div class="w-10 h-6 bg-blue-500 rounded-sm shadow-inner flex gap-1 items-center justify-center px-1">
+                        <div class="w-3 h-3 rounded-full bg-blue-600/50"></div><div class="w-3 h-3 rounded-full bg-blue-600/50"></div>
+                    </div>
+                </button>
+                <button onclick="addBlock(3,1)" class="w-20 h-14 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 hover:border-blue-500 active:scale-95 shrink-0">
+                    <div class="w-14 h-6 bg-green-500 rounded-sm shadow-inner flex gap-1 items-center justify-center px-1">
+                        <div class="w-3 h-3 rounded-full bg-green-600/50"></div><div class="w-3 h-3 rounded-full bg-green-600/50"></div><div class="w-3 h-3 rounded-full bg-green-600/50"></div>
+                    </div>
+                </button>
+                <button onclick="addBlock(4,2)" class="w-24 h-14 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 hover:border-blue-500 active:scale-95 shrink-0">
+                    <div class="w-16 h-10 bg-yellow-500 rounded-sm shadow-inner flex flex-wrap gap-1 p-1">
+                        <div class="w-3 h-3 rounded-full bg-yellow-600/50"></div><div class="w-3 h-3 rounded-full bg-yellow-600/50"></div><div class="w-3 h-3 rounded-full bg-yellow-600/50"></div><div class="w-3 h-3 rounded-full bg-yellow-600/50"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-600/50"></div><div class="w-3 h-3 rounded-full bg-yellow-600/50"></div><div class="w-3 h-3 rounded-full bg-yellow-600/50"></div><div class="w-3 h-3 rounded-full bg-yellow-600/50"></div>
+                    </div>
+                </button>
+                <button onclick="addBlock(2,2)" class="w-16 h-14 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 hover:border-blue-500 active:scale-95 shrink-0">
+                    <div class="w-10 h-10 bg-slate-500 rounded-sm shadow-inner flex flex-wrap gap-1 p-1">
+                        <div class="w-3 h-3 rounded-full bg-slate-600/50"></div><div class="w-3 h-3 rounded-full bg-slate-600/50"></div>
+                        <div class="w-3 h-3 rounded-full bg-slate-600/50"></div><div class="w-3 h-3 rounded-full bg-slate-600/50"></div>
+                    </div>
+                </button>
+            </div>
+
+            <div id="tray-stickers" class="hidden gap-4 p-4 overflow-x-auto no-scrollbar items-center">
+                <button onclick="addSticker('🚗')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Auto">🚗</button>
+                <button onclick="addSticker('🛞')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Rueda">🛞</button>
+                <button onclick="addSticker('🏠')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Casa">🏠</button>
+                <button onclick="addSticker('🪟')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Ventana">🪟</button>
+                <button onclick="addSticker('🚦')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Semáforo">🚦</button>
+                <button onclick="addSticker('🏁')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Meta">🏁</button>
+                <button onclick="addSticker('🔧')" class="w-14 h-14 bg-slate-800 rounded-lg text-3xl active:scale-95 shrink-0" title="Herramienta">🔧</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI DE NOTIFICACIÓN TOAST -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-xl transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+        Mensaje
+    </div>
+
+    <script>
+        // --- MOTOR GRÁFICO ORIENTADO A OBJETOS ---
+        const canvas = document.getElementById('appCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        const contextMenu = document.getElementById('context-menu');
+        
+        // Constantes del sistema
+        const UNIT = 30; // Tamaño base de un "stud" o muesca de Lego
+        const HANDLE_RADIUS = 16; // Radio del botón de rotación
+        
+        let objects = [];
+        let selectedObj = null;
+        
+        // Estado del puntero
+        let isDragging = false;
+        let isRotating = false;
+        let startX = 0, startY = 0;
+        let initialObjX = 0, initialObjY = 0, initialObjRot = 0;
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            render();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- DEFINICIÓN DE CLASES ---
+
+        class BaseObject {
+            constructor(x, y) {
+                this.id = Date.now() + Math.random();
+                this.x = x;
+                this.y = y;
+                this.rotation = 0;
+            }
+            // Álgebra: Convertir un toque en la pantalla al espacio local del objeto rotado
+            localPoint(px, py) {
+                const tx = px - this.x;
+                const ty = py - this.y;
+                const cos = Math.cos(-this.rotation);
+                const sin = Math.sin(-this.rotation);
+                return {
+                    x: tx * cos - ty * sin,
+                    y: tx * sin + ty * cos
+                };
+            }
+        }
+
+        class LegoBlock extends BaseObject {
+            constructor(x, y, cols, rows, color) {
+                super(x, y);
+                this.cols = cols;
+                this.rows = rows;
+                this.w = cols * UNIT;
+                this.h = rows * UNIT;
+                this.color = color;
+                this.type = 'block';
+            }
+
+            draw(ctx, isSelected) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                // Dibujar base del bloque con sombra/profundidad
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = 'rgba(0,0,0,0.4)';
+                ctx.shadowBlur = 6;
+                ctx.shadowOffsetY = 4;
+                
+                // Rectángulo principal
+                const rx = -this.w / 2;
+                const ry = -this.h / 2;
+                ctx.beginPath();
+                ctx.roundRect(rx, ry, this.w, this.h, 4); // Borde ligeramente redondeado
+                ctx.fill();
+
+                // Quitar sombra exterior para los detalles internos
+                ctx.shadowColor = 'transparent';
+
+                // Borde interno (para darle efecto biselado o 3D)
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(rx + 2, ry + 2, this.w - 4, this.h - 4);
+
+                // Dibujar los "Studs" (cilindros superiores)
+                ctx.fillStyle = this.color;
+                ctx.lineWidth = 1.5;
+                for (let c = 0; c < this.cols; c++) {
+                    for (let r = 0; r < this.rows; r++) {
+                        const sx = rx + (c * UNIT) + (UNIT / 2);
+                        const sy = ry + (r * UNIT) + (UNIT / 2);
+                        
+                        // Sombra del stud
+                        ctx.beginPath();
+                        ctx.arc(sx, sy + 1, UNIT * 0.3, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                        ctx.fill();
+
+                        // Stud real
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, UNIT * 0.3, 0, Math.PI * 2);
+                        ctx.fillStyle = this.color;
+                        ctx.fill();
+                        
+                        // Brillo superior del stud (Reflejo)
+                        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, UNIT * 0.2, Math.PI, Math.PI * 1.5);
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            }
+
+            hitTest(px, py) {
+                const loc = this.localPoint(px, py);
+                return loc.x >= -this.w/2 && loc.x <= this.w/2 && loc.y >= -this.h/2 && loc.y <= this.h/2;
+            }
+        }
+
+        class Sticker extends BaseObject {
+            constructor(x, y, emoji) {
+                super(x, y);
+                this.emoji = emoji;
+                this.size = 60;
+                this.w = this.size;
+                this.h = this.size;
+                this.type = 'sticker';
+            }
+
+            draw(ctx, isSelected) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                ctx.font = `${this.size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Efecto de pegatina (borde blanco grueso)
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetY = 4;
+                
+                // Hack para borde blanco en Emojis: dibujarlo desplazado ligeramente
+                ctx.fillStyle = 'white';
+                for(let i=0; i<8; i++) {
+                    ctx.fillText(this.emoji, Math.cos(i)*3, Math.sin(i)*3);
+                }
+                
+                ctx.shadowColor = 'transparent';
+                ctx.fillText(this.emoji, 0, 0);
+                
+                ctx.restore();
+            }
+
+            hitTest(px, py) {
+                const loc = this.localPoint(px, py);
+                // Aproximación de colisión para el sticker
+                return loc.x >= -this.w/2 && loc.x <= this.w/2 && loc.y >= -this.h/2 && loc.y <= this.h/2;
+            }
+        }
+
+        // --- LÓGICA DE RENDERIZADO (Event-Driven, no bucle continuo) ---
+        function render() {
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar objetos
+            objects.forEach(obj => {
+                obj.draw(ctx, obj === selectedObj);
+            });
+
+            // Dibujar UI de Selección (Bounding Box y Handle de Rotación)
+            if (selectedObj) {
+                ctx.save();
+                ctx.translate(selectedObj.x, selectedObj.y);
+                ctx.rotate(selectedObj.rotation);
+
+                // Caja punteada
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(-selectedObj.w/2 - 4, -selectedObj.h/2 - 4, selectedObj.w + 8, selectedObj.h + 8);
+                
+                // Línea hacia el tirador de rotación
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(0, -selectedObj.h/2 - 4);
+                ctx.lineTo(0, -selectedObj.h/2 - 30);
+                ctx.stroke();
+
+                // Tirador de rotación (círculo azul)
+                ctx.beginPath();
+                ctx.arc(0, -selectedObj.h/2 - 30, HANDLE_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.stroke();
+                
+                // Icono de rotar dibujado a mano
+                ctx.fillStyle = '#3b82f6';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('↻', 0, -selectedObj.h/2 - 30);
+
+                ctx.restore();
+                
+                // Posicionar el menú contextual en HTML sobre la pieza
+                updateContextMenu();
+            } else {
+                contextMenu.style.display = 'none';
+            }
+        }
+
+        function updateContextMenu() {
+            if (!selectedObj) return;
+            // Solo actualizamos si no estamos arrastrando para que no vibre
+            if (isDragging || isRotating) {
+                contextMenu.style.display = 'none';
+                return;
+            }
+            contextMenu.style.display = 'flex';
+            
+            // Obtener coordenadas de pantalla
+            const rect = canvas.getBoundingClientRect();
+            // Calcular el punto más alto de la pieza considerando su rotación
+            const radius = Math.max(selectedObj.w, selectedObj.h) / 2 + 50; 
+            
+            // Colocar arriba de la pieza
+            contextMenu.style.left = `${selectedObj.x}px`;
+            contextMenu.style.top = `${selectedObj.y - radius}px`;
+        }
+
+        // --- SISTEMA DE EVENTOS TÁCTILES / PUNTERO ---
+        canvas.addEventListener('pointerdown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+
+            // 1. Chequear si tocó el tirador de rotación del objeto seleccionado
+            if (selectedObj) {
+                const loc = selectedObj.localPoint(px, py);
+                const handleY = -selectedObj.h/2 - 30;
+                const distToHandle = Math.hypot(loc.x, loc.y - handleY);
+                
+                if (distToHandle <= HANDLE_RADIUS + 10) { // +10 de tolerancia táctil
+                    isRotating = true;
+                    startX = px;
+                    startY = py;
+                    initialObjRot = selectedObj.rotation;
+                    canvas.setPointerCapture(e.pointerId);
+                    contextMenu.style.display = 'none';
+                    return;
+                }
+            }
+
+            // 2. Chequear si tocó alguna pieza (Iteramos en reversa para seleccionar la de más arriba)
+            let hit = false;
+            for (let i = objects.length - 1; i >= 0; i--) {
+                if (objects[i].hitTest(px, py)) {
+                    selectedObj = objects[i];
+                    
+                    // Mover al frente (Z-Index)
+                    objects.splice(i, 1);
+                    objects.push(selectedObj);
+                    
+                    isDragging = true;
+                    startX = px;
+                    startY = py;
+                    initialObjX = selectedObj.x;
+                    initialObjY = selectedObj.y;
+                    
+                    hit = true;
+                    canvas.setPointerCapture(e.pointerId);
+                    contextMenu.style.display = 'none';
+                    render();
+                    break;
+                }
+            }
+
+            // 3. Si no tocó nada, deseleccionar
+            if (!hit) {
+                selectedObj = null;
+                render();
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!isDragging && !isRotating) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+
+            if (isDragging && selectedObj) {
+                // Movimiento libre (Free Drag)
+                const dx = px - startX;
+                const dy = py - startY;
+                selectedObj.x = initialObjX + dx;
+                selectedObj.y = initialObjY + dy;
+            } 
+            else if (isRotating && selectedObj) {
+                // Matemáticas de rotación (Ángulo hacia el puntero)
+                const cx = selectedObj.x;
+                const cy = selectedObj.y;
+                const angle = Math.atan2(py - cy, px - cx);
+                
+                // Como el tirador está a -90 grados (arriba), compensamos sumando Math.PI/2
+                let finalAngle = angle + Math.PI / 2;
+                
+                // Funcionalidad "Snap": Anclar a ángulos exactos de 45 grados (Math.PI / 4)
+                // Esto facilita enormemente construir con precisión en pantallas táctiles
+                const snapAngle = Math.PI / 4; 
+                selectedObj.rotation = Math.round(finalAngle / snapAngle) * snapAngle;
+            }
+            
+            render();
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            isDragging = false;
+            isRotating = false;
+            canvas.releasePointerCapture(e.pointerId);
+            render(); // Llama render final para mostrar el menú contextual
+        });
+
+        // --- ACCIONES DE UI ---
+
+        function addBlock(cols, rows) {
+            const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#64748b'];
+            // Determinar color basado en el botón (simplificado)
+            let color = colors[cols % colors.length]; 
+            if(cols===2 && rows===2) color = '#64748b'; // gris
+            if(cols===4) color = '#eab308'; // amarillo
+            
+            // Aparecer en el centro
+            const x = canvas.width / 2;
+            const y = canvas.height / 2;
+            
+            const block = new LegoBlock(x, y, cols, rows, color);
+            objects.push(block);
+            selectedObj = block;
+            render();
+            showToast("Bloque añadido");
+        }
+
+        function addSticker(emoji) {
+            const x = canvas.width / 2;
+            const y = canvas.height / 2;
+            const sticker = new Sticker(x, y, emoji);
+            objects.push(sticker);
+            selectedObj = sticker;
+            render();
+            showToast("Sticker añadido");
+        }
+
+        function deleteSelected() {
+            if (!selectedObj) return;
+            objects = objects.filter(o => o !== selectedObj);
+            selectedObj = null;
+            render();
+            showToast("Elemento eliminado");
+        }
+
+        function bringToFront() {
+            if (!selectedObj) return;
+            objects = objects.filter(o => o !== selectedObj);
+            objects.push(selectedObj);
+            render();
+            showToast("Movido al frente");
+        }
+
+        function changeColor(color) {
+            if (!selectedObj || selectedObj.type !== 'block') return;
+            selectedObj.color = color;
+            render();
+        }
+
+        function clearCanvas() {
+            if (objects.length === 0) return;
+            if (confirm("¿Estás seguro de que deseas limpiar la mesa de trabajo?")) {
+                objects = [];
+                selectedObj = null;
+                render();
+                showToast("Mesa limpiada");
+            }
+        }
+
+        function exportCanvas() {
+            // Deseleccionar temporalmente para que no salga el recuadro azul en la foto
+            const tempSelected = selectedObj;
+            selectedObj = null;
+            render();
+
+            // Exportar a Data URL
+            const dataURL = canvas.toDataURL('image/png');
+            
+            // Restaurar selección
+            selectedObj = tempSelected;
+            render();
+
+            // Crear un enlace falso para forzar la descarga
+            const link = document.createElement('a');
+            link.download = 'ProBuilder_Project.png';
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Diseño Guardado 💾");
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tray-blocks').style.display = tab === 'blocks' ? 'flex' : 'none';
+            document.getElementById('tray-stickers').style.display = tab === 'stickers' ? 'flex' : 'none';
+            
+            document.getElementById('tab-blocks').className = tab === 'blocks' ? "flex-1 py-3 text-sm font-bold border-b-2 border-blue-500 text-blue-400" : "flex-1 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500";
+            document.getElementById('tab-stickers').className = tab === 'stickers' ? "flex-1 py-3 text-sm font-bold border-b-2 border-blue-500 text-blue-400" : "flex-1 py-3 text-sm font-bold border-b-2 border-transparent text-slate-500";
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }
+
+        function startApp() {
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('workspace').classList.remove('hidden');
+            // Retrasar resize un frame para asegurar que el contenedor tenga dimensiones
+            setTimeout(() => {
+                resizeCanvas();
+                if(objects.length === 0) {
+                    // Inicializar con un bloque de muestra
+                    addBlock(4,2); 
+                }
+            }, 50);
+        }
+
+        function goHome() {
+            document.getElementById('workspace').classList.add('hidden');
+            document.getElementById('home-screen').style.display = 'flex';
+        }
+
+    </script>
+</body>
+</html>
