@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lego Creator Ultimate</title>
+    <style>
+        :root {
+            --bg-color: #f0fdf4;
+            --primary: #2563eb;
+            --text-dark: #1e293b;
+            --border: #cbd5e1;
+            
+            /* Variables dinámicas del SVG */
+            --skin-color: #fcd34d;
+            --hair-color: #451a03;
+            --top-color: #ef4444;
+            --bottom-color: #1e3a8a;
+            --shoes-color: #111827;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+
+        /* --- PANTALLA DE INICIO --- */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        #splash-screen h1 {
+            color: white; font-size: 3rem; margin-bottom: 2rem;
+            text-shadow: 2px 2px 0 #1e3a8a; text-align: center;
+        }
+
+        .gender-btns { display: flex; gap: 2rem; }
+        
+        .gender-btn {
+            background: white; border: 4px solid #fcd34d; border-radius: 20px;
+            padding: 2rem; font-size: 4rem; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: transform 0.2s;
+        }
+        .gender-btn:active { transform: scale(0.9); }
+        .gender-btn p { font-size: 1.5rem; font-weight: bold; color: #1e3a8a; margin-top: 1rem; }
+
+        /* --- APLICACIÓN PRINCIPAL --- */
+        .app-layout {
+            display: none; /* Se activa tras elegir género */
+            flex-direction: column;
+            height: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        @media (min-width: 768px) { .app-layout { flex-direction: row; } }
+
+        /* --- LIENZO SVG --- */
+        .canvas-section {
+            flex: 1.2;
+            position: relative;
+            background: radial-gradient(circle, #ffffff 0%, #cbd5e1 100%);
+            display: flex; justify-content: center; align-items: center;
+            border-bottom: 2px solid var(--border);
+            touch-action: none; /* Para arrastrar stickers */
+            overflow: hidden;
+        }
+
+        #avatar-container {
+            width: 300px; height: 450px;
+            filter: drop-shadow(0 15px 15px rgba(0,0,0,0.3));
+        }
+
+        svg#lego-canvas { width: 100%; height: 100%; display: block; }
+
+        /* --- ZONA DE CONTROLES --- */
+        .controls-section { flex: 1; display: flex; flex-direction: column; background: white; z-index: 20; }
+
+        .tabs-header {
+            display: flex; background: #f8fafc; border-bottom: 1px solid var(--border); overflow-x: auto;
+        }
+        .tabs-header::-webkit-scrollbar { display: none; }
+
+        .tab-btn {
+            flex: 1; min-width: 80px; padding: 1rem 0.5rem; background: transparent; border: none;
+            font-size: 1.8rem; cursor: pointer; border-bottom: 3px solid transparent; opacity: 0.5;
+        }
+        .tab-btn.active { opacity: 1; border-bottom-color: var(--primary); background: white; }
+
+        .tab-content { display: none; flex: 1; overflow-y: auto; padding: 1.5rem; flex-direction: column; gap: 1.5rem; }
+        .tab-content.active { display: flex; }
+
+        .section-title { font-size: 0.9rem; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 0.8rem; }
+
+        /* Carruseles (Deslizables) */
+        .carousel {
+            display: flex; overflow-x: auto; gap: 1rem; padding-bottom: 0.5rem;
+            scroll-snap-type: x mandatory; scrollbar-width: none;
+        }
+        .carousel::-webkit-scrollbar { display: none; }
+
+        .card {
+            flex: 0 0 75px; height: 75px; border-radius: 15px; border: 2px solid var(--border);
+            background: #f1f5f9; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 2.2rem; cursor: pointer; scroll-snap-align: start; transition: all 0.1s;
+        }
+        .card:active { transform: scale(0.95); }
+        .card.selected { border-color: var(--primary); background: #eff6ff; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
+        .card span.label { font-size: 0.6rem; font-weight: bold; color: #475569; margin-top: 5px; }
+
+        /* Paletas de Colores */
+        .color-row { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+        .color-dot {
+            width: 40px; height: 40px; border-radius: 50%; border: 3px solid #e2e8f0;
+            cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .color-dot.selected { border-color: var(--primary); transform: scale(1.1); }
+        
+        /* Selector de Color Personalizado */
+        .custom-color-wrapper {
+            position: relative; width: 40px; height: 40px; border-radius: 50%;
+            background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+            border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+        }
+        .custom-color-wrapper input[type="color"] {
+            opacity: 0; width: 100%; height: 100%; position: absolute; cursor: pointer;
+        }
+        .custom-color-wrapper::after { content: '🎨'; font-size: 1.2rem; pointer-events: none; }
+
+        /* Stickers UI */
+        .sticker-panel { background: #f8fafc; padding: 1rem; border-radius: 15px; border: 2px dashed var(--border); display: none; margin-top: 1rem;}
+        .sticker-panel.active { display: block; }
+        .slider-wrap { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        input[type=range] { flex: 1; }
+        
+        /* Botones de Acción */
+        .btn {
+            padding: 1rem; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem;
+            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 0.5rem;
+            transition: transform 0.1s; width: 100%;
+        }
+        .btn:active { transform: translateY(3px); }
+        .btn-danger { background: #ef4444; color: white; box-shadow: 0 4px 0 #b91c1c; }
+        .btn-save { background: #10b981; color: white; box-shadow: 0 4px 0 #059669; margin-top: auto; }
+
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA DE INICIO -->
+    <div id="splash-screen">
+        <h1>Crea tu Personaje</h1>
+        <div class="gender-btns">
+            <div class="gender-btn" onclick="initApp('boy')">👦<p>Niño</p></div>
+            <div class="gender-btn" onclick="initApp('girl')">👧<p>Niña</p></div>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div class="app-layout" id="app-layout">
+        
+        <!-- LIENZO -->
+        <div class="canvas-section">
+            <div id="avatar-container">
+                <!-- SVG AUTÓNOMO (Todo ocurre aquí adentro para poder exportarlo) -->
+                <svg id="lego-canvas" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- Brillos para dar volumen de plástico -->
+                        <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="white" stop-opacity="0.4"/>
+                            <stop offset="20%" stop-color="white" stop-opacity="0.0"/>
+                            <stop offset="80%" stop-color="black" stop-opacity="0.0"/>
+                            <stop offset="100%" stop-color="black" stop-opacity="0.3"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- 1. PIERNAS Y CADERA (Proporciones exactas de bloque) -->
+                    <g id="layer-legs">
+                        <!-- Zapatos -->
+                        <path d="M 65 260 L 95 260 L 95 275 C 95 280 65 280 65 275 Z" fill="var(--shoes-color)"/>
+                        <path d="M 105 260 L 135 260 L 135 275 C 135 280 105 280 105 275 Z" fill="var(--shoes-color)"/>
+                        
+                        <!-- Pantorrillas -->
+                        <rect x="65" y="220" width="30" height="40" class="svg-bottom" fill="var(--bottom-color)" />
+                        <rect x="105" y="220" width="30" height="40" class="svg-bottom" fill="var(--bottom-color)" />
+
+                        <!-- Muslos -->
+                        <rect x="65" y="190" width="30" height="30" fill="var(--bottom-color)" />
+                        <rect x="105" y="190" width="30" height="30" fill="var(--bottom-color)" />
+
+                        <!-- Pieza central de la cadera -->
+                        <rect x="95" y="175" width="10" height="20" fill="var(--bottom-color)" />
+                        <rect x="60" y="175" width="80" height="15" rx="2" fill="var(--bottom-color)" />
+                        <rect x="60" y="175" width="80" height="15" rx="2" fill="url(#shine)" pointer-events="none"/>
+                    </g>
+
+                    <!-- 2. BRAZOS Y MANOS (Manos de garra en C) -->
+                    <g id="layer-arms">
+                        <!-- Brazo Izquierdo -->
+                        <path d="M 75 105 Q 40 115 45 160" fill="none" stroke="var(--top-color)" stroke-width="18" stroke-linecap="round"/>
+                        <!-- Mano Izquierda (Garra C) -->
+                        <path d="M 40 155 A 10 10 0 1 0 50 155" fill="none" stroke="var(--skin-color)" stroke-width="6" stroke-linecap="round"/>
+                        
+                        <!-- Brazo Derecho -->
+                        <path d="M 125 105 Q 160 115 155 160" fill="none" stroke="var(--top-color)" stroke-width="18" stroke-linecap="round"/>
+                        <!-- Mano Derecha (Garra C) -->
+                        <path d="M 160 155 A 10 10 0 1 1 150 155" fill="none" stroke="var(--skin-color)" stroke-width="6" stroke-linecap="round"/>
+                    </g>
+
+                    <!-- 3. TORSO (Trapezoide ancho abajo, estrecho arriba) -->
+                    <g id="layer-torso">
+                        <polygon points="80,100 120,100 140,175 60,175" fill="var(--top-color)"/>
+                        <polygon points="80,100 120,100 140,175 60,175" fill="url(#shine)" pointer-events="none"/>
+                        
+                        <!-- Decals del Torso (Inyectados por JS) -->
+                        <g id="torso-decal"></g>
+                    </g>
+
+                    <!-- 4. CABEZA -->
+                    <g id="layer-head">
+                        <!-- Cuello -->
+                        <rect x="92" y="90" width="16" height="10" fill="var(--skin-color)"/>
+                        <!-- Botón Lego Arriba -->
+                        <rect x="90" y="35" width="20" height="8" rx="2" fill="var(--skin-color)"/>
+                        <!-- Cabeza (Cilíndrica) -->
+                        <rect x="75" y="42" width="50" height="48" rx="12" fill="var(--skin-color)"/>
+                        <rect x="75" y="42" width="50" height="48" rx="12" fill="url(#shine)" pointer-events="none"/>
+
+                        <!-- Rostro (Inyectado por JS) -->
+                        <g id="face-decal"></g>
+                    </g>
+
+                    <!-- 5. PELO / SOMBREROS (Inyectado por JS) -->
+                    <g id="layer-hair"></g>
+
+                    <!-- 6. STICKERS (Textos SVG para poder exportar) -->
+                    <g id="layer-stickers"></g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div class="controls-section">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="openTab('tab-outfits')">👗</button>
+                <button class="tab-btn" onclick="openTab('tab-head')">🙂</button>
+                <button class="tab-btn" onclick="openTab('tab-body')">👕</button>
+                <button class="tab-btn" onclick="openTab('tab-stickers')">⭐️</button>
+            </div>
+
+            <!-- TAB: PREDEFINIDOS (OUTFITS) -->
+            <div id="tab-outfits" class="tab-content active">
+                <div class="section-title">Estilos Predefinidos (Mínimo 10)</div>
+                <div class="carousel" id="outfits-carousel"></div>
+                
+                <button class="btn btn-save" onclick="downloadImage()">💾 Guardar Foto en Galería</button>
+            </div>
+
+            <!-- TAB: CABEZA -->
+            <div id="tab-head" class="tab-content">
+                <div class="section-title">Rostro</div>
+                <div class="carousel" id="face-carousel"></div>
+                <div class="section-title">Color de Piel</div>
+                <div class="color-row" id="skin-colors"></div>
+
+                <div class="section-title">Pelo / Accesorio</div>
+                <div class="carousel" id="hair-carousel"></div>
+                <div class="section-title">Color de Pelo</div>
+                <div class="color-row" id="hair-colors"></div>
+            </div>
+
+            <!-- TAB: CUERPO -->
+            <div id="tab-body" class="tab-content">
+                <div class="section-title">Ropa Superior</div>
+                <div class="carousel" id="top-carousel"></div>
+                <div class="section-title">Color Superior</div>
+                <div class="color-row" id="top-colors"></div>
+
+                <div class="section-title">Ropa Inferior</div>
+                <div class="carousel" id="bottom-carousel"></div>
+                <div class="section-title">Color Inferior</div>
+                <div class="color-row" id="bottom-colors"></div>
+
+                <div class="section-title">Color Zapatos</div>
+                <div class="color-row" id="shoes-colors"></div>
+            </div>
+
+            <!-- TAB: STICKERS -->
+            <div id="tab-stickers" class="tab-content">
+                <div class="section-title">Elige un Sticker (Toca y arrastra en el dibujo)</div>
+                <div class="carousel" id="stickers-carousel" style="flex-wrap: wrap; overflow: visible;"></div>
+
+                <div class="sticker-panel" id="sticker-tools">
+                    <div class="section-title">Ajustar Sticker</div>
+                    <div class="slider-wrap">
+                        <span>🔍</span>
+                        <input type="range" id="sticker-size" min="10" max="60" value="30">
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteSticker()">🗑️ Borrar Sticker</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. BASE DE DATOS (Mínimo 10 de todo) ---
+
+        // Rostros (SVG Paths para inyectar)
+        const dbFaces = [
+            { id: 'smile', icon: '🙂', name: 'Sonrisa', svg: `<circle cx="92" cy="60" r="3" fill="#111827"/><circle cx="108" cy="60" r="3" fill="#111827"/><path d="M 90 70 Q 100 80 110 70" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round"/>` },
+            { id: 'cool', icon: '😎', name: 'Cool', svg: `<rect x="85" y="55" width="12" height="6" rx="1" fill="#111827"/><rect x="103" y="55" width="12" height="6" rx="1" fill="#111827"/><line x1="97" y1="58" x2="103" y2="58" stroke="#111827" stroke-width="2"/><path d="M 92 75 Q 100 80 108 75" fill="none" stroke="#111827" stroke-width="1.5"/>` },
+            { id: 'laugh', icon: '😆', name: 'Risa', svg: `<path d="M 88 58 Q 92 55 95 58" fill="none" stroke="#111827" stroke-width="1.5"/><path d="M 105 58 Q 108 55 112 58" fill="none" stroke="#111827" stroke-width="1.5"/><path d="M 90 70 Q 100 85 110 70 Z" fill="#ef4444" stroke="#111827" stroke-width="1.5"/><path d="M 90 70 Q 100 75 110 70" fill="white"/>` },
+            { id: 'mustache', icon: '🥸', name: 'Bigote', svg: `<circle cx="92" cy="58" r="2.5" fill="#111827"/><circle cx="108" cy="58" r="2.5" fill="#111827"/><path d="M 85 75 Q 100 65 115 75 Q 100 70 85 75 Z" fill="#451a03"/>` },
+            { id: 'angry', icon: '😠', name: 'Enojado', svg: `<circle cx="92" cy="62" r="2.5" fill="#111827"/><circle cx="108" cy="62" r="2.5" fill="#111827"/><line x1="85" y1="55" x2="95" y2="60" stroke="#111827" stroke-width="2"/><line x1="115" y1="55" x2="105" y2="60" stroke="#111827" stroke-width="2"/><path d="M 90 75 Q 100 70 110 75" fill="none" stroke="#111827" stroke-width="1.5"/>` },
+            { id: 'wink', icon: '😉', name: 'Guiño', svg: `<circle cx="92" cy="60" r="3" fill="#111827"/><line x1="105" y1="60" x2="112" y2="60" stroke="#111827" stroke-width="2"/><path d="M 90 70 Q 100 80 110 70" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round"/>` },
+            { id: 'girl', icon: '👧', name: 'Pestañas', svg: `<circle cx="92" cy="60" r="3" fill="#111827"/><circle cx="108" cy="60" r="3" fill="#111827"/><line x1="88" y1="58" x2="85" y2="55" stroke="#111827" stroke-width="1"/><line x1="112" y1="58" x2="115" y2="55" stroke="#111827" stroke-width="1"/><path d="M 92 72 Q 100 78 108 72" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>` },
+            { id: 'pirate', icon: '🏴‍☠️', name: 'Pirata', svg: `<circle cx="108" cy="60" r="3" fill="#111827"/><circle cx="92" cy="60" r="6" fill="#111827"/><line x1="75" y1="50" x2="92" y2="60" stroke="#111827" stroke-width="2"/><path d="M 92 75 Q 100 70 110 75" fill="none" stroke="#111827" stroke-width="1.5"/>` },
+            { id: 'clown', icon: '🤡', name: 'Payaso', svg: `<circle cx="92" cy="58" r="3" fill="#111827"/><circle cx="108" cy="58" r="3" fill="#111827"/><circle cx="100" cy="65" r="5" fill="#ef4444"/><path d="M 85 75 Q 100 85 115 75" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>` },
+            { id: 'robot', icon: '🤖', name: 'Robot', svg: `<rect x="85" y="55" width="10" height="10" fill="#3b82f6"/><rect x="105" y="55" width="10" height="10" fill="#3b82f6"/><rect x="85" y="70" width="30" height="5" fill="#111827"/><line x1="90" y1="70" x2="90" y2="75" stroke="white" stroke-width="1"/><line x1="95" y1="70" x2="95" y2="75" stroke="white" stroke-width="1"/><line x1="100" y1="70" x2="100" y2="75" stroke="white" stroke-width="1"/>` }
+        ];
+
+        // Pelos / Sombreros
+        const dbHairs = [
+            { id: 'none', icon: '👨‍🦲', name: 'Calvo', svg: `` },
+            { id: 'short', icon: '👦', name: 'Corto', svg: `<path d="M 70 50 Q 75 30 100 30 Q 125 30 130 50 L 135 65 Q 135 70 125 70 L 125 50 Q 100 40 75 50 L 75 70 Q 65 70 65 65 Z" fill="var(--hair-color)"/>` },
+            { id: 'spiky', icon: '💥', name: 'Pinchos', svg: `<path d="M 68 55 L 80 30 L 90 45 L 100 25 L 110 45 L 120 30 L 132 55 Q 135 65 125 65 L 125 50 Q 100 40 75 50 L 75 65 Q 65 65 68 55 Z" fill="var(--hair-color)"/>` },
+            { id: 'ponytail', icon: '👧', name: 'Coleta', svg: `<path d="M 70 55 C 70 30 130 30 130 55 C 130 65 70 65 70 55 Z" fill="var(--hair-color)"/><path d="M 125 50 Q 145 60 135 85 Q 120 60 125 50" fill="var(--hair-color)"/>` },
+            { id: 'cap', icon: '🧢', name: 'Gorra', svg: `<path d="M 70 50 C 70 20 130 20 130 50 Z" fill="var(--top-color)"/><path d="M 120 48 L 150 48 C 150 55 120 55 120 48" fill="var(--top-color)"/><circle cx="100" cy="30" r="4" fill="#111827" opacity="0.3"/>` },
+            { id: 'crown', icon: '👑', name: 'Corona', svg: `<path d="M 75 45 L 70 20 L 85 35 L 100 15 L 115 35 L 130 20 L 125 45 Z" fill="#fcd34d" stroke="#b45309" stroke-width="1"/>` },
+            { id: 'cowboy', icon: '🤠', name: 'Vaquero', svg: `<path d="M 50 45 Q 100 60 150 45 Q 150 35 130 40 C 130 10 70 10 70 40 Q 50 35 50 45 Z" fill="#78350f"/>` },
+            { id: 'chef', icon: '👨‍🍳', name: 'Chef', svg: `<path d="M 75 45 L 70 10 Q 85 -5 100 10 Q 115 -5 130 10 L 125 45 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>` },
+            { id: 'police', icon: '👮', name: 'Policía', svg: `<path d="M 70 40 C 70 15 130 15 130 40 Z" fill="#1e3a8a"/><path d="M 60 40 L 140 40 C 140 45 60 45 60 40" fill="#0f172a"/><circle cx="100" cy="25" r="5" fill="#fcd34d"/>` },
+            { id: 'ninja', icon: '🥷', name: 'Ninja', svg: `<path d="M 70 45 C 70 20 130 20 130 45 L 130 80 C 130 90 70 90 70 80 Z" fill="#111827"/><rect x="75" y="55" width="50" height="20" rx="5" fill="var(--skin-color)"/><path d="M 130 65 L 150 75 L 130 85 Z" fill="#111827"/>` }
+        ];
+
+        // Ropa Superior (Decals)
+        const dbTops = [
+            { id: 'basic', icon: '👕', name: 'Básica', svg: `` },
+            { id: 'suit', icon: '👔', name: 'Traje', svg: `<polygon points="90,100 110,100 100,130" fill="#ffffff"/><polygon points="97,100 103,100 100,125" fill="#111827"/>` },
+            { id: 'cowboy', icon: '🤠', name: 'Chaleco', svg: `<path d="M 80 100 L 95 100 L 90 170 L 65 170 Z" fill="#78350f"/><path d="M 120 100 L 105 100 L 110 170 L 135 170 Z" fill="#78350f"/>` },
+            { id: 'clown', icon: '🤡', name: 'Lunares', svg: `<circle cx="80" cy="120" r="5" fill="#ef4444"/><circle cx="120" cy="130" r="5" fill="#3b82f6"/><circle cx="100" cy="150" r="5" fill="#10b981"/><circle cx="90" cy="165" r="5" fill="#fcd34d"/>` },
+            { id: 'princess', icon: '👸', name: 'Corsé', svg: `<path d="M 85 100 Q 100 130 115 100 L 110 170 L 90 170 Z" fill="#ec4899"/><line x1="95" y1="110" x2="105" y2="120" stroke="white" stroke-width="1"/><line x1="105" y1="110" x2="95" y2="120" stroke="white" stroke-width="1"/>` },
+            { id: 'police', icon: '👮', name: 'Placa', svg: `<polygon points="110,120 120,120 125,130 115,140 105,130" fill="#fcd34d"/><rect x="85" y="125" width="10" height="15" fill="#111827"/>` },
+            { id: 'pirate', icon: '🏴‍☠️', name: 'Rayas', svg: `<line x1="75" y1="115" x2="125" y2="115" stroke="white" stroke-width="4"/><line x1="70" y1="135" x2="130" y2="135" stroke="white" stroke-width="4"/><line x1="65" y1="155" x2="135" y2="155" stroke="white" stroke-width="4"/>` },
+            { id: 'super', icon: '🦸', name: 'Héroe', svg: `<polygon points="100,120 110,145 85,130 115,130 90,145" fill="#fcd34d"/>` },
+            { id: 'fireman', icon: '🚒', name: 'Bombero', svg: `<line x1="85" y1="100" x2="85" y2="175" stroke="#fcd34d" stroke-width="4"/><line x1="115" y1="100" x2="115" y2="175" stroke="#fcd34d" stroke-width="4"/><line x1="65" y1="165" x2="135" y2="165" stroke="#fcd34d" stroke-width="4"/>` },
+            { id: 'chef', icon: '👨‍🍳', name: 'Chef', svg: `<circle cx="90" cy="120" r="2" fill="#111827"/><circle cx="90" cy="140" r="2" fill="#111827"/><circle cx="90" cy="160" r="2" fill="#111827"/><line x1="105" y1="100" x2="105" y2="175" stroke="#cbd5e1" stroke-width="1"/>` }
+        ];
+
+        // Ropa Inferior (Geometría)
+        const dbBottoms = [
+            { id: 'pants', icon: '👖', name: 'Pantalón', type: 'pants' },
+            { id: 'shorts', icon: '🩳', name: 'Shorts', type: 'shorts' }
+        ];
+
+        // Stickers
+        const dbStickers = ['⭐️', '❤️', '⚡️', '🚀', '🦖', '⚽️', '🦋', '🍕', '🎮', '🦄', '👑', '💀', '🌸', '🎸', '🍩'];
+
+        // Outfits Predefinidos
+        const dbOutfits = [
+            { id: 'boy', icon: '👦', name: 'Niño', set: { face:'smile', hair:'short', top:'basic', bottom:'pants', colors: { skin:'#fcd34d', hair:'#451a03', top:'#ef4444', bottom:'#1e3a8a', shoes:'#111827' } } },
+            { id: 'girl', icon: '👧', name: 'Niña', set: { face:'girl', hair:'ponytail', top:'basic', bottom:'shorts', colors: { skin:'#fcd34d', hair:'#b45309', top:'#ec4899', bottom:'#3b82f6', shoes:'#ffffff' } } },
+            { id: 'cowboy', icon: '🤠', name: 'Vaquero', set: { face:'mustache', hair:'cowboy', top:'cowboy', bottom:'pants', colors: { skin:'#fcd34d', hair:'#78350f', top:'#f59e0b', bottom:'#1e3a8a', shoes:'#78350f' } } },
+            { id: 'princess', icon: '👸', name: 'Princesa', set: { face:'girl', hair:'crown', top:'princess', bottom:'pants', colors: { skin:'#fbcfe8', hair:'#fef08a', top:'#a855f7', bottom:'#ec4899', shoes:'#ec4899' } } },
+            { id: 'clown', icon: '🤡', name: 'Payaso', set: { face:'clown', hair:'spiky', top:'clown', bottom:'shorts', colors: { skin:'#ffffff', hair:'#ef4444', top:'#fef08a', bottom:'#10b981', shoes:'#ef4444' } } },
+            { id: 'pirate', icon: '🏴‍☠️', name: 'Pirata', set: { face:'pirate', hair:'none', top:'pirate', bottom:'shorts', colors: { skin:'#fcd34d', hair:'#111827', top:'#111827', bottom:'#78350f', shoes:'#451a03' } } },
+            { id: 'police', icon: '👮', name: 'Policía', set: { face:'cool', hair:'police', top:'police', bottom:'pants', colors: { skin:'#fcd34d', hair:'#1e3a8a', top:'#1e3a8a', bottom:'#0f172a', shoes:'#111827' } } },
+            { id: 'chef', icon: '👨‍🍳', name: 'Chef', set: { face:'smile', hair:'chef', top:'chef', bottom:'pants', colors: { skin:'#fcd34d', hair:'#ffffff', top:'#ffffff', bottom:'#111827', shoes:'#111827' } } },
+            { id: 'super', icon: '🦸', name: 'Héroe', set: { face:'angry', hair:'short', top:'super', bottom:'shorts', colors: { skin:'#fcd34d', hair:'#111827', top:'#3b82f6', bottom:'#ef4444', shoes:'#ef4444' } } },
+            { id: 'ninja', icon: '🥷', name: 'Ninja', set: { face:'ninja', hair:'ninja', top:'basic', bottom:'pants', colors: { skin:'#fcd34d', hair:'#111827', top:'#111827', bottom:'#111827', shoes:'#111827' } } }
+        ];
+
+        // Paletas
+        const colorPalettes = {
+            skin: ['#fcd34d', '#fbcfe8', '#fef08a', '#d6d3d1', '#a8a29e', '#78716c', '#44403c'],
+            hair: ['#111827', '#451a03', '#78350f', '#b45309', '#fef08a', '#ef4444', '#a855f7'],
+            clothes: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#1e293b', '#ffffff'],
+            shoes: ['#111827', '#451a03', '#dc2626', '#2563eb', '#ffffff', '#10b981']
+        };
+
+        // --- 2. MOTOR LÓGICO Y RENDERIZADO ---
+
+        let currentState = { bottomType: 'pants' };
+
+        function initApp(gender) {
+            document.getElementById('splash-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('splash-screen').style.display = 'none';
+                document.getElementById('app-layout').style.display = 'flex';
+                applyOutfit(gender); // Carga predefinido inicial
+                buildUI();
+            }, 500);
+        }
+
+        function buildUI() {
+            buildCarousel('outfits-carousel', dbOutfits, (item) => applyOutfit(item.id));
+            buildCarousel('face-carousel', dbFaces, (item) => updateSVG('face-decal', item.svg));
+            buildCarousel('hair-carousel', dbHairs, (item) => updateSVG('layer-hair', item.svg));
+            buildCarousel('top-carousel', dbTops, (item) => updateSVG('torso-decal', item.svg));
+            buildCarousel('bottom-carousel', dbBottoms, (item) => setBottomType(item.type));
+            
+            // Stickers especiales
+            const stickerGrid = document.getElementById('stickers-carousel');
+            dbStickers.forEach(emoji => {
+                const div = document.createElement('div');
+                div.className = 'card'; div.style.flex = '0 0 60px'; div.style.height = '60px';
+                div.innerText = emoji; div.onclick = () => spawnSticker(emoji);
+                stickerGrid.appendChild(div);
+            });
+
+            // Colores
+            buildColorRow('skin-colors', colorPalettes.skin, '--skin-color');
+            buildColorRow('hair-colors', colorPalettes.hair, '--hair-color');
+            buildColorRow('top-colors', colorPalettes.clothes, '--top-color');
+            buildColorRow('bottom-colors', colorPalettes.clothes, '--bottom-color');
+            buildColorRow('shoes-colors', colorPalettes.shoes, '--shoes-color');
+        }
+
+        function buildCarousel(containerId, db, onClickFn) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            db.forEach((item, i) => {
+                const card = document.createElement('div');
+                card.className = `card ${i===0 ? 'selected':''}`;
+                card.innerHTML = `${item.icon}<span class="label">${item.name}</span>`;
+                card.onclick = () => {
+                    container.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    card.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+                    onClickFn(item);
+                };
+                container.appendChild(card);
+            });
+        }
+
+        function buildColorRow(containerId, palette, cssVar) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            // Colores fijos
+            palette.forEach((color, i) => {
+                const dot = document.createElement('div');
+                dot.className = `color-dot ${i===0 ? 'selected':''}`;
+                dot.style.backgroundColor = color;
+                dot.onclick = () => applyColor(container, cssVar, color, dot);
+                container.appendChild(dot);
+            });
+
+            // Selector Personalizado
+            const customWrap = document.createElement('div');
+            customWrap.className = 'custom-color-wrapper';
+            const input = document.createElement('input');
+            input.type = 'color';
+            input.oninput = (e) => applyColor(container, cssVar, e.target.value, customWrap);
+            customWrap.appendChild(input);
+            container.appendChild(customWrap);
+        }
+
+        function applyColor(container, cssVar, color, element) {
+            document.documentElement.style.setProperty(cssVar, color);
+            container.querySelectorAll('.color-dot, .custom-color-wrapper').forEach(d=>d.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        function updateSVG(layerId, svgContent) {
+            document.getElementById(layerId).innerHTML = svgContent;
+        }
+
+        function setBottomType(type) {
+            currentState.bottomType = type;
+            const calves = document.querySelectorAll('.svg-bottom');
+            if(type === 'shorts') {
+                calves.forEach(el => el.setAttribute('fill', 'var(--skin-color)'));
+            } else {
+                calves.forEach(el => el.setAttribute('fill', 'var(--bottom-color)'));
+            }
+        }
+
+        function applyOutfit(outfitId) {
+            const outfit = dbOutfits.find(o => o.id === outfitId) || dbOutfits[0];
+            
+            // Set SVG Paths
+            updateSVG('face-decal', dbFaces.find(f => f.id === outfit.set.face).svg);
+            updateSVG('layer-hair', dbHairs.find(h => h.id === outfit.set.hair).svg);
+            updateSVG('torso-decal', dbTops.find(t => t.id === outfit.set.top).svg);
+            setBottomType(outfit.set.bottom);
+
+            // Set Colors
+            Object.keys(outfit.set.colors).forEach(key => {
+                document.documentElement.style.setProperty(`--${key}-color`, outfit.set.colors[key]);
+            });
+
+            // Actualizar visualmente los menús si están creados
+            syncMenuSelection('face-carousel', dbFaces.findIndex(x=>x.id === outfit.set.face));
+            syncMenuSelection('hair-carousel', dbHairs.findIndex(x=>x.id === outfit.set.hair));
+            syncMenuSelection('top-carousel', dbTops.findIndex(x=>x.id === outfit.set.top));
+            syncMenuSelection('bottom-carousel', dbBottoms.findIndex(x=>x.id === outfit.set.bottom));
+        }
+
+        function syncMenuSelection(containerId, index) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            const cards = container.querySelectorAll('.card');
+            cards.forEach(c=>c.classList.remove('selected'));
+            if(cards[index]) cards[index].classList.add('selected');
+        }
+
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- 3. SISTEMA DE STICKERS NATIVO SVG ---
+        // Al usar <text> DENTRO del SVG, podemos exportar todo junto
+        const svgCanvas = document.getElementById('lego-canvas');
+        const stickerLayer = document.getElementById('layer-stickers');
+        let activeSticker = null;
+        let stkCount = 0;
+
+        function spawnSticker(emoji) {
+            const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            textEl.setAttribute('id', 'stk-' + stkCount++);
+            textEl.setAttribute('x', '100'); // Centro del viewBox
+            textEl.setAttribute('y', '150');
+            textEl.setAttribute('font-size', '30');
+            textEl.setAttribute('text-anchor', 'middle');
+            textEl.setAttribute('dominant-baseline', 'central');
+            textEl.style.cursor = 'grab';
+            textEl.textContent = emoji;
+
+            stickerLayer.appendChild(textEl);
+            makeStickerDraggable(textEl);
+            selectSticker(textEl);
+        }
+
+        function selectSticker(el) {
+            // Quitar filtro a todos
+            stickerLayer.querySelectorAll('text').forEach(t => t.removeAttribute('filter'));
+            if(el) {
+                activeSticker = el;
+                el.setAttribute('filter', 'drop-shadow(0px 0px 2px #2563eb)'); // Resaltar
+                document.getElementById('sticker-tools').classList.add('active');
+                document.getElementById('sticker-size').value = el.getAttribute('font-size');
+            } else {
+                activeSticker = null;
+                document.getElementById('sticker-tools').classList.remove('active');
+            }
+        }
+
+        function deleteSticker() {
+            if(activeSticker) { activeSticker.remove(); selectSticker(null); }
+        }
+
+        document.getElementById('sticker-size').addEventListener('input', (e) => {
+            if(activeSticker) activeSticker.setAttribute('font-size', e.target.value);
+        });
+
+        // Click en el fondo deselecciona
+        svgCanvas.addEventListener('pointerdown', (e) => {
+            if(e.target.tagName !== 'text') selectSticker(null);
+        });
+
+        // Arrastre Matemático SVG Puro (Bulletproof para exportar)
+        function makeStickerDraggable(el) {
+            let isDragging = false;
+            
+            function getMousePosition(evt) {
+                const CTM = svgCanvas.getScreenCTM();
+                return {
+                    x: (evt.clientX - CTM.e) / CTM.a,
+                    y: (evt.clientY - CTM.f) / CTM.d
+                };
+            }
+
+            function startDrag(evt) {
+                isDragging = true;
+                selectSticker(el);
+                const pos = getMousePosition(evt.touches ? evt.touches[0] : evt);
+                // Offset para agarrar del centro exacto donde se hizo clic
+                el.dataset.offsetX = pos.x - parseFloat(el.getAttribute('x'));
+                el.dataset.offsetY = pos.y - parseFloat(el.getAttribute('y'));
+                el.style.cursor = 'grabbing';
+            }
+
+            function drag(evt) {
+                if (isDragging) {
+                    evt.preventDefault();
+                    const pos = getMousePosition(evt.touches ? evt.touches[0] : evt);
+                    el.setAttribute('x', pos.x - parseFloat(el.dataset.offsetX));
+                    el.setAttribute('y', pos.y - parseFloat(el.dataset.offsetY));
+                }
+            }
+
+            function endDrag() { isDragging = false; el.style.cursor = 'grab'; }
+
+            el.addEventListener('mousedown', startDrag);
+            el.addEventListener('touchstart', startDrag, {passive: false});
+            
+            svgCanvas.addEventListener('mousemove', drag);
+            svgCanvas.addEventListener('touchmove', drag, {passive: false});
+            
+            window.addEventListener('mouseup', endDrag);
+            window.addEventListener('touchend', endDrag);
+        }
+
+        // --- 4. EXPORTACIÓN A PNG ---
+        function downloadImage() {
+            selectSticker(null); // Quitar selecciones visuales
+
+            // Obtener el SVG como texto XML
+            const svgData = new XMLSerializer().serializeToString(svgCanvas);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            // Resolución de alta calidad (Multiplicar viewBox)
+            canvas.width = 1000; 
+            canvas.height = 1500;
+
+            img.onload = function() {
+                // Fondo blanco/radial
+                const grad = ctx.createRadialGradient(500, 750, 100, 500, 750, 1000);
+                grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#cbd5e1');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Dibujar SVG
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Descargar
+                const a = document.createElement('a');
+                a.download = 'MiLegoCreado.png';
+                a.href = canvas.toDataURL('image/png');
+                a.click();
+            };
+            
+            // Inyectar CSS Variables al SVG textual (Crucial para que los colores pasen a la imagen)
+            const styleString = `<style>
+                svg {
+                    --skin-color: ${getComputedStyle(document.documentElement).getPropertyValue('--skin-color')};
+                    --hair-color: ${getComputedStyle(document.documentElement).getPropertyValue('--hair-color')};
+                    --top-color: ${getComputedStyle(document.documentElement).getPropertyValue('--top-color')};
+                    --bottom-color: ${getComputedStyle(document.documentElement).getPropertyValue('--bottom-color')};
+                    --shoes-color: ${getComputedStyle(document.documentElement).getPropertyValue('--shoes-color')};
+                }
+            </style>`;
+            
+            const finalSvg = svgData.replace('<defs>', '<defs>' + styleString);
+            
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(finalSvg)));
+        }
+
+    </script>
+</body>
+</html>
+
+
