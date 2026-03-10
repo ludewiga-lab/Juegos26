@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Atrapa las Abejas v2</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #4ade80;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: opacity 0.3s ease;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .panel {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            max-width: 90%;
+            width: 450px;
+        }
+
+        h1 {
+            color: #d97706;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 0px #fde68a;
+        }
+
+        .record-badge {
+            display: inline-block;
+            background: #fef3c7;
+            color: #b45309;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            border: 2px solid #fde68a;
+        }
+
+        p {
+            color: #4b5563;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.4;
+        }
+
+        .rules {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 15px;
+        }
+
+        .rule-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .rule-item span:first-child { font-size: 2rem; }
+        .rule-item.good { color: #16a34a; }
+        .rule-item.bad { color: #dc2626; }
+
+        .time-selector {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .time-btn {
+            background: #e5e7eb;
+            color: #4b5563;
+            border: 2px solid #d1d5db;
+            padding: 0.8rem 1.5rem;
+            font-size: 1.2rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .time-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 4px 0 #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .play-btn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #d97706, 0 10px 10px rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-transform: uppercase;
+            width: 100%;
+        }
+
+        .play-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #d97706, 0 5px 5px rgba(0,0,0,0.2);
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .badge {
+            background: rgba(0,0,0,0.3);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .time-warning {
+            color: #ef4444;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        /* Efecto de daño en la pantalla */
+        .damage-flash {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(220, 38, 38, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 5;
+            transition: opacity 0.1s;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="damageFlash" class="damage-flash"></div>
+
+    <div class="ui-layer">
+        <div class="hud" id="hud" style="display: none;">
+            <div class="badge">
+                🐝 <span id="scoreDisplay">0</span>
+            </div>
+            <div class="badge" id="timeContainer">
+                ⏱️ <span id="timeDisplay">60</span>s
+            </div>
+        </div>
+
+        <!-- Pantalla de Inicio -->
+        <div class="screen" id="startScreen">
+            <div class="panel">
+                <h1>Abejas vs Avispas</h1>
+                <div class="record-badge">🏆 Récord Global Máximo: <span id="menuBestScore">0</span></div>
+                
+                <p>Atrapa las abejas, pero <b>¡evita las avispas rojas!</b> No puedes atraparlas si están en las colmenas.</p>
+                
+                <div class="rules">
+                    <div class="rule-item good">
+                        <span>🐝</span>
+                        <span>+1 Puntos</span>
+                    </div>
+                    <div class="rule-item bad">
+                        <span>🦟</span>
+                        <span>-2 Puntos</span>
+                    </div>
+                </div>
+
+                <div class="time-selector">
+                    <button class="time-btn" data-time="30" onclick="selectTime(30)">30 Segundos</button>
+                    <button class="time-btn active" data-time="60" onclick="selectTime(60)">60 Segundos</button>
+                </div>
+
+                <button class="play-btn" onclick="startGame()">¡A Jugar!</button>
+            </div>
+        </div>
+
+        <!-- Pantalla de Fin de Juego -->
+        <div class="screen hidden" id="gameOverScreen">
+            <div class="panel">
+                <h1>¡Tiempo Terminado!</h1>
+                <p style="font-size: 1.5rem">Puntuación Final: <strong style="color:#d97706; font-size: 2.5rem;" id="finalScore">0</strong></p>
+                
+                <div id="newRecordMsg" style="display:none; color: #16a34a; font-weight: bold; font-size: 1.2rem; margin-bottom: 1rem; animation: pulse 0.5s infinite alternate;">
+                    ¡NUEVO RÉCORD MÁXIMO! 🏆
+                </div>
+
+                <div class="record-badge">🏆 Récord Máximo: <span id="endBestScore">0</span></div>
+                
+                <button class="play-btn" onclick="showMenu()">Volver al Menú</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const damageFlash = document.getElementById('damageFlash');
+
+        // UI
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const hud = document.getElementById('hud');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const timeContainer = document.getElementById('timeContainer');
+        const timeButtons = document.querySelectorAll('.time-btn');
+        
+        // Estado
+        let width = 0, height = 0;
+        let animationId = null;
+        let lastTime = null;
+        let score = 0;
+        let bestScore = localStorage.getItem('beeGameGlobalBest') || 0;
+        let selectedDuration = 60;
+        let timeLeft = 60;
+        let gameActive = false;
+        let timerInterval;
+
+        // Entidades
+        let insects = []; // Contiene abejas y avispas
+        let obstacles = [];
+        let decorations = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        const random = (min, max) => Math.random() * (max - min) + min;
+        const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+
+        // Actualizar UI inicial
+        document.getElementById('menuBestScore').innerText = bestScore;
+
+        function selectTime(seconds) {
+            selectedDuration = seconds;
+            timeButtons.forEach(btn => {
+                if (parseInt(btn.dataset.time) === seconds) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function showMenu() {
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            document.getElementById('menuBestScore').innerText = bestScore;
+            document.getElementById('newRecordMsg').style.display = 'none';
+        }
+
+        function resizeCanvas() {
+            width = Math.max(window.innerWidth || document.documentElement.clientWidth || 800, 300);
+            height = Math.max(window.innerHeight || document.documentElement.clientHeight || 600, 300);
+            canvas.width = width;
+            canvas.height = height;
+            
+            if (!gameActive && decorations.length === 0) {
+                generateLevel();
+                drawEnvironment();
+            }
+        }
+
+        // --- CLASES ---
+
+        class Insect {
+            constructor(spawnOutside, type = 'bee') {
+                this.type = type; // 'bee' o 'wasp'
+                this.size = type === 'bee' ? random(18, 28) : random(20, 30);
+                
+                if (spawnOutside && width > 0) {
+                    const edge = Math.floor(random(0, 4));
+                    if (edge === 0) { this.x = random(0, width); this.y = -50; }
+                    else if (edge === 1) { this.x = width + 50; this.y = random(0, height); }
+                    else if (edge === 2) { this.x = random(0, width); this.y = height + 50; }
+                    else { this.x = -50; this.y = random(0, height); }
+                } else {
+                    this.x = random(50, width - 50);
+                    this.y = random(50, height - 50);
+                }
+
+                // Las avispas son un 30% más rápidas y su vuelo es más errático
+                const speedMult = type === 'wasp' ? 1.3 : 1;
+                this.baseSpeed = random(120, 350) * speedMult; 
+                this.angle = random(0, Math.PI * 2);
+                this.wobble = random(0, Math.PI * 2);
+                this.wobbleSpeed = type === 'wasp' ? random(8, 18) : random(5, 12);
+                this.wingTime = 0;
+            }
+
+            update(dt) {
+                this.wobble += this.wobbleSpeed * dt;
+                // Las avispas zigzaguean más fuerte
+                const wobbleIntensity = this.type === 'wasp' ? 0.9 : 0.6;
+                const currentAngle = this.angle + Math.sin(this.wobble) * wobbleIntensity;
+                
+                this.x += Math.cos(currentAngle) * this.baseSpeed * dt;
+                this.y += Math.sin(currentAngle) * this.baseSpeed * dt;
+                
+                // Las alas de la avispa baten más rápido
+                this.wingTime += dt * (this.type === 'wasp' ? 70 : 50);
+
+                const margin = 50;
+                if (this.x > width + margin) this.x = -margin;
+                else if (this.x < -margin) this.x = width + margin;
+                if (this.y > height + margin) this.y = -margin;
+                else if (this.y < -margin) this.y = height + margin;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const actualAngle = this.angle + Math.sin(this.wobble) * (this.type === 'wasp' ? 0.9 : 0.6);
+                ctx.rotate(actualAngle);
+
+                // Alas
+                const flap = Math.sin(this.wingTime) * 8;
+                ctx.fillStyle = this.type === 'wasp' ? 'rgba(200,200,255,0.7)' : 'rgba(255,255,255,0.8)'; // Alas de avispa más afiladas/azuladas
+                
+                ctx.save();
+                ctx.translate(0, -this.size * 0.5 - flap);
+                ctx.scale(this.type === 'wasp' ? 2.5 : 2, 0.8);
+                ctx.beginPath(); ctx.arc(0, 0, this.size*0.3, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+
+                ctx.save();
+                ctx.translate(0, this.size * 0.5 + flap);
+                ctx.scale(this.type === 'wasp' ? 2.5 : 2, 0.8);
+                ctx.beginPath(); ctx.arc(0, 0, this.size*0.3, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+
+                // Aguijón (Solo avispa)
+                if (this.type === 'wasp') {
+                    ctx.fillStyle = '#111827';
+                    ctx.beginPath();
+                    ctx.moveTo(-this.size * 1.2, 0);
+                    ctx.lineTo(-this.size * 1.8, -this.size * 0.1);
+                    ctx.lineTo(-this.size * 1.8, this.size * 0.1);
+                    ctx.fill();
+                }
+
+                // Cuerpo
+                ctx.save();
+                ctx.scale(1.2, 0.7);
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size, 0, Math.PI*2);
+                ctx.fillStyle = this.type === 'wasp' ? '#ef4444' : '#fbbf24'; // Rojo vs Amarillo
+                ctx.fill();
+                
+                // Rayas negras
+                ctx.clip();
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(-this.size*0.4, -this.size, this.size*0.3, this.size*2);
+                ctx.fillRect(this.size*0.3, -this.size, this.size*0.3, this.size*2);
+                ctx.restore();
+
+                // Ojos
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.size * 0.8, -this.size * 0.3, this.size * 0.25, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = this.type === 'wasp' ? '#7f1d1d' : 'black'; // Ojos oscuros/rojos para avispa
+                ctx.beginPath();
+                ctx.arc(this.size * 0.9, -this.size * 0.3, this.size * 0.1, 0, Math.PI*2);
+                ctx.fill();
+
+                // Ceño fruncido para la avispa
+                if (this.type === 'wasp') {
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(this.size * 0.6, -this.size * 0.6);
+                    ctx.lineTo(this.size * 1.0, -this.size * 0.3);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class Obstacle {
+            constructor() {
+                this.x = random(100, width - 100);
+                this.y = random(100, height - 100);
+                this.radius = random(55, 90);
+            }
+            draw(ctx) {
+                // Solo dibujamos Colmenas (hives), eliminamos la miel
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Rama de la que cuelga (detalle visual)
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(-5, -this.radius - 20, 10, 30);
+
+                ctx.fillStyle = '#d97706';
+                ctx.strokeStyle = '#92400e';
+                ctx.lineWidth = 3;
+                for (let i = 0; i < 5; i++) {
+                    ctx.save();
+                    ctx.translate(0, i * 22 - 40);
+                    ctx.scale(1, 0.45);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius - Math.abs(i-2)*12, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                // Puertita
+                ctx.fillStyle = '#451a03';
+                ctx.beginPath();
+                ctx.arc(0, 25, 18, 0, Math.PI, true);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y;
+                this.vx = random(-200, 200);
+                this.vy = random(-200, 200);
+                this.life = 1.0;
+                this.color = color || (Math.random() > 0.5 ? '#fde047' : 'white');
+            }
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.life -= dt * 1.5;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, random(3, 6), 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class FloatText {
+            constructor(x, y, text, color = 'white') {
+                this.x = x; this.y = y;
+                this.text = text;
+                this.color = color;
+                this.life = 1.0;
+            }
+            update(dt) {
+                this.y -= 80 * dt;
+                this.life -= dt;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.font = 'bold 32px Arial';
+                ctx.strokeText(this.text, this.x, this.y);
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // --- SISTEMA CENTRAL ---
+
+        function generateLevel() {
+            obstacles = [];
+            decorations = [];
+            
+            for(let i=0; i<20; i++) {
+                decorations.push({
+                    x: random(0, width), y: random(0, height), r: random(20, 60)
+                });
+            }
+            
+            // Más espacio, menos colmenas para compensar que no hay miel
+            const numObs = Math.max(3, Math.floor((width * height) / 250000));
+            for(let i=0; i<numObs; i++) obstacles.push(new Obstacle());
+        }
+
+        function drawEnvironment() {
+            ctx.fillStyle = '#4ade80';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#22c55e';
+            decorations.forEach(d => {
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+                ctx.fill();
+            });
+        }
+
+        function startGame() {
+            resizeCanvas();
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            hud.style.display = 'flex';
+            
+            score = 0;
+            timeLeft = selectedDuration;
+            scoreDisplay.innerText = score;
+            timeDisplay.innerText = timeLeft;
+            timeContainer.classList.remove('time-warning');
+            
+            insects = [];
+            particles = [];
+            floatingTexts = [];
+            generateLevel();
+
+            // Generar abejas y avispas iniciales
+            // Proporción: 1 avispa por cada 4 abejas
+            const totalInsects = Math.max(12, Math.floor((width*height)/45000));
+            for(let i=0; i<totalInsects; i++) {
+                const type = (i % 5 === 0) ? 'wasp' : 'bee'; 
+                insects.push(new Insect(false, type));
+            }
+
+            gameActive = true;
+            lastTime = null;
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.innerText = timeLeft;
+                if(timeLeft <= 10) timeContainer.classList.add('time-warning');
+                if(timeLeft <= 0) endGame();
+            }, 1000);
+
+            if(animationId) cancelAnimationFrame(animationId);
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            hud.style.display = 'none';
+            gameOverScreen.classList.remove('hidden');
+            
+            document.getElementById('finalScore').innerText = score;
+            
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('beeGameGlobalBest', bestScore);
+                document.getElementById('newRecordMsg').style.display = 'block';
+            }
+            document.getElementById('endBestScore').innerText = bestScore;
+        }
+
+        function flashDamage() {
+            damageFlash.style.opacity = '1';
+            setTimeout(() => { damageFlash.style.opacity = '0'; }, 150);
+        }
+
+        // Manejo táctil robusto
+        canvas.addEventListener('pointerdown', (e) => {
+            if (!gameActive) return;
+            const x = e.clientX;
+            const y = e.clientY;
+
+            // 1. Zona segura (Colmenas)
+            for(let obs of obstacles) {
+                if (dist(x, y, obs.x, obs.y) < obs.radius) {
+                    // Golpea la colmena (bloqueado)
+                    for(let i=0; i<4; i++) particles.push(new Particle(x, y, '#d97706'));
+                    return; 
+                }
+            }
+
+            // 2. Colisión Insectos
+            for (let i = insects.length - 1; i >= 0; i--) {
+                let insect = insects[i];
+                if (dist(x, y, insect.x, insect.y) < insect.size * 2.5) {
+                    
+                    if (insect.type === 'bee') {
+                        // Atrapa abeja
+                        score++;
+                        for(let p=0; p<12; p++) particles.push(new Particle(insect.x, insect.y));
+                        floatingTexts.push(new FloatText(insect.x, insect.y, '+1', '#fde047'));
+                    } else {
+                        // Toca avispa (¡Ouch!)
+                        score = Math.max(0, score - 2); // No bajamos de 0 para no frustrar de más
+                        flashDamage();
+                        for(let p=0; p<15; p++) particles.push(new Particle(insect.x, insect.y, '#ef4444'));
+                        floatingTexts.push(new FloatText(insect.x, insect.y, '-2', '#ef4444'));
+                    }
+
+                    scoreDisplay.innerText = score;
+                    
+                    // Nace otro insecto del mismo tipo para mantener el equilibrio
+                    const type = insect.type;
+                    insects.splice(i, 1);
+                    insects.push(new Insect(true, type)); 
+                    break; 
+                }
+            }
+        });
+
+        function gameLoop(timestamp) {
+            if (!gameActive) return;
+
+            if (width !== window.innerWidth || height !== window.innerHeight) {
+                resizeCanvas();
+            }
+
+            if (!lastTime) lastTime = timestamp;
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt < 0 || dt > 0.1) dt = 0.016; 
+            lastTime = timestamp;
+
+            drawEnvironment();
+
+            // Capa 1: Insectos
+            insects.forEach(insect => {
+                insect.update(dt);
+                insect.draw(ctx);
+            });
+
+            // Capa 2: Colmenas
+            obstacles.forEach(obs => obs.draw(ctx));
+
+            // Capa 3: Efectos
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update(dt);
+                particles[i].draw(ctx);
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                floatingTexts[i].update(dt);
+                floatingTexts[i].draw(ctx);
+                if (floatingTexts[i].life <= 0) floatingTexts.splice(i, 1);
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('load', () => {
+            resizeCanvas();
+        });
+        window.addEventListener('resize', resizeCanvas);
+
+    </script>
+</body>
+</html>
+
+
+
