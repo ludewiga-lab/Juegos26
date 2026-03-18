@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --bg-cad: #cbd5e1; /* Base gris Lego */
+            --bg-cad: #cbd5e1;
             --grid-line: #e2e8f0; 
             --grid-dot: #94a3b8;
             --grid-size: 20px;
@@ -23,7 +23,6 @@
             color: #1e293b;
         }
         
-        /* Cuadrícula Lego (Studs + Lines) */
         .cad-background {
             background-color: var(--bg-cad);
             background-image: 
@@ -35,11 +34,10 @@
             box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
         }
         .cad-background.playing {
-            background-color: #fca5a5; /* Tono rojizo al simular */
+            background-color: #fca5a5;
             transition: background-color 0.5s ease;
         }
 
-        /* Utilidades UI */
         .glass-panel {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
@@ -63,28 +61,29 @@
         #tray {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        /* Mobile adjustment for tray closed state */
         .tray-closed {
-            transform: translateY(calc(100% - 24px));
+            transform: translateY(calc(100% - 32px)); 
         }
     </style>
 </head>
 <body class="flex flex-col h-screen w-screen" onload="initApp()">
 
-    <!-- TOP HEADER -->
-    <header class="h-14 glass-panel flex items-center justify-between px-4 z-20 shrink-0 relative">
+    <!-- TOP HEADER (Responsive) -->
+    <header class="h-12 sm:h-14 glass-panel flex items-center justify-between px-3 sm:px-4 z-20 shrink-0 relative">
         <div class="flex items-center gap-2">
-            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
             <div>
-                <h1 class="font-bold text-sm tracking-wide text-slate-800" id="main-title">GRAVITY STUDIO</h1>
-                <p class="text-[10px] text-blue-600 uppercase tracking-widest font-mono font-bold" id="level-indicator">Nivel 1</p>
+                <h1 class="font-bold text-xs sm:text-sm tracking-wide text-slate-800" id="main-title">GRAVITY STUDIO</h1>
+                <p class="text-[9px] sm:text-[10px] text-blue-600 uppercase tracking-widest font-mono font-bold" id="level-indicator">Nivel 1</p>
             </div>
         </div>
         
-        <div class="flex items-center gap-2 mr-16">
-            <button onclick="toggleCreatorMode()" id="btn-creator" class="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors">
+        <div class="flex items-center gap-1 sm:gap-2 mr-14 sm:mr-16">
+            <button onclick="toggleCreatorMode()" id="btn-creator" class="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-600 text-[10px] sm:text-xs font-bold hover:bg-slate-200 transition-colors">
                 ⚙️ CREADOR
             </button>
-            <button onclick="resetLevel()" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-200">
+            <button onclick="resetLevel()" class="p-1.5 sm:p-2 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             </button>
         </div>
@@ -92,106 +91,105 @@
 
     <!-- WORKSPACE / CANVAS -->
     <main class="flex-1 relative overflow-hidden">
-        <div id="grid-bg" class="absolute inset-0 cad-background"></div>
-        <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
+        <div id="grid-bg" class="absolute inset-0 cad-background pointer-events-none"></div>
+        <canvas id="gameCanvas" class="absolute inset-0 z-10" style="touch-action: none;"></canvas>
 
-        <!-- Menú Contextual Flotante (Girar y Borrar) -->
-        <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-3 flex gap-2">
-            <!-- Rotar ahora gira 45 grados -->
-            <button onclick="rotateSelected()" class="bg-blue-500 text-white p-2.5 rounded-full shadow-lg hover:bg-blue-600 border border-blue-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5h5"></path></svg>
+        <!-- Menú Contextual Flotante -->
+        <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-6 flex gap-3">
+            <button onclick="rotateSelected()" class="bg-blue-500 text-white p-3 rounded-full shadow-xl hover:bg-blue-600 border-2 border-white scale-90 sm:scale-100 active:scale-95 transition-transform">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5h5"></path></svg>
             </button>
-            <button onclick="deleteSelected()" class="bg-red-500 text-white p-2.5 rounded-full shadow-lg hover:bg-red-600 border border-red-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            <button onclick="deleteSelected()" class="bg-red-500 text-white p-3 rounded-full shadow-xl hover:bg-red-600 border-2 border-white scale-90 sm:scale-100 active:scale-95 transition-transform">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
         </div>
         
-        <!-- FAB PRINCIPAL: PLAY / STOP / SAVE -->
-        <button id="btn-play" onclick="handleMainAction()" class="absolute top-4 right-4 z-40 w-14 h-14 rounded-full bg-blue-600 shadow-[0_5px_15px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border-2 border-white hover:scale-105 transition-transform">
-            <svg id="icon-play" class="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="icon-stop" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-            <svg id="icon-save" class="w-7 h-7 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+        <!-- FAB PRINCIPAL -->
+        <button id="btn-play" onclick="handleMainAction()" class="absolute top-3 sm:top-4 right-3 sm:right-4 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-600 shadow-[0_5px_15px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border-2 border-white hover:scale-105 transition-transform">
+            <svg id="icon-play" class="w-6 h-6 sm:w-7 sm:h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="icon-stop" class="w-6 h-6 sm:w-7 sm:h-7 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+            <svg id="icon-save" class="w-6 h-6 sm:w-7 sm:h-7 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         </button>
     </main>
 
-    <!-- BOTTOM TRAY -->
-    <footer id="tray" class="absolute bottom-0 w-full glass-tray rounded-t-3xl z-40 pb-6">
-        <div class="h-6 w-full flex justify-center items-center cursor-pointer" onclick="toggleTray()">
+    <!-- BOTTOM TRAY (Escalado para móvil) -->
+    <footer id="tray" class="absolute bottom-0 w-full glass-tray rounded-t-3xl z-40 pb-4 sm:pb-6">
+        <div class="h-8 w-full flex justify-center items-center cursor-pointer" onclick="toggleTray()">
             <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
         </div>
         
-        <div class="px-6 mb-2 flex justify-between items-center">
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider" id="tray-title">Inventario de Construcción</h3>
-            <span class="text-[10px] text-blue-500 font-bold bg-blue-100 px-2 py-1 rounded-md" id="tray-status">ACTIVO</span>
+        <div class="px-4 sm:px-6 mb-2 flex justify-between items-center">
+            <h3 class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider" id="tray-title">Inventario</h3>
+            <span class="text-[9px] sm:text-[10px] text-blue-500 font-bold bg-blue-100 px-2 py-1 rounded-md" id="tray-status">ACTIVO</span>
         </div>
 
-        <div class="flex gap-4 px-6 overflow-x-auto pb-2" id="tray-items">
+        <div class="flex gap-3 sm:gap-4 px-4 sm:px-6 overflow-x-auto pb-2" id="tray-items">
             <!-- Item: Madera -->
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('wood')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-4 bg-amber-600 rounded-sm border border-amber-800"></div>
+            <div class="block-btn flex flex-col items-center gap-1.5 sm:gap-2 min-w-[56px] sm:min-w-[70px] cursor-pointer" onclick="spawnBlock('wood')">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-8 h-3 sm:w-10 sm:h-4 bg-amber-600 rounded-sm border border-amber-800"></div>
                 </div>
-                <span class="text-[10px] text-slate-600 font-bold">Madera</span>
+                <span class="text-[9px] sm:text-[10px] text-slate-600 font-bold">Madera</span>
             </div>
 
             <!-- Item: U-Shape -->
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('u_shape')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-8 h-6 border-b-4 border-l-4 border-r-4 border-amber-600 rounded-b-sm"></div>
+            <div class="block-btn flex flex-col items-center gap-1.5 sm:gap-2 min-w-[56px] sm:min-w-[70px] cursor-pointer" onclick="spawnBlock('u_shape')">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-6 h-5 sm:w-8 sm:h-6 border-b-4 border-l-4 border-r-4 border-amber-600 rounded-b-sm"></div>
                 </div>
-                <span class="text-[10px] text-slate-600 font-bold">Forma U</span>
+                <span class="text-[9px] sm:text-[10px] text-slate-600 font-bold">Forma U</span>
             </div>
 
             <!-- Item: Rebote -->
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('bounce')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-4 bg-slate-800 rounded-sm border border-pink-500 flex items-center justify-center">
-                        <div class="w-8 h-1 bg-pink-500 rounded-full"></div>
+            <div class="block-btn flex flex-col items-center gap-1.5 sm:gap-2 min-w-[56px] sm:min-w-[70px] cursor-pointer" onclick="spawnBlock('bounce')">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-8 h-3 sm:w-10 sm:h-4 bg-slate-800 rounded-sm border border-pink-500 flex items-center justify-center">
+                        <div class="w-6 h-1 sm:w-8 sm:h-1 bg-pink-500 rounded-full"></div>
                     </div>
                 </div>
-                <span class="text-[10px] text-slate-600 font-bold">Rebote</span>
+                <span class="text-[9px] sm:text-[10px] text-slate-600 font-bold">Rebote</span>
             </div>
 
             <!-- Item: Metal -->
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('metal')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-4 bg-slate-400 rounded-sm border border-slate-500 flex justify-between px-1 items-center">
+            <div class="block-btn flex flex-col items-center gap-1.5 sm:gap-2 min-w-[56px] sm:min-w-[70px] cursor-pointer" onclick="spawnBlock('metal')">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-8 h-3 sm:w-10 sm:h-4 bg-slate-400 rounded-sm border border-slate-500 flex justify-between px-1 items-center">
                         <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
                         <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
                     </div>
                 </div>
-                <span class="text-[10px] text-slate-600 font-bold">Metal</span>
+                <span class="text-[9px] sm:text-[10px] text-slate-600 font-bold">Metal</span>
             </div>
 
             <!-- Item: L-Shape -->
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('l_shape')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-6 h-8 border-b-4 border-l-4 border-slate-400 rounded-bl-sm absolute top-3 left-4"></div>
+            <div class="block-btn flex flex-col items-center gap-1.5 sm:gap-2 min-w-[56px] sm:min-w-[70px] cursor-pointer" onclick="spawnBlock('l_shape')">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-5 h-6 sm:w-6 sm:h-8 border-b-4 border-l-4 border-slate-400 rounded-bl-sm absolute top-2.5 sm:top-3 left-3 sm:left-4"></div>
                 </div>
-                <span class="text-[10px] text-slate-600 font-bold">Ángulo</span>
+                <span class="text-[9px] sm:text-[10px] text-slate-600 font-bold">Ángulo</span>
             </div>
 
             <!-- Item: Tunnel -->
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('tunnel')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-2 bg-slate-400 border border-slate-500 rounded-sm absolute top-3"></div>
-                    <div class="w-10 h-2 bg-slate-400 border border-slate-500 rounded-sm absolute bottom-3"></div>
+            <div class="block-btn flex flex-col items-center gap-1.5 sm:gap-2 min-w-[56px] sm:min-w-[70px] cursor-pointer" onclick="spawnBlock('tunnel')">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-8 h-1.5 sm:w-10 sm:h-2 bg-slate-400 border border-slate-500 rounded-sm absolute top-2 sm:top-3"></div>
+                    <div class="w-8 h-1.5 sm:w-10 sm:h-2 bg-slate-400 border border-slate-500 rounded-sm absolute bottom-2 sm:bottom-3"></div>
                 </div>
-                <span class="text-[10px] text-slate-600 font-bold">Túnel</span>
+                <span class="text-[9px] sm:text-[10px] text-slate-600 font-bold">Túnel</span>
             </div>
         </div>
     </footer>
 
     <!-- OVERLAYS -->
-    <div id="overlay-msg" class="absolute inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white border-2 border-slate-200 p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-4 transform scale-95 opacity-0 transition-all duration-300" id="overlay-box">
-            <h2 id="msg-title" class="text-3xl font-black mb-2 text-slate-800">¡Completado!</h2>
-            <p id="msg-desc" class="text-slate-500 mb-6 font-medium">Secuencia exitosa.</p>
+    <div id="overlay-msg" class="absolute inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
+        <div class="bg-white border-2 border-slate-200 p-6 sm:p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm transform scale-95 opacity-0 transition-all duration-300" id="overlay-box">
+            <h2 id="msg-title" class="text-2xl sm:text-3xl font-black mb-2 text-slate-800">¡Completado!</h2>
+            <p id="msg-desc" class="text-sm sm:text-base text-slate-500 mb-6 font-medium">Secuencia exitosa.</p>
             <button id="msg-btn" onclick="nextLevel()" class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold tracking-wide hover:bg-blue-700 shadow-md">Siguiente Nivel</button>
         </div>
     </div>
 
-    <div id="toast" class="absolute top-24 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-bold opacity-0 transition-opacity z-50 pointer-events-none">
+    <div id="toast" class="absolute top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-bold opacity-0 transition-opacity z-50 pointer-events-none">
         Aviso
     </div>
 
@@ -214,8 +212,8 @@
         let startPos = { x: 0, y: 0 };
         let goalPortal = { x: 0, y: 0, r: 30 };
         
-        // Atascamiento (Stuck Detection)
         let stuckFrames = 0;
+        let globalIdCounter = 1000; // FIX: Previene colisiones de ID
         
         let staticBlocks = []; 
         let userBlocks = [];   
@@ -228,7 +226,7 @@
         let particles = [];
         let trail = [];
 
-        // CATÁLOGO DE PIEZAS (Simples y Compuestas)
+        // CATÁLOGO DE PIEZAS
         const CATALOG = {
             wood: { w: 100, h: 20, bounce: 0.4, type: 'wood' },
             bounce: { w: 80, h: 20, bounce: 1.2, type: 'bounce' },
@@ -238,7 +236,6 @@
             tunnel: { w: 80, h: 80, bounce: 0.1, type: 'metal', parts: [{x:0, y:0, w:80, h:20}, {x:0, y:60, w:80, h:20}] }
         };
 
-        // Nivel 1 Mejorado: Obliga a usar rotación de 45 grados.
         let levels = [
             { name: "La Rampa (Rota a 45°)", start: {x:60, y:60}, goal: {x:260, y:340}, static: [
                 {x:240, y:400, w:100, h:20, type:'metal', id:1, angle: 0}
@@ -293,7 +290,6 @@
             goalPortal = { x: lvl.goal.x, y: lvl.goal.y, r: 30 };
             
             staticBlocks = JSON.parse(JSON.stringify(lvl.static));
-            // Asegurar que las piezas tengan propiedad angle
             staticBlocks.forEach(b => { if(b.angle === undefined) b.angle = 0; });
             
             userBlocks = []; 
@@ -337,7 +333,7 @@
                 btn.classList.remove('bg-blue-600', 'text-white');
                 btn.classList.add('bg-slate-100', 'text-slate-600');
                 title.innerText = "GRAVITY STUDIO";
-                document.getElementById('tray-title').innerText = "Inventario de Construcción";
+                document.getElementById('tray-title').innerText = "Inventario";
                 document.getElementById('icon-play').classList.remove('hidden');
                 document.getElementById('icon-save').classList.add('hidden');
                 
@@ -387,10 +383,9 @@
                 bounce: tpl.bounce, type: tpl.type, 
                 parts: tpl.parts ? JSON.parse(JSON.stringify(tpl.parts)) : [{x:0, y:0, w:tpl.w, h:tpl.h}],
                 angle: 0,
-                id: Date.now()
+                id: globalIdCounter++
             };
 
-            // Solapamiento suave (si hay una pieza exactamente en el mismo centro, la desplazamos un poco)
             while(checkOverlap(newBlock)) {
                 newBlock.y -= GRID; 
             }
@@ -414,10 +409,9 @@
             }
         }
 
-        // --- SISTEMA DE ROTACIÓN A 45 GRADOS ---
         function rotateSelected() {
             if (!selectedBlock) return;
-            selectedBlock.angle += Math.PI / 4; // Gira 45 grados (Pi/4 Radianes)
+            selectedBlock.angle += Math.PI / 4; 
             if (selectedBlock.angle >= Math.PI * 2) selectedBlock.angle = 0;
             updateContextMenu();
         }
@@ -426,34 +420,31 @@
             const menu = document.getElementById('context-menu');
             if (selectedBlock && gameState === 'EDIT') {
                 menu.classList.remove('hidden');
-                // Posicionar el menú considerando que la pieza puede estar rotada (usamos su centro)
                 menu.style.left = `${selectedBlock.x + selectedBlock.w / 2}px`;
-                menu.style.top = `${selectedBlock.y - 15}px`;
+                // FIX: Menú elevado un poco más para que no se tape con el dedo en pantallas táctiles
+                menu.style.top = `${selectedBlock.y - 20}px`;
             } else {
                 menu.classList.add('hidden');
             }
         }
 
-        // ==========================================
-        // SISTEMA DE OVERLAYS (Win / Lose)
-        // ==========================================
         function showMessage(title, desc, isWin) {
             gameState = 'DONE';
             const overlay = document.getElementById('overlay-msg');
             const box = document.getElementById('overlay-box');
             
             document.getElementById('msg-title').innerText = title;
-            document.getElementById('msg-title').className = `text-3xl font-black mb-2 ${isWin ? 'text-blue-600' : 'text-red-500'}`;
+            document.getElementById('msg-title').className = `text-2xl sm:text-3xl font-black mb-2 ${isWin ? 'text-blue-600' : 'text-red-500'}`;
             document.getElementById('msg-desc').innerText = desc;
             
             const btn = document.getElementById('msg-btn');
             if (isWin) {
                 btn.innerText = "Siguiente Nivel";
-                btn.className = "w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700";
+                btn.className = "w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-md";
                 btn.onclick = nextLevel;
             } else {
                 btn.innerText = "Volver a intentar";
-                btn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-800 font-bold hover:bg-slate-300";
+                btn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 shadow-md";
                 btn.onclick = hideMessage;
             }
             
@@ -488,15 +479,11 @@
         }
 
         // ==========================================
-        // INPUTS (Snapping & Dragging Corregidos)
+        // INPUTS: POINTER EVENTS (FIX UNIVERSAL PARA TÁCTIL)
         // ==========================================
         function setupInput() {
-            // FIX: getBoundingClientRect soluciona el desfase en móviles/tablets
             const getPos = (e) => {
                 const rect = canvas.getBoundingClientRect();
-                if (e.touches && e.touches.length > 0) {
-                    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-                }
                 return { x: e.clientX - rect.left, y: e.clientY - rect.top };
             };
 
@@ -505,15 +492,14 @@
                 const pos = getPos(e);
                 
                 if (isCreatorMode) {
-                    if (Math.hypot(pos.x - goalPortal.x, pos.y - goalPortal.y) < goalPortal.r + 15) { draggingSpecial = 'goal'; return; }
-                    if (Math.hypot(pos.x - startPos.x, pos.y - startPos.y) < 25) { draggingSpecial = 'start'; return; }
+                    if (Math.hypot(pos.x - goalPortal.x, pos.y - goalPortal.y) < goalPortal.r + 20) { draggingSpecial = 'goal'; return; }
+                    if (Math.hypot(pos.x - startPos.x, pos.y - startPos.y) < 30) { draggingSpecial = 'start'; return; }
                 }
 
                 let arr = isCreatorMode ? staticBlocks : userBlocks;
                 for (let i = arr.length - 1; i >= 0; i--) {
                     let b = arr[i];
                     
-                    // Transformación inversa para detectar toque en piezas rotadas
                     let cx = b.x + b.w/2;
                     let cy = b.y + b.h/2;
                     let angle = b.angle || 0;
@@ -523,8 +509,7 @@
                     let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle) + b.w/2;
                     let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle) + b.h/2;
                     
-                    let pad = 15; // Padding táctil
-                    // Comprobar si tocó alguna parte de la pieza
+                    let pad = 20; // Hitbox táctil más permisivo
                     let hit = b.parts.some(p => 
                         localX >= p.x - pad && localX <= p.x + p.w + pad && 
                         localY >= p.y - pad && localY <= p.y + p.h + pad
@@ -533,7 +518,6 @@
                     if (hit) {
                         selectedBlock = b;
                         draggingBlock = b;
-                        // Offset desde la esquina superior izquierda real (sin rotar)
                         dragOffset.x = pos.x - b.x;
                         dragOffset.y = pos.y - b.y;
                         
@@ -549,6 +533,8 @@
             };
 
             const move = (e) => {
+                if (!draggingBlock && !draggingSpecial) return;
+                
                 const pos = getPos(e);
                 if (draggingSpecial === 'goal') {
                     goalPortal.x = Math.round(pos.x / GRID) * GRID;
@@ -570,17 +556,13 @@
                 draggingSpecial = null;
             };
 
-            canvas.addEventListener('mousedown', down);
-            canvas.addEventListener('mousemove', move);
-            window.addEventListener('mouseup', up);
-
-            canvas.addEventListener('touchstart', (e)=>{ if(gameState==='EDIT') e.preventDefault(); down(e); }, {passive: false});
-            canvas.addEventListener('touchmove', (e)=>{ if(draggingBlock||draggingSpecial) e.preventDefault(); move(e); }, {passive: false});
-            window.addEventListener('touchend', up);
+            // Implementación robusta de Pointer Events
+            canvas.addEventListener('pointerdown', down);
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', up);
+            window.addEventListener('pointercancel', up);
         }
 
-        // Solapamiento suave (Lego Snap). 
-        // Solo evita que dos piezas queden exactamente una encima de la otra.
         function checkOverlap(b1) {
             let all = [...staticBlocks, ...userBlocks];
             let cx1 = b1.x + b1.w/2;
@@ -591,7 +573,6 @@
                 let cx2 = b2.x + b2.w/2;
                 let cy2 = b2.y + b2.h/2;
                 
-                // Si están en el mismo centro exacto, hay solapamiento. De resto, ¡creatividad libre!
                 if (Math.hypot(cx1 - cx2, cy1 - cy2) < GRID * 0.5) {
                     return true;
                 }
@@ -600,12 +581,12 @@
         }
 
         // ==========================================
-        // FÍSICAS Y SIMULACIÓN (Soporta 45 Grados)
+        // FÍSICAS Y SIMULACIÓN 
         // ==========================================
         function updatePhysics() {
             if (gameState !== 'PLAY') return;
 
-            ball.vy += 0.4; // Gravedad
+            ball.vy += 0.4; 
             
             if (Math.abs(ball.vx) > 0.1 || Math.abs(ball.vy) > 0.1) {
                 trail.push({ x: ball.x, y: ball.y, life: 1.0 });
@@ -619,7 +600,6 @@
 
             let ballSpeed = Math.hypot(ball.vx, ball.vy);
 
-            // Detección de atascamiento (Si está casi quieto por 120 frames / 2 segs)
             if (ballSpeed < 0.25) {
                 stuckFrames++;
                 if (stuckFrames > 120) {
@@ -637,7 +617,6 @@
                 let cx = b.x + b.w/2;
                 let cy = b.y + b.h/2;
 
-                // 1. Convertir la pelota al espacio local de la pieza (rotando inversamente)
                 let dx = ball.x - cx;
                 let dy = ball.y - cy;
                 let localBallX = dx * Math.cos(-angle) - dy * Math.sin(-angle) + b.w/2;
@@ -650,7 +629,6 @@
                     if (col.hit) {
                         let overlap = ball.r - col.distance;
                         
-                        // 2. Rotar la normal (nx, ny) de vuelta al espacio global
                         let globalNx = col.nx * Math.cos(angle) - col.ny * Math.sin(angle);
                         let globalNy = col.nx * Math.sin(angle) + col.ny * Math.cos(angle);
 
@@ -659,7 +637,6 @@
 
                         let dot = ball.vx * globalNx + ball.vy * globalNy;
                         
-                        // Si se acerca a la superficie
                         if (dot < 0) {
                             let bounceFactor = b.bounce || 0.5;
                             if (b.type === 'bounce' && ballSpeed > 20) bounceFactor = 0.8;
@@ -667,13 +644,11 @@
                             ball.vx -= (1 + bounceFactor) * dot * globalNx;
                             ball.vy -= (1 + bounceFactor) * dot * globalNy;
 
-                            // Fricción lateral
                             let tangentX = -globalNy; let tangentY = globalNx;
                             let tangentDot = ball.vx * tangentX + ball.vy * tangentY;
                             ball.vx -= tangentDot * 0.1 * tangentX;
                             ball.vy -= tangentDot * 0.1 * tangentY;
 
-                            // Sparks (solo si el impacto es moderado/fuerte)
                             if (ballSpeed > 2) {
                                 let colorHex = b.type === 'bounce' ? '#ec4899' : (b.type === 'wood' ? '#d97706' : '#94a3b8');
                                 spawnParticles(ball.x - globalNx*ball.r, ball.y - globalNy*ball.r, colorHex, b.type==='bounce'?15:5);
@@ -683,12 +658,10 @@
                 }
             }
 
-            // Fallo por caída
             if (ball.y > height + 50 || ball.x < -50 || ball.x > width + 50) {
                 showMessage("¡Perdiste!", "El sujeto cayó fuera del área de prueba.", false);
             }
 
-            // Victoria
             let distToGoal = Math.hypot(ball.x - goalPortal.x, ball.y - goalPortal.y);
             if (distToGoal < goalPortal.r) {
                 ball.vx += (goalPortal.x - ball.x) * 0.1;
@@ -702,7 +675,6 @@
             }
         }
 
-        // Detección Círculo-Rectángulo que retorna la normal de colisión precisa (nx, ny)
         function circleRectCollide(circle, rect) {
             let testX = circle.x; let testY = circle.y;
             let nx = 0, ny = 0;
@@ -754,14 +726,12 @@
 
         function drawBlock(b) {
             ctx.save();
-            // Trasladar al centro, rotar, y luego dibujar desde arriba-izquierda relativo
             ctx.translate(b.x + b.w/2, b.y + b.h/2);
             ctx.rotate(b.angle || 0);
             ctx.translate(-b.w/2, -b.h/2);
 
             let parts = b.parts || [{x:0, y:0, w:b.w, h:b.h}];
 
-            // Dibujar Sombras primero
             ctx.shadowColor = 'rgba(0,0,0,0.15)';
             ctx.shadowBlur = 5; ctx.shadowOffsetY = 3;
             for (let p of parts) {
@@ -771,7 +741,6 @@
                 ctx.fillRect(p.x, p.y, p.w, p.h);
             }
             
-            // Texturas y Bordes
             ctx.shadowBlur = 0; 
             for (let p of parts) {
                 if (b.type === 'wood') {
@@ -795,7 +764,6 @@
                 }
             }
 
-            // Selección Visual (Recuadro punteado rojo)
             if (b === selectedBlock && gameState === 'EDIT') {
                 ctx.strokeStyle = '#ef4444';
                 ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.lineDashOffset = -Date.now() / 50; 
@@ -803,7 +771,6 @@
                 ctx.setLineDash([]);
             }
             
-            // Anclajes para Estáticos
             if (!isCreatorMode && staticBlocks.includes(b)) {
                 ctx.fillStyle = 'rgba(0,0,0,0.2)';
                 ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(8, 0); ctx.lineTo(0, 8); ctx.fill();
