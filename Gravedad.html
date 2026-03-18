@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Regla de Oro del Viewport: Anti-zoom, ajuste a notch (viewport-fit=cover) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gravity Studio Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,12 +10,9 @@
             --bg-cad: #cbd5e1;
             --grid-line: #e2e8f0; 
             --grid-dot: #94a3b8;
-            --grid-size: 20px; /* Será ajustado dinámicamente por JS en móviles */
-            /* Safe area fallbacks */
+            --grid-size: 20px;
             --sat: env(safe-area-inset-top, 0px);
             --sab: env(safe-area-inset-bottom, 0px);
-            --sal: env(safe-area-inset-left, 0px);
-            --sar: env(safe-area-inset-right, 0px);
         }
         body {
             margin: 0; padding: 0;
@@ -24,10 +20,9 @@
             background: var(--bg-cad);
             font-family: 'Segoe UI', system-ui, sans-serif;
             user-select: none;
-            touch-action: none; /* Previene scroll nativo */
+            touch-action: none; /* Bloqueo estricto de gestos */
             -webkit-tap-highlight-color: transparent;
             color: #1e293b;
-            overscroll-behavior-y: contain; /* Bloquea pull-to-refresh */
         }
         
         .cad-background {
@@ -37,7 +32,7 @@
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size);
-            background-position: calc(var(--grid-size)/2) calc(var(--grid-size)/2), 0 0, 0 0;
+            background-position: 10px 10px, 0 0, 0 0;
             box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
         }
         .cad-background.playing {
@@ -50,33 +45,15 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            /* Aplicando Safe Area Top */
+            box-shadow: 0 4px 15px -1px rgba(0, 0, 0, 0.1);
             padding-top: max(var(--sat), 0.5rem);
-        }
-        
-        .glass-tray {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
-            border-top: 1px solid #e2e8f0;
-            /* Aplicando Safe Area Bottom */
-            padding-bottom: max(var(--sab), 1rem);
         }
         
         ::-webkit-scrollbar { display: none; }
 
         .block-btn { transition: transform 0.1s; }
         .block-btn:active { transform: scale(0.95); }
-        
-        #tray {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .tray-closed {
-            transform: translateY(calc(100% - max(var(--sab), 1rem) - 32px)); 
-        }
 
-        /* Targets táctiles Premium (Mínimo 44x44px garantizado) */
         .touch-target {
             min-width: 44px;
             min-height: 44px;
@@ -86,10 +63,9 @@
         }
     </style>
 </head>
-<!-- 100dvh garantiza que la altura respeta las barras dinámicas de móviles -->
 <body class="flex flex-col h-[100dvh] w-screen" onload="initApp()">
 
-    <!-- PANTALLA DE INICIO (Welcome Screen) -->
+    <!-- PANTALLA DE INICIO -->
     <div id="welcome-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900 text-white transition-opacity duration-500">
         <div class="absolute inset-0 cad-background opacity-20 pointer-events-none"></div>
         <div class="relative z-10 flex flex-col items-center p-6 text-center">
@@ -105,112 +81,106 @@
         </div>
     </div>
 
-    <!-- HEADER (App UI) -->
-    <header id="main-header" class="hidden glass-panel flex items-center justify-between px-3 sm:px-4 z-20 shrink-0 relative">
-        <div class="flex items-center gap-2 touch-target">
-            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-            <div>
-                <h1 class="font-bold text-xs sm:text-sm tracking-wide text-slate-800" id="main-title">GRAVITY STUDIO</h1>
-                <p class="text-[10px] text-blue-600 uppercase tracking-widest font-mono font-bold" id="level-indicator">Nivel 1</p>
+    <!-- HEADER UNIFICADO (Controles + Piezas) -->
+    <header id="main-header" class="hidden glass-panel flex flex-col z-20 shrink-0 relative">
+        <!-- Fila Superior: Controles -->
+        <div class="flex items-center justify-between px-3 sm:px-4 pb-2">
+            <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                <div>
+                    <h1 class="font-bold text-xs sm:text-sm tracking-wide text-slate-800" id="main-title">GRAVITY STUDIO</h1>
+                    <p class="text-[10px] text-blue-600 uppercase tracking-widest font-mono font-bold" id="level-indicator">Nivel 1</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="toggleCreatorMode()" id="btn-creator" class="touch-target px-3 rounded-xl bg-slate-100 border border-slate-300 text-slate-600 text-[10px] sm:text-xs font-bold hover:bg-slate-200 transition-colors">
+                    ⚙️ CREADOR
+                </button>
+                <button onclick="resetLevel()" class="touch-target px-3 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
             </div>
         </div>
-        
-        <div class="flex items-center gap-1 mr-12 sm:mr-16">
-            <button onclick="toggleCreatorMode()" id="btn-creator" class="touch-target px-3 rounded-xl bg-slate-100 border border-slate-300 text-slate-600 text-[10px] sm:text-xs font-bold hover:bg-slate-200 transition-colors">
-                ⚙️ CREADOR
-            </button>
-            <button onclick="resetLevel()" class="touch-target px-3 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-200">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            </button>
+
+        <!-- Fila Inferior: Inventario de Piezas (Barra Superior) -->
+        <div class="flex gap-3 px-3 pb-3 overflow-x-auto w-full items-center border-t border-slate-200 pt-2" id="top-tray-items">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 pr-2">Piezas:</span>
+            
+            <div class="block-btn flex flex-col items-center gap-1 min-w-[50px] cursor-pointer" onclick="spawnBlock('wood')">
+                <div class="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shadow-sm">
+                    <div class="w-8 h-3 bg-amber-600 rounded-sm border border-amber-800"></div>
+                </div>
+                <span class="text-[9px] text-slate-500 font-bold">Madera</span>
+            </div>
+
+            <div class="block-btn flex flex-col items-center gap-1 min-w-[50px] cursor-pointer" onclick="spawnBlock('bounce')">
+                <div class="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shadow-sm">
+                    <div class="w-8 h-3 bg-slate-800 rounded-sm border border-pink-500 flex items-center justify-center">
+                        <div class="w-6 h-1 bg-pink-500 rounded-full"></div>
+                    </div>
+                </div>
+                <span class="text-[9px] text-slate-500 font-bold">Rebote</span>
+            </div>
+
+            <div class="block-btn flex flex-col items-center gap-1 min-w-[50px] cursor-pointer" onclick="spawnBlock('u_shape')">
+                <div class="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shadow-sm">
+                    <div class="w-6 h-5 border-b-4 border-l-4 border-r-4 border-amber-600 rounded-b-sm"></div>
+                </div>
+                <span class="text-[9px] text-slate-500 font-bold">Forma U</span>
+            </div>
+
+            <div class="block-btn flex flex-col items-center gap-1 min-w-[50px] cursor-pointer" onclick="spawnBlock('metal')">
+                <div class="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shadow-sm">
+                    <div class="w-8 h-3 bg-slate-400 rounded-sm border border-slate-500 flex justify-between px-1 items-center">
+                        <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
+                        <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
+                    </div>
+                </div>
+                <span class="text-[9px] text-slate-500 font-bold">Metal</span>
+            </div>
+
+            <div class="block-btn flex flex-col items-center gap-1 min-w-[50px] cursor-pointer" onclick="spawnBlock('l_shape')">
+                <div class="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shadow-sm relative">
+                    <div class="w-5 h-6 border-b-4 border-l-4 border-slate-400 rounded-bl-sm absolute top-3 left-3"></div>
+                </div>
+                <span class="text-[9px] text-slate-500 font-bold">Ángulo</span>
+            </div>
+            
+            <div class="block-btn flex flex-col items-center gap-1 min-w-[50px] cursor-pointer" onclick="spawnBlock('tunnel')">
+                <div class="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shadow-sm relative">
+                    <div class="w-8 h-1.5 bg-slate-400 border border-slate-500 rounded-sm absolute top-3"></div>
+                    <div class="w-8 h-1.5 bg-slate-400 border border-slate-500 rounded-sm absolute bottom-3"></div>
+                </div>
+                <span class="text-[9px] text-slate-500 font-bold">Túnel</span>
+            </div>
         </div>
     </header>
 
     <!-- WORKSPACE / CANVAS -->
-    <main class="flex-1 relative overflow-hidden">
+    <main class="flex-1 relative overflow-hidden bg-slate-800">
         <div id="grid-bg" class="absolute inset-0 cad-background pointer-events-none"></div>
-        <!-- Eventos transferidos al API Pointer Native -->
+        
+        <!-- Canvas de físicas -->
         <canvas id="gameCanvas" class="absolute inset-0 z-10" style="touch-action: none;"></canvas>
 
         <!-- Menú Contextual Flotante -->
-        <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-8 flex gap-3">
-            <button onclick="rotateSelected()" class="touch-target bg-blue-500 text-white rounded-full shadow-xl hover:bg-blue-600 border-2 border-white active:scale-95 transition-transform">
+        <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-6 flex gap-3 pointer-events-auto">
+            <button onclick="rotateSelected()" class="w-12 h-12 flex items-center justify-center bg-blue-500 text-white rounded-full shadow-xl hover:bg-blue-600 border-2 border-white active:scale-95 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5h5"></path></svg>
             </button>
-            <button onclick="deleteSelected()" class="touch-target bg-red-500 text-white rounded-full shadow-xl hover:bg-red-600 border-2 border-white active:scale-95 transition-transform">
+            <button onclick="deleteSelected()" class="w-12 h-12 flex items-center justify-center bg-red-500 text-white rounded-full shadow-xl hover:bg-red-600 border-2 border-white active:scale-95 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
         </div>
         
-        <!-- FAB PRINCIPAL (Posicionado dinámicamente debajo del header para no solaparse) -->
-        <button id="btn-play" onclick="handleMainAction()" class="absolute top-[env(safe-area-inset-top,10px)] right-3 mt-16 sm:mt-20 z-40 w-14 h-14 rounded-full bg-blue-600 shadow-[0_5px_15px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border-2 border-white hover:scale-105 transition-transform">
-            <svg id="icon-play" class="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="icon-stop" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-            <svg id="icon-save" class="w-7 h-7 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+        <!-- FAB PRINCIPAL (Posicionado abajo a la derecha para fácil acceso con el pulgar) -->
+        <button id="btn-play" onclick="handleMainAction()" class="absolute bottom-6 right-4 z-40 w-16 h-16 rounded-full bg-blue-600 shadow-[0_5px_15px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border-2 border-white hover:scale-105 transition-transform">
+            <svg id="icon-play" class="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="icon-stop" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+            <svg id="icon-save" class="w-8 h-8 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         </button>
     </main>
-
-    <!-- BOTTOM TRAY -->
-    <footer id="tray" class="hidden absolute bottom-0 w-full glass-tray rounded-t-3xl z-40 pb-4 sm:pb-6">
-        <div class="h-10 w-full flex justify-center items-center cursor-pointer touch-target" onclick="toggleTray()">
-            <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
-        </div>
-        
-        <div class="px-4 sm:px-6 mb-2 flex justify-between items-center">
-            <h3 class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider" id="tray-title">Inventario</h3>
-            <span class="text-[9px] sm:text-[10px] text-blue-500 font-bold bg-blue-100 px-2 py-1 rounded-md" id="tray-status">ACTIVO</span>
-        </div>
-
-        <div class="flex gap-4 px-4 sm:px-6 overflow-x-auto pb-4 pt-1" id="tray-items">
-            <!-- Items: Usando min-w de ~70px para hacerlos "Thumb-Friendly" -->
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('wood')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-4 bg-amber-600 rounded-sm border border-amber-800"></div>
-                </div>
-                <span class="text-[10px] text-slate-600 font-bold">Madera</span>
-            </div>
-
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('u_shape')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-8 h-6 border-b-4 border-l-4 border-r-4 border-amber-600 rounded-b-sm"></div>
-                </div>
-                <span class="text-[10px] text-slate-600 font-bold">Forma U</span>
-            </div>
-
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('bounce')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-4 bg-slate-800 rounded-sm border border-pink-500 flex items-center justify-center">
-                        <div class="w-8 h-1 bg-pink-500 rounded-full"></div>
-                    </div>
-                </div>
-                <span class="text-[10px] text-slate-600 font-bold">Rebote</span>
-            </div>
-
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('metal')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-4 bg-slate-400 rounded-sm border border-slate-500 flex justify-between px-1 items-center">
-                        <div class="w-1.5 h-1.5 bg-slate-700 rounded-full"></div>
-                        <div class="w-1.5 h-1.5 bg-slate-700 rounded-full"></div>
-                    </div>
-                </div>
-                <span class="text-[10px] text-slate-600 font-bold">Metal</span>
-            </div>
-
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('l_shape')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-6 h-8 border-b-4 border-l-4 border-slate-400 rounded-bl-sm absolute top-3 left-4"></div>
-                </div>
-                <span class="text-[10px] text-slate-600 font-bold">Ángulo</span>
-            </div>
-
-            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('tunnel')">
-                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
-                    <div class="w-10 h-2 bg-slate-400 border border-slate-500 rounded-sm absolute top-3"></div>
-                    <div class="w-10 h-2 bg-slate-400 border border-slate-500 rounded-sm absolute bottom-3"></div>
-                </div>
-                <span class="text-[10px] text-slate-600 font-bold">Túnel</span>
-            </div>
-        </div>
-    </footer>
 
     <!-- MODALES / OVERLAYS -->
     <div id="overlay-msg" class="absolute inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
@@ -223,7 +193,7 @@
         </div>
     </div>
 
-    <div id="toast" class="absolute top-[calc(env(safe-area-inset-top,20px)+60px)] left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity z-50 pointer-events-none shadow-lg">
+    <div id="toast" class="absolute top-32 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity z-50 pointer-events-none shadow-lg">
         Aviso
     </div>
 
@@ -237,14 +207,8 @@
         let width, height;
         const GRID = 20; 
         
-        // Variables de Escalado Responsivo (Solución a "Se ve gigante")
-        let currentScale = 1;
-        let logicalWidth = 0;
-        let logicalHeight = 0;
-        
-        let gameState = 'START'; // Estados: START, EDIT, PLAY, DONE
+        let gameState = 'START'; 
         let isCreatorMode = false;
-        let trayOpen = true;
         let currentLevelIdx = 0;
         
         let lastTime = 0;
@@ -276,21 +240,52 @@
             tunnel: { w: 80, h: 80, bounce: 0.1, type: 'metal', parts: [{x:0, y:0, w:80, h:20}, {x:0, y:60, w:80, h:20}] }
         };
 
-        let levels = [
-            { name: "La Rampa (Rota a 45°)", start: {x:60, y:60}, goal: {x:260, y:340}, static: [
-                {x:240, y:400, w:100, h:20, type:'metal', id:1, angle: 0}
-            ]},
-            { name: "El Trampolín", start: {x:60, y:60}, goal: {x:240, y:200}, static: [{x:60, y:300, w:60, h:20, type:'metal', id:1, angle: 0}] },
-            { name: "Pasaje Estrecho", start: {x:180, y:60}, goal: {x:180, y:560}, static: [
-                {x:100, y:260, w:60, h:20, type:'wood', id:1, angle: 0}, {x:200, y:260, w:60, h:20, type:'wood', id:2, angle: 0}
-            ]}
+        // Diseño Responsivo: Las coordenadas son % de la pantalla (0.0 a 1.0)
+        let levelsLayouts = [
+            { 
+                name: "La Rampa Dinámica", 
+                setup: (w, h) => {
+                    return {
+                        start: { x: w * 0.2, y: h * 0.15 },
+                        goal: { x: w * 0.8, y: h * 0.8 },
+                        static: [
+                            { x: w * 0.7, y: h * 0.9, w: 100, h: 20, type: 'metal', id: 1, angle: 0 }
+                        ]
+                    };
+                }
+            },
+            { 
+                name: "El Trampolín", 
+                setup: (w, h) => {
+                    return {
+                        start: { x: w * 0.2, y: h * 0.15 },
+                        goal: { x: w * 0.8, y: h * 0.4 },
+                        static: [
+                            { x: w * 0.2, y: h * 0.6, w: 60, h: 20, type: 'metal', id: 1, angle: 0 }
+                        ]
+                    };
+                }
+            },
+            { 
+                name: "Pasaje Estrecho", 
+                setup: (w, h) => {
+                    return {
+                        start: { x: w * 0.5, y: h * 0.1 },
+                        goal: { x: w * 0.5, y: h * 0.85 },
+                        static: [
+                            { x: w * 0.3, y: h * 0.4, w: 80, h: 20, type: 'wood', id: 1, angle: 0 },
+                            { x: w * 0.7, y: h * 0.4, w: 80, h: 20, type: 'wood', id: 2, angle: 0 }
+                        ]
+                    };
+                }
+            }
         ];
 
         // ==========================================
         // INICIALIZACIÓN Y FLUJO
         // ==========================================
         function initApp() {
-            window.addEventListener('resize', resize);
+            window.addEventListener('resize', () => { resize(); resetSim(); });
             resize();
             setupTouchInput();
             
@@ -307,7 +302,6 @@
                 ws.classList.add('hidden');
                 document.getElementById('main-header').classList.remove('hidden');
                 document.getElementById('main-header').classList.add('flex');
-                document.getElementById('tray').classList.remove('hidden');
                 
                 gameState = 'EDIT';
                 loadLevel(0);
@@ -358,24 +352,12 @@
             width = canvas.parentElement.clientWidth;
             height = canvas.parentElement.clientHeight;
             
-            // Sistema de Auto-Escalado para que quepa en móviles sin verse gigante
-            // Aseguramos que el ancho lógico (espacio de juego) sea mínimo de 600px
-            currentScale = width < 600 ? width / 600 : 1;
-            
-            logicalWidth = width / currentScale;
-            logicalHeight = height / currentScale;
-
-            // El canvas físico usa los pixeles reales
+            // Relación de pixeles 1:1, nada de zooms extraños
             canvas.width = width * window.devicePixelRatio;
             canvas.height = height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             
-            // Ajustamos el tamaño del grid CSS visual de fondo
-            document.documentElement.style.setProperty('--grid-size', (GRID * currentScale) + 'px');
-            
-            // Ajustar posición del objetivo si cae fuera del rango visual escalado
-            if (goalPortal.y > logicalHeight) goalPortal.y = Math.floor((logicalHeight - 150)/GRID)*GRID;
-            
-            updateContextMenu(); // Reposicionar menú si estaba abierto
+            updateContextMenu(); 
         }
 
         function showToast(msg) {
@@ -385,24 +367,31 @@
             setTimeout(() => t.style.opacity = '0', 2500);
         }
 
-        function toggleTray() {
-            trayOpen = !trayOpen;
-            const tray = document.getElementById('tray');
-            if(trayOpen) tray.classList.remove('tray-closed');
-            else tray.classList.add('tray-closed');
-        }
-
         function loadLevel(idx) {
             currentLevelIdx = idx;
-            let lvl = levels[idx] || levels[0];
+            let layoutGenerator = levelsLayouts[idx] || levelsLayouts[0];
             
             document.getElementById('level-indicator').innerText = isCreatorMode ? 'MODO CREADOR' : `Nivel ${idx + 1}`;
             
-            startPos = { x: lvl.start.x, y: lvl.start.y };
-            goalPortal = { x: lvl.goal.x, y: lvl.goal.y, r: 30 };
+            // Calculamos posiciones usando el tamaño físico actual
+            let layout = layoutGenerator.setup(width, height);
             
-            staticBlocks = JSON.parse(JSON.stringify(lvl.static));
-            staticBlocks.forEach(b => { if(b.angle === undefined) b.angle = 0; });
+            startPos = { x: layout.start.x, y: layout.start.y };
+            goalPortal = { x: layout.goal.x, y: layout.goal.y, r: 30 };
+            
+            // Ajustamos al GRID
+            startPos.x = Math.round(startPos.x / GRID) * GRID;
+            startPos.y = Math.round(startPos.y / GRID) * GRID;
+            goalPortal.x = Math.round(goalPortal.x / GRID) * GRID;
+            goalPortal.y = Math.round(goalPortal.y / GRID) * GRID;
+
+            staticBlocks = JSON.parse(JSON.stringify(layout.static));
+            staticBlocks.forEach(b => { 
+                if(b.angle === undefined) b.angle = 0; 
+                // Ajustamos estáticos al grid físico
+                b.x = Math.round(b.x / GRID) * GRID;
+                b.y = Math.round(b.y / GRID) * GRID;
+            });
             
             userBlocks = []; 
             selectedBlock = null;
@@ -435,7 +424,6 @@
                 btn.classList.add('bg-blue-600', 'text-white');
                 btn.classList.remove('bg-slate-100', 'text-slate-600');
                 title.innerText = "CREATOR STUDIO";
-                document.getElementById('tray-title').innerText = "Bloques Estáticos";
                 document.getElementById('icon-play').classList.add('hidden');
                 document.getElementById('icon-save').classList.remove('hidden');
                 
@@ -446,7 +434,6 @@
                 btn.classList.remove('bg-blue-600', 'text-white');
                 btn.classList.add('bg-slate-100', 'text-slate-600');
                 title.innerText = "GRAVITY STUDIO";
-                document.getElementById('tray-title').innerText = "Inventario";
                 document.getElementById('icon-play').classList.remove('hidden');
                 document.getElementById('icon-save').classList.add('hidden');
                 
@@ -456,16 +443,21 @@
 
         function handleMainAction() {
             if (isCreatorMode) {
+                // Guardar custom layout
                 const newLvl = {
-                    name: "Nivel de Usuario",
-                    start: {x: startPos.x, y: startPos.y},
-                    goal: {x: goalPortal.x, y: goalPortal.y},
-                    static: JSON.parse(JSON.stringify(staticBlocks))
+                    name: "Nivel Usuario",
+                    setup: (w, h) => {
+                        return {
+                            start: { x: startPos.x, y: startPos.y },
+                            goal: { x: goalPortal.x, y: goalPortal.y },
+                            static: JSON.parse(JSON.stringify(staticBlocks))
+                        };
+                    }
                 };
-                levels.push(newLvl);
+                levelsLayouts.push(newLvl);
                 showToast("¡Nivel Guardado!");
                 toggleCreatorMode();
-                loadLevel(levels.length - 1);
+                loadLevel(levelsLayouts.length - 1);
             } else {
                 if (gameState === 'EDIT') {
                     gameState = 'PLAY';
@@ -485,10 +477,9 @@
             if (gameState !== 'EDIT') resetSim();
             const tpl = CATALOG[type];
             
-            // Spawnear usando el tamaño del lienzo lógico para que caiga en el centro
-            let bx = Math.round((logicalWidth/2 - tpl.w/2) / GRID) * GRID;
-            // Lo ponemos un poco más arriba para que la bandeja de piezas no lo tape al nacer
-            let by = Math.round((logicalHeight/2 - tpl.h/2 - 100/currentScale) / GRID) * GRID;
+            // Aparece en el centro superior (debajo del header)
+            let bx = Math.round((width/2 - tpl.w/2) / GRID) * GRID;
+            let by = Math.round((height * 0.15) / GRID) * GRID;
 
             const newBlock = {
                 x: bx, y: by, w: tpl.w, h: tpl.h,
@@ -499,7 +490,7 @@
             };
 
             while(checkOverlap(newBlock)) {
-                newBlock.y -= GRID; 
+                newBlock.y += GRID; 
             }
 
             if (isCreatorMode) staticBlocks.push(newBlock);
@@ -532,10 +523,8 @@
             const menu = document.getElementById('context-menu');
             if (selectedBlock && gameState === 'EDIT') {
                 menu.classList.remove('hidden');
-                // Posicionar menú HTML sobre el Canvas usando la escala física calculada
-                menu.style.left = `${(selectedBlock.x + selectedBlock.w / 2) * currentScale}px`;
-                // Lo alejamos más (60px) para compensar el dedo gordo en móviles
-                menu.style.top = `${selectedBlock.y * currentScale - 60}px`; 
+                menu.style.left = `${selectedBlock.x + selectedBlock.w / 2}px`;
+                menu.style.top = `${selectedBlock.y - 20}px`; 
             } else {
                 menu.classList.add('hidden');
             }
@@ -579,7 +568,7 @@
 
         function nextLevel() {
             hideMessage();
-            if (currentLevelIdx < levels.length - 1) {
+            if (currentLevelIdx < levelsLayouts.length - 1) {
                 loadLevel(currentLevelIdx + 1);
             } else { 
                 showToast("¡Felicidades! Completaste todos los niveles.");
@@ -592,28 +581,30 @@
         }
 
         // ==========================================
-        // SISTEMA TÁCTIL MEJORADO (POINTER CAPTURE)
+        // SISTEMA TÁCTIL ABSOLUTO (Estilo Lego)
         // ==========================================
         function setupTouchInput() {
             
-            // Convierte coordenadas físicas a lógicas usando currentScale
+            // Extractor de coordenadas seguro
             const getEventPos = (e) => {
                 const rect = canvas.getBoundingClientRect();
+                let x, y;
+                if (e.touches && e.touches.length > 0) {
+                    x = e.touches[0].clientX;
+                    y = e.touches[0].clientY;
+                } else {
+                    x = e.clientX;
+                    y = e.clientY;
+                }
                 return { 
-                    x: (e.clientX - rect.left) / currentScale, 
-                    y: (e.clientY - rect.top) / currentScale 
+                    x: x - rect.left, 
+                    y: y - rect.top 
                 };
             };
 
-            const handleDown = (e) => {
+            const handleDown = (pos) => {
                 if (gameState !== 'EDIT') return;
-                
-                // MÁGIA ANTI-BLOQUEO: Esto "captura" tu dedo. Aunque arrastres
-                // hacia la barra de UI de abajo, el Canvas seguirá leyendo el movimiento.
-                canvas.setPointerCapture(e.pointerId);
-                
-                const pos = getEventPos(e);
-                
+
                 if (isCreatorMode) {
                     if (Math.hypot(pos.x - goalPortal.x, pos.y - goalPortal.y) < goalPortal.r + 30) { draggingSpecial = 'goal'; return; }
                     if (Math.hypot(pos.x - startPos.x, pos.y - startPos.y) < 40) { draggingSpecial = 'start'; return; }
@@ -632,8 +623,8 @@
                     let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle) + b.w/2;
                     let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle) + b.h/2;
                     
-                    // Hitbox expansivo y responsivo al scale
-                    let pad = 24 / currentScale; 
+                    // Hitbox permisiva para dedos gordos
+                    let pad = 24; 
                     let hit = b.parts.some(p => 
                         localX >= p.x - pad && localX <= p.x + p.w + pad && 
                         localY >= p.y - pad && localY <= p.y + p.h + pad
@@ -657,9 +648,8 @@
                 updateContextMenu();
             };
 
-            const handleMove = (e) => {
+            const handleMove = (pos) => {
                 if (!draggingBlock && !draggingSpecial) return;
-                const pos = getEventPos(e);
                 
                 if (draggingSpecial === 'goal') {
                     goalPortal.x = Math.round(pos.x / GRID) * GRID;
@@ -676,22 +666,23 @@
                 }
             };
 
-            const handleUp = (e) => {
-                if (canvas.hasPointerCapture(e.pointerId)) {
-                    canvas.releasePointerCapture(e.pointerId);
-                }
+            const handleUp = () => {
                 draggingBlock = null;
                 draggingSpecial = null;
             };
 
-            // Eventos Modernos (Unificados para Mouse y Touch robusto)
-            canvas.addEventListener('pointerdown', handleDown);
-            canvas.addEventListener('pointermove', handleMove);
-            canvas.addEventListener('pointerup', handleUp);
-            canvas.addEventListener('pointercancel', handleUp);
+            // Eventos Táctiles Puros (Bloqueando Scroll y recargas con preventDefault)
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleDown(getEventPos(e)); }, { passive: false });
+            window.addEventListener('touchmove', (e) => { 
+                if(draggingBlock || draggingSpecial) { e.preventDefault(); handleMove(getEventPos(e)); }
+            }, { passive: false });
+            window.addEventListener('touchend', (e) => { handleUp(); }, { passive: false });
+            window.addEventListener('touchcancel', (e) => { handleUp(); }, { passive: false });
 
-            // Respaldo de seguridad brutal para detener scrolls nativos de iOS (Safari)
-            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
+            // Eventos de Ratón (Para PC o ratones de tablet)
+            canvas.addEventListener('mousedown', (e) => { handleDown(getEventPos(e)); });
+            window.addEventListener('mousemove', (e) => { handleMove(getEventPos(e)); });
+            window.addEventListener('mouseup', (e) => { handleUp(); });
         }
 
         function checkOverlap(b1) {
@@ -790,8 +781,8 @@
                 }
             }
 
-            // Detectar caída fuera usando las dimensiones del área LÓGICA
-            if (ball.y > logicalHeight + 50 || ball.x < -50 || ball.x > logicalWidth + 50) {
+            // Detectar caída fuera usando medidas físicas absolutas
+            if (ball.y > height + 50 || ball.x < -50 || ball.x > width + 50) {
                 showMessage("¡Perdiste!", "El sujeto cayó fuera del área de prueba.", false);
             }
 
@@ -834,16 +825,11 @@
         }
 
         // ==========================================
-        // RENDER / DIBUJO CON ESCALADO
+        // RENDER / DIBUJO PURO (Sin hacks de escala)
         // ==========================================
         function draw() {
-            // Se limpia usando los pixeles reales del canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            ctx.clearRect(0, 0, width, height); 
             if(gameState === 'START') return;
-
-            ctx.save();
-            // Aplicamos la resolución del dispositivo y nuestra Escala Dinámica (zoom)
-            ctx.scale(window.devicePixelRatio * currentScale, window.devicePixelRatio * currentScale);
 
             drawTrail();
             drawPortal();
@@ -862,8 +848,6 @@
                 ctx.fillStyle = '#475569'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
                 ctx.fillText('INICIO', startPos.x, startPos.y - 25);
             }
-            
-            ctx.restore();
         }
 
         function drawBlock(b) {
