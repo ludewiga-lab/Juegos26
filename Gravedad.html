@@ -39,7 +39,7 @@
             transition: background-color 0.5s ease;
         }
 
-        /* Utilidades UI Light Mode */
+        /* Utilidades UI */
         .glass-panel {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
@@ -80,12 +80,10 @@
             </div>
         </div>
         
-        <div class="flex items-center gap-2 mr-16"> <!-- Margen para el FAB -->
-            <!-- Botón Modo Creador -->
+        <div class="flex items-center gap-2 mr-16">
             <button onclick="toggleCreatorMode()" id="btn-creator" class="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors">
                 ⚙️ CREADOR
             </button>
-            <!-- Botón Reset -->
             <button onclick="resetLevel()" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             </button>
@@ -99,6 +97,7 @@
 
         <!-- Menú Contextual Flotante (Girar y Borrar) -->
         <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-3 flex gap-2">
+            <!-- Rotar ahora gira 45 grados -->
             <button onclick="rotateSelected()" class="bg-blue-500 text-white p-2.5 rounded-full shadow-lg hover:bg-blue-600 border border-blue-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5h5"></path></svg>
             </button>
@@ -107,18 +106,15 @@
             </button>
         </div>
         
-        <!-- FAB PRINCIPAL: PLAY / STOP / SAVE (Movido arriba) -->
+        <!-- FAB PRINCIPAL: PLAY / STOP / SAVE -->
         <button id="btn-play" onclick="handleMainAction()" class="absolute top-4 right-4 z-40 w-14 h-14 rounded-full bg-blue-600 shadow-[0_5px_15px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border-2 border-white hover:scale-105 transition-transform">
-            <!-- Icono Play -->
             <svg id="icon-play" class="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <!-- Icono Stop -->
             <svg id="icon-stop" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-            <!-- Icono Save (Modo Creador) -->
             <svg id="icon-save" class="w-7 h-7 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         </button>
     </main>
 
-    <!-- BOTTOM TRAY (Módulos Extendidos) -->
+    <!-- BOTTOM TRAY -->
     <footer id="tray" class="absolute bottom-0 w-full glass-tray rounded-t-3xl z-40 pb-6">
         <div class="h-6 w-full flex justify-center items-center cursor-pointer" onclick="toggleTray()">
             <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
@@ -138,7 +134,7 @@
                 <span class="text-[10px] text-slate-600 font-bold">Madera</span>
             </div>
 
-            <!-- Item: U-Shape (Nuevo) -->
+            <!-- Item: U-Shape -->
             <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('u_shape')">
                 <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
                     <div class="w-8 h-6 border-b-4 border-l-4 border-r-4 border-amber-600 rounded-b-sm"></div>
@@ -167,7 +163,7 @@
                 <span class="text-[10px] text-slate-600 font-bold">Metal</span>
             </div>
 
-            <!-- Item: L-Shape (Nuevo) -->
+            <!-- Item: L-Shape -->
             <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('l_shape')">
                 <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
                     <div class="w-6 h-8 border-b-4 border-l-4 border-slate-400 rounded-bl-sm absolute top-3 left-4"></div>
@@ -175,7 +171,7 @@
                 <span class="text-[10px] text-slate-600 font-bold">Ángulo</span>
             </div>
 
-            <!-- Item: Tunnel (Nuevo) -->
+            <!-- Item: Tunnel -->
             <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('tunnel')">
                 <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
                     <div class="w-10 h-2 bg-slate-400 border border-slate-500 rounded-sm absolute top-3"></div>
@@ -218,6 +214,9 @@
         let startPos = { x: 0, y: 0 };
         let goalPortal = { x: 0, y: 0, r: 30 };
         
+        // Atascamiento (Stuck Detection)
+        let stuckFrames = 0;
+        
         let staticBlocks = []; 
         let userBlocks = [];   
         
@@ -239,13 +238,15 @@
             tunnel: { w: 80, h: 80, bounce: 0.1, type: 'metal', parts: [{x:0, y:0, w:80, h:20}, {x:0, y:60, w:80, h:20}] }
         };
 
+        // Nivel 1 Mejorado: Obliga a usar rotación de 45 grados.
         let levels = [
-            { name: "Caída Directa", start: {x:100, y:60}, goal: {x:100, y:500}, static: [] },
-            { name: "El Trampolín", start: {x:60, y:60}, goal: {x:240, y:200}, static: [{x:60, y:300, w:60, h:20, type:'metal', id:1}] },
+            { name: "La Rampa (Rota a 45°)", start: {x:60, y:60}, goal: {x:260, y:340}, static: [
+                {x:240, y:400, w:100, h:20, type:'metal', id:1, angle: 0}
+            ]},
+            { name: "El Trampolín", start: {x:60, y:60}, goal: {x:240, y:200}, static: [{x:60, y:300, w:60, h:20, type:'metal', id:1, angle: 0}] },
             { name: "Pasaje Estrecho", start: {x:180, y:60}, goal: {x:180, y:560}, static: [
-                {x:100, y:260, w:60, h:20, type:'wood', id:1}, {x:200, y:260, w:60, h:20, type:'wood', id:2}
+                {x:100, y:260, w:60, h:20, type:'wood', id:1, angle: 0}, {x:200, y:260, w:60, h:20, type:'wood', id:2, angle: 0}
             ]}
-            // ... Mismos niveles progresivos de la base
         ];
 
         // ==========================================
@@ -292,6 +293,9 @@
             goalPortal = { x: lvl.goal.x, y: lvl.goal.y, r: 30 };
             
             staticBlocks = JSON.parse(JSON.stringify(lvl.static));
+            // Asegurar que las piezas tengan propiedad angle
+            staticBlocks.forEach(b => { if(b.angle === undefined) b.angle = 0; });
+            
             userBlocks = []; 
             selectedBlock = null;
             
@@ -305,6 +309,7 @@
             ball.y = startPos.y;
             ball.vx = 0; ball.vy = 0;
             trail = []; particles = [];
+            stuckFrames = 0;
             
             document.getElementById('grid-bg').classList.remove('playing');
             document.getElementById('icon-play').classList.remove('hidden');
@@ -381,12 +386,13 @@
                 x: bx, y: by, w: tpl.w, h: tpl.h,
                 bounce: tpl.bounce, type: tpl.type, 
                 parts: tpl.parts ? JSON.parse(JSON.stringify(tpl.parts)) : [{x:0, y:0, w:tpl.w, h:tpl.h}],
+                angle: 0,
                 id: Date.now()
             };
 
-            if(checkOverlap(newBlock)) {
-                showToast("Espacio ocupado");
-                return;
+            // Solapamiento suave (si hay una pieza exactamente en el mismo centro, la desplazamos un poco)
+            while(checkOverlap(newBlock)) {
+                newBlock.y -= GRID; 
             }
 
             if (isCreatorMode) staticBlocks.push(newBlock);
@@ -408,42 +414,21 @@
             }
         }
 
-        // --- SISTEMA DE ROTACIÓN PERFECTA ---
+        // --- SISTEMA DE ROTACIÓN A 45 GRADOS ---
         function rotateSelected() {
             if (!selectedBlock) return;
-            let b = selectedBlock;
-            
-            // Respaldos por si no cabe
-            let oldW = b.w, oldH = b.h;
-            let oldParts = JSON.parse(JSON.stringify(b.parts));
-            
-            // Girar bounding box
-            b.w = oldH;
-            b.h = oldW;
-            
-            // Girar partes relativas matemáticamente
-            b.parts = oldParts.map(p => ({
-                x: oldH - p.y - p.h,
-                y: p.x,
-                w: p.h,
-                h: p.w
-            }));
-            
-            // Chequeo estricto
-            if (checkOverlap(b)) {
-                showToast("No hay espacio para girar");
-                b.w = oldW; b.h = oldH; b.parts = oldParts; // Revertir
-            } else {
-                updateContextMenu();
-            }
+            selectedBlock.angle += Math.PI / 4; // Gira 45 grados (Pi/4 Radianes)
+            if (selectedBlock.angle >= Math.PI * 2) selectedBlock.angle = 0;
+            updateContextMenu();
         }
 
         function updateContextMenu() {
             const menu = document.getElementById('context-menu');
             if (selectedBlock && gameState === 'EDIT') {
                 menu.classList.remove('hidden');
+                // Posicionar el menú considerando que la pieza puede estar rotada (usamos su centro)
                 menu.style.left = `${selectedBlock.x + selectedBlock.w / 2}px`;
-                menu.style.top = `${selectedBlock.y - 10}px`;
+                menu.style.top = `${selectedBlock.y - 15}px`;
             } else {
                 menu.classList.add('hidden');
             }
@@ -488,7 +473,7 @@
             setTimeout(() => {
                 overlay.classList.add('hidden');
                 overlay.style.display = '';
-                resetSim(); // Regresa la bola a su sitio, ¡tus piezas se quedan intactas!
+                resetSim(); 
             }, 300);
         }
 
@@ -503,12 +488,16 @@
         }
 
         // ==========================================
-        // INPUTS (Snapping & Dragging)
+        // INPUTS (Snapping & Dragging Corregidos)
         // ==========================================
         function setupInput() {
+            // FIX: getBoundingClientRect soluciona el desfase en móviles/tablets
             const getPos = (e) => {
-                if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                return { x: e.clientX, y: e.clientY };
+                const rect = canvas.getBoundingClientRect();
+                if (e.touches && e.touches.length > 0) {
+                    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+                }
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
             };
 
             const down = (e) => {
@@ -523,15 +512,30 @@
                 let arr = isCreatorMode ? staticBlocks : userBlocks;
                 for (let i = arr.length - 1; i >= 0; i--) {
                     let b = arr[i];
-                    let pad = 15; // Padding táctil mayor
-                    if (pos.x >= b.x - pad && pos.x <= b.x + b.w + pad &&
-                        pos.y >= b.y - pad && pos.y <= b.y + b.h + pad) {
-                        
+                    
+                    // Transformación inversa para detectar toque en piezas rotadas
+                    let cx = b.x + b.w/2;
+                    let cy = b.y + b.h/2;
+                    let angle = b.angle || 0;
+                    
+                    let dx = pos.x - cx;
+                    let dy = pos.y - cy;
+                    let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle) + b.w/2;
+                    let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle) + b.h/2;
+                    
+                    let pad = 15; // Padding táctil
+                    // Comprobar si tocó alguna parte de la pieza
+                    let hit = b.parts.some(p => 
+                        localX >= p.x - pad && localX <= p.x + p.w + pad && 
+                        localY >= p.y - pad && localY <= p.y + p.h + pad
+                    );
+
+                    if (hit) {
                         selectedBlock = b;
                         draggingBlock = b;
+                        // Offset desde la esquina superior izquierda real (sin rotar)
                         dragOffset.x = pos.x - b.x;
                         dragOffset.y = pos.y - b.y;
-                        b.prevX = b.x; b.prevY = b.y;
                         
                         arr.splice(i, 1);
                         arr.push(b);
@@ -562,16 +566,6 @@
             };
 
             const up = () => {
-                if (draggingBlock) {
-                    if (checkOverlap(draggingBlock)) {
-                        if (draggingBlock.prevX !== undefined) {
-                            draggingBlock.x = draggingBlock.prevX;
-                            draggingBlock.y = draggingBlock.prevY;
-                        } else deleteSelected();
-                        showToast("Espacio obstruido");
-                        updateContextMenu();
-                    }
-                }
                 draggingBlock = null;
                 draggingSpecial = null;
             };
@@ -585,32 +579,28 @@
             window.addEventListener('touchend', up);
         }
 
-        // Colisión Píxel Perfecto usando las partes que la conforman
+        // Solapamiento suave (Lego Snap). 
+        // Solo evita que dos piezas queden exactamente una encima de la otra.
         function checkOverlap(b1) {
             let all = [...staticBlocks, ...userBlocks];
-            let parts1 = b1.parts || [{x:0,y:0,w:b1.w,h:b1.h}];
+            let cx1 = b1.x + b1.w/2;
+            let cy1 = b1.y + b1.h/2;
             
             for (let b2 of all) {
                 if (b1.id === b2.id) continue;
-                let parts2 = b2.parts || [{x:0,y:0,w:b2.w,h:b2.h}];
+                let cx2 = b2.x + b2.w/2;
+                let cy2 = b2.y + b2.h/2;
                 
-                for (let p1 of parts1) {
-                    let abs1 = {x: b1.x + p1.x, y: b1.y + p1.y, w: p1.w, h: p1.h};
-                    for (let p2 of parts2) {
-                        let abs2 = {x: b2.x + p2.x, y: b2.y + p2.y, w: p2.w, h: p2.h};
-                        const shrink = 1; 
-                        if (abs1.x + shrink < abs2.x + abs2.w && abs1.x + abs1.w - shrink > abs2.x &&
-                            abs1.y + shrink < abs2.y + abs2.h && abs1.y + abs1.h - shrink > abs2.y) {
-                            return true;
-                        }
-                    }
+                // Si están en el mismo centro exacto, hay solapamiento. De resto, ¡creatividad libre!
+                if (Math.hypot(cx1 - cx2, cy1 - cy2) < GRID * 0.5) {
+                    return true;
                 }
             }
             return false;
         }
 
         // ==========================================
-        // FÍSICAS Y SIMULACIÓN (Soporta Piezas Compuestas)
+        // FÍSICAS Y SIMULACIÓN (Soporta 45 Grados)
         // ==========================================
         function updatePhysics() {
             if (gameState !== 'PLAY') return;
@@ -624,48 +614,76 @@
 
             ball.x += ball.vx;
             ball.y += ball.vy;
-
             ball.vx *= 0.99;
             ball.vy *= 0.99;
+
+            let ballSpeed = Math.hypot(ball.vx, ball.vy);
+
+            // Detección de atascamiento (Si está casi quieto por 120 frames / 2 segs)
+            if (ballSpeed < 0.25) {
+                stuckFrames++;
+                if (stuckFrames > 120) {
+                    showMessage("¡Te atascaste!", "La simulación se detuvo porque perdiste el impulso.", false);
+                    return;
+                }
+            } else {
+                stuckFrames = 0;
+            }
 
             const allBlocks = [...staticBlocks, ...userBlocks];
             for (let b of allBlocks) {
                 let parts = b.parts || [{x:0, y:0, w:b.w, h:b.h}];
+                let angle = b.angle || 0;
+                let cx = b.x + b.w/2;
+                let cy = b.y + b.h/2;
+
+                // 1. Convertir la pelota al espacio local de la pieza (rotando inversamente)
+                let dx = ball.x - cx;
+                let dy = ball.y - cy;
+                let localBallX = dx * Math.cos(-angle) - dy * Math.sin(-angle) + b.w/2;
+                let localBallY = dx * Math.sin(-angle) + dy * Math.cos(-angle) + b.h/2;
+                let localBall = { x: localBallX, y: localBallY, r: ball.r };
                 
                 for (let p of parts) {
-                    let absRect = {x: b.x + p.x, y: b.y + p.y, w: p.w, h: p.h};
-                    let col = circleRectCollide(ball, absRect);
+                    let col = circleRectCollide(localBall, p);
                     
                     if (col.hit) {
                         let overlap = ball.r - col.distance;
-                        let nx = col.distX / col.distance;
-                        let ny = col.distY / col.distance;
+                        
+                        // 2. Rotar la normal (nx, ny) de vuelta al espacio global
+                        let globalNx = col.nx * Math.cos(angle) - col.ny * Math.sin(angle);
+                        let globalNy = col.nx * Math.sin(angle) + col.ny * Math.cos(angle);
 
-                        ball.x += nx * overlap;
-                        ball.y += ny * overlap;
+                        ball.x += globalNx * overlap;
+                        ball.y += globalNy * overlap;
 
-                        let dot = ball.vx * nx + ball.vy * ny;
+                        let dot = ball.vx * globalNx + ball.vy * globalNy;
+                        
+                        // Si se acerca a la superficie
                         if (dot < 0) {
                             let bounceFactor = b.bounce || 0.5;
-                            let speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
-                            if (b.type === 'bounce' && speed > 20) bounceFactor = 0.8;
+                            if (b.type === 'bounce' && ballSpeed > 20) bounceFactor = 0.8;
 
-                            ball.vx = ball.vx - (1 + bounceFactor) * dot * nx;
-                            ball.vy = ball.vy - (1 + bounceFactor) * dot * ny;
+                            ball.vx -= (1 + bounceFactor) * dot * globalNx;
+                            ball.vy -= (1 + bounceFactor) * dot * globalNy;
 
-                            let tangentX = -ny; let tangentY = nx;
+                            // Fricción lateral
+                            let tangentX = -globalNy; let tangentY = globalNx;
                             let tangentDot = ball.vx * tangentX + ball.vy * tangentY;
                             ball.vx -= tangentDot * 0.1 * tangentX;
                             ball.vy -= tangentDot * 0.1 * tangentY;
 
-                            let colorHex = b.type === 'bounce' ? '#ec4899' : (b.type === 'wood' ? '#d97706' : '#94a3b8');
-                            spawnParticles(ball.x - nx*ball.r, ball.y - ny*ball.r, colorHex, b.type==='bounce'?15:5);
+                            // Sparks (solo si el impacto es moderado/fuerte)
+                            if (ballSpeed > 2) {
+                                let colorHex = b.type === 'bounce' ? '#ec4899' : (b.type === 'wood' ? '#d97706' : '#94a3b8');
+                                spawnParticles(ball.x - globalNx*ball.r, ball.y - globalNy*ball.r, colorHex, b.type==='bounce'?15:5);
+                            }
                         }
                     }
                 }
             }
 
-            // Fallo modificado
+            // Fallo por caída
             if (ball.y > height + 50 || ball.x < -50 || ball.x > width + 50) {
                 showMessage("¡Perdiste!", "El sujeto cayó fuera del área de prueba.", false);
             }
@@ -684,17 +702,28 @@
             }
         }
 
+        // Detección Círculo-Rectángulo que retorna la normal de colisión precisa (nx, ny)
         function circleRectCollide(circle, rect) {
             let testX = circle.x; let testY = circle.y;
-            if (circle.x < rect.x) testX = rect.x;
-            else if (circle.x > rect.x + rect.w) testX = rect.x + rect.w;
-            if (circle.y < rect.y) testY = rect.y;
-            else if (circle.y > rect.y + rect.h) testY = rect.y + rect.h;
+            let nx = 0, ny = 0;
+            
+            if (circle.x < rect.x) { testX = rect.x; nx = -1; }
+            else if (circle.x > rect.x + rect.w) { testX = rect.x + rect.w; nx = 1; }
+            
+            if (circle.y < rect.y) { testY = rect.y; ny = -1; }
+            else if (circle.y > rect.y + rect.h) { testY = rect.y + rect.h; ny = 1; }
 
-            let distX = circle.x - testX; let distY = circle.y - testY;
-            let distance = Math.sqrt((distX*distX) + (distY*distY));
+            let distX = circle.x - testX; 
+            let distY = circle.y - testY;
+            let distance = Math.hypot(distX, distY);
 
-            if (distance <= circle.r) return { hit: true, distX, distY, distance };
+            if (distance <= circle.r) {
+                if (distance > 0) {
+                    nx = distX / distance;
+                    ny = distY / distance;
+                }
+                return { hit: true, nx, ny, distance };
+            }
             return { hit: false };
         }
 
@@ -725,7 +754,10 @@
 
         function drawBlock(b) {
             ctx.save();
-            ctx.translate(b.x, b.y);
+            // Trasladar al centro, rotar, y luego dibujar desde arriba-izquierda relativo
+            ctx.translate(b.x + b.w/2, b.y + b.h/2);
+            ctx.rotate(b.angle || 0);
+            ctx.translate(-b.w/2, -b.h/2);
 
             let parts = b.parts || [{x:0, y:0, w:b.w, h:b.h}];
 
@@ -755,7 +787,7 @@
                     ctx.strokeStyle = '#be185d';
                     ctx.lineWidth = 2; ctx.strokeRect(p.x, p.y, p.w, p.h);
                 } else if (b.type === 'metal') {
-                    ctx.fillStyle = '#64748b'; // Remaches (simplificados)
+                    ctx.fillStyle = '#64748b'; 
                     ctx.beginPath(); ctx.arc(p.x+6, p.y+p.h/2, 2, 0, Math.PI*2); ctx.fill();
                     ctx.beginPath(); ctx.arc(p.x+p.w-6, p.y+p.h/2, 2, 0, Math.PI*2); ctx.fill();
                     ctx.strokeStyle = '#94a3b8';
@@ -763,21 +795,22 @@
                 }
             }
 
-            ctx.restore();
-
-            // Selección (Recubre todo el Bounding Box)
+            // Selección Visual (Recuadro punteado rojo)
             if (b === selectedBlock && gameState === 'EDIT') {
                 ctx.strokeStyle = '#ef4444';
                 ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.lineDashOffset = -Date.now() / 50; 
-                ctx.strokeRect(b.x - 2, b.y - 2, b.w + 4, b.h + 4); ctx.setLineDash([]);
+                ctx.strokeRect(-2, -2, b.w + 4, b.h + 4); 
+                ctx.setLineDash([]);
             }
             
             // Anclajes para Estáticos
             if (!isCreatorMode && staticBlocks.includes(b)) {
                 ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x+8, b.y); ctx.lineTo(b.x, b.y+8); ctx.fill();
-                ctx.beginPath(); ctx.moveTo(b.x+b.w, b.y); ctx.lineTo(b.x+b.w-8, b.y); ctx.lineTo(b.x+b.w, b.y+8); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(8, 0); ctx.lineTo(0, 8); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(b.w, 0); ctx.lineTo(b.w-8, 0); ctx.lineTo(b.w, 8); ctx.fill();
             }
+
+            ctx.restore();
         }
 
         function drawBall() {
