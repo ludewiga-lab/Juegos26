@@ -11,7 +11,7 @@
             --bg-cad: #cbd5e1;
             --grid-line: #e2e8f0; 
             --grid-dot: #94a3b8;
-            --grid-size: 20px;
+            --grid-size: 20px; /* Será ajustado dinámicamente por JS en móviles */
             /* Safe area fallbacks */
             --sat: env(safe-area-inset-top, 0px);
             --sab: env(safe-area-inset-bottom, 0px);
@@ -37,7 +37,7 @@
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size);
-            background-position: 10px 10px, 0 0, 0 0;
+            background-position: calc(var(--grid-size)/2) calc(var(--grid-size)/2), 0 0, 0 0;
             box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
         }
         .cad-background.playing {
@@ -128,6 +128,7 @@
     <!-- WORKSPACE / CANVAS -->
     <main class="flex-1 relative overflow-hidden">
         <div id="grid-bg" class="absolute inset-0 cad-background pointer-events-none"></div>
+        <!-- Eventos transferidos al API Pointer Native -->
         <canvas id="gameCanvas" class="absolute inset-0 z-10" style="touch-action: none;"></canvas>
 
         <!-- Menú Contextual Flotante -->
@@ -236,12 +237,16 @@
         let width, height;
         const GRID = 20; 
         
+        // Variables de Escalado Responsivo (Solución a "Se ve gigante")
+        let currentScale = 1;
+        let logicalWidth = 0;
+        let logicalHeight = 0;
+        
         let gameState = 'START'; // Estados: START, EDIT, PLAY, DONE
         let isCreatorMode = false;
         let trayOpen = true;
         let currentLevelIdx = 0;
         
-        // Variables para Delta Time
         let lastTime = 0;
         
         let ball = { x: 0, y: 0, vx: 0, vy: 0, r: 10 };
@@ -282,14 +287,13 @@
         ];
 
         // ==========================================
-        // INICIALIZACIÓN Y FLUJO (HISTORY TRAP)
+        // INICIALIZACIÓN Y FLUJO
         // ==========================================
         function initApp() {
             window.addEventListener('resize', resize);
             resize();
             setupTouchInput();
             
-            // Trampa de Historial (Prevenir salidas accidentales en Android)
             history.pushState({page: 'home'}, '', '');
             window.addEventListener('popstate', handlePopState);
             
@@ -311,11 +315,8 @@
         }
 
         function handlePopState(e) {
-            // Reinsertamos estado para evitar que el navegador vuelva atrás
             history.pushState({page: 'game'}, '', window.location.pathname);
-            if (gameState !== 'START') {
-                showExitModal();
-            }
+            if (gameState !== 'START') showExitModal();
         }
 
         function showExitModal() {
@@ -349,17 +350,32 @@
             setTimeout(() => {
                 overlay.classList.add('hidden');
                 overlay.style.display = '';
-                gameState = 'EDIT'; // Retorna al editor de forma segura
+                gameState = 'EDIT';
             }, 300);
         }
 
         function resize() {
             width = canvas.parentElement.clientWidth;
             height = canvas.parentElement.clientHeight;
+            
+            // Sistema de Auto-Escalado para que quepa en móviles sin verse gigante
+            // Aseguramos que el ancho lógico (espacio de juego) sea mínimo de 600px
+            currentScale = width < 600 ? width / 600 : 1;
+            
+            logicalWidth = width / currentScale;
+            logicalHeight = height / currentScale;
+
+            // El canvas físico usa los pixeles reales
             canvas.width = width * window.devicePixelRatio;
             canvas.height = height * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            if (goalPortal.y > height) goalPortal.y = Math.floor((height - 100)/GRID)*GRID;
+            
+            // Ajustamos el tamaño del grid CSS visual de fondo
+            document.documentElement.style.setProperty('--grid-size', (GRID * currentScale) + 'px');
+            
+            // Ajustar posición del objetivo si cae fuera del rango visual escalado
+            if (goalPortal.y > logicalHeight) goalPortal.y = Math.floor((logicalHeight - 150)/GRID)*GRID;
+            
+            updateContextMenu(); // Reposicionar menú si estaba abierto
         }
 
         function showToast(msg) {
@@ -469,8 +485,10 @@
             if (gameState !== 'EDIT') resetSim();
             const tpl = CATALOG[type];
             
-            let bx = Math.round((width/2 - tpl.w/2) / GRID) * GRID;
-            let by = Math.round((height/2 - tpl.h/2) / GRID) * GRID;
+            // Spawnear usando el tamaño del lienzo lógico para que caiga en el centro
+            let bx = Math.round((logicalWidth/2 - tpl.w/2) / GRID) * GRID;
+            // Lo ponemos un poco más arriba para que la bandeja de piezas no lo tape al nacer
+            let by = Math.round((logicalHeight/2 - tpl.h/2 - 100/currentScale) / GRID) * GRID;
 
             const newBlock = {
                 x: bx, y: by, w: tpl.w, h: tpl.h,
@@ -514,8 +532,10 @@
             const menu = document.getElementById('context-menu');
             if (selectedBlock && gameState === 'EDIT') {
                 menu.classList.remove('hidden');
-                menu.style.left = `${selectedBlock.x + selectedBlock.w / 2}px`;
-                menu.style.top = `${selectedBlock.y - 30}px`; // Elevado para dedos
+                // Posicionar menú HTML sobre el Canvas usando la escala física calculada
+                menu.style.left = `${(selectedBlock.x + selectedBlock.w / 2) * currentScale}px`;
+                // Lo alejamos más (60px) para compensar el dedo gordo en móviles
+                menu.style.top = `${selectedBlock.y * currentScale - 60}px`; 
             } else {
                 menu.classList.add('hidden');
             }
@@ -572,34 +592,25 @@
         }
 
         // ==========================================
-        // SISTEMA TÁCTIL (ANTI-OVERLAP Y ANTI-SCROLL)
+        // SISTEMA TÁCTIL MEJORADO (POINTER CAPTURE)
         // ==========================================
         function setupTouchInput() {
             
-            // Extractor Universal de Coordenadas (Ratón + Touch)
+            // Convierte coordenadas físicas a lógicas usando currentScale
             const getEventPos = (e) => {
                 const rect = canvas.getBoundingClientRect();
-                let clientX = e.clientX;
-                let clientY = e.clientY;
-                
-                if (e.touches && e.touches.length > 0) {
-                    clientX = e.touches[0].clientX;
-                    clientY = e.touches[0].clientY;
-                } else if (e.changedTouches && e.changedTouches.length > 0) {
-                    clientX = e.changedTouches[0].clientX;
-                    clientY = e.changedTouches[0].clientY;
-                }
-                
-                // Normalizar respecto al Canvas (CSS Pixels)
                 return { 
-                    x: clientX - rect.left, 
-                    y: clientY - rect.top 
+                    x: (e.clientX - rect.left) / currentScale, 
+                    y: (e.clientY - rect.top) / currentScale 
                 };
             };
 
             const handleDown = (e) => {
-                if(e.type === 'touchstart') e.preventDefault(); // Bloquear scroll nativo
                 if (gameState !== 'EDIT') return;
+                
+                // MÁGIA ANTI-BLOQUEO: Esto "captura" tu dedo. Aunque arrastres
+                // hacia la barra de UI de abajo, el Canvas seguirá leyendo el movimiento.
+                canvas.setPointerCapture(e.pointerId);
                 
                 const pos = getEventPos(e);
                 
@@ -618,11 +629,11 @@
                     
                     let dx = pos.x - cx;
                     let dy = pos.y - cy;
-                    // Rotación inversa para chequear hitbox táctil
                     let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle) + b.w/2;
                     let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle) + b.h/2;
                     
-                    let pad = 24; // Hitbox ultra permisivo para dedos (Fat Finger)
+                    // Hitbox expansivo y responsivo al scale
+                    let pad = 24 / currentScale; 
                     let hit = b.parts.some(p => 
                         localX >= p.x - pad && localX <= p.x + p.w + pad && 
                         localY >= p.y - pad && localY <= p.y + p.h + pad
@@ -648,8 +659,6 @@
 
             const handleMove = (e) => {
                 if (!draggingBlock && !draggingSpecial) return;
-                if(e.type === 'touchmove') e.preventDefault(); // Evitar Pull-To-Refresh
-                
                 const pos = getEventPos(e);
                 
                 if (draggingSpecial === 'goal') {
@@ -667,20 +676,22 @@
                 }
             };
 
-            const handleUp = () => {
+            const handleUp = (e) => {
+                if (canvas.hasPointerCapture(e.pointerId)) {
+                    canvas.releasePointerCapture(e.pointerId);
+                }
                 draggingBlock = null;
                 draggingSpecial = null;
             };
 
-            // Escuchadores Nativos combinados ({passive: false} requerido para preventDefault en iOS)
-            canvas.addEventListener('touchstart', handleDown, { passive: false });
-            window.addEventListener('touchmove', handleMove, { passive: false });
-            window.addEventListener('touchend', handleUp);
-            window.addEventListener('touchcancel', handleUp);
+            // Eventos Modernos (Unificados para Mouse y Touch robusto)
+            canvas.addEventListener('pointerdown', handleDown);
+            canvas.addEventListener('pointermove', handleMove);
+            canvas.addEventListener('pointerup', handleUp);
+            canvas.addEventListener('pointercancel', handleUp);
 
-            canvas.addEventListener('mousedown', handleDown);
-            window.addEventListener('mousemove', handleMove);
-            window.addEventListener('mouseup', handleUp);
+            // Respaldo de seguridad brutal para detener scrolls nativos de iOS (Safari)
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
         }
 
         function checkOverlap(b1) {
@@ -706,7 +717,6 @@
         function updatePhysics(dt) {
             if (gameState !== 'PLAY') return;
 
-            // Gravedad multiplicada por Delta Time
             ball.vy += 0.4 * dt; 
             
             if (Math.abs(ball.vx) > 0.1 || Math.abs(ball.vy) > 0.1) {
@@ -717,7 +727,6 @@
             ball.x += ball.vx * dt;
             ball.y += ball.vy * dt;
             
-            // Fricción adaptada al tiempo
             ball.vx *= Math.pow(0.99, dt);
             ball.vy *= Math.pow(0.99, dt);
 
@@ -755,7 +764,6 @@
                         let globalNx = col.nx * Math.cos(angle) - col.ny * Math.sin(angle);
                         let globalNy = col.nx * Math.sin(angle) + col.ny * Math.cos(angle);
 
-                        // Corrección de posición (Resolución inmediata, sin DT)
                         ball.x += globalNx * overlap;
                         ball.y += globalNy * overlap;
 
@@ -782,7 +790,8 @@
                 }
             }
 
-            if (ball.y > height + 50 || ball.x < -50 || ball.x > width + 50) {
+            // Detectar caída fuera usando las dimensiones del área LÓGICA
+            if (ball.y > logicalHeight + 50 || ball.x < -50 || ball.x > logicalWidth + 50) {
                 showMessage("¡Perdiste!", "El sujeto cayó fuera del área de prueba.", false);
             }
 
@@ -825,11 +834,16 @@
         }
 
         // ==========================================
-        // RENDER / DIBUJO
+        // RENDER / DIBUJO CON ESCALADO
         // ==========================================
         function draw() {
-            ctx.clearRect(0, 0, width, height); 
+            // Se limpia usando los pixeles reales del canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
             if(gameState === 'START') return;
+
+            ctx.save();
+            // Aplicamos la resolución del dispositivo y nuestra Escala Dinámica (zoom)
+            ctx.scale(window.devicePixelRatio * currentScale, window.devicePixelRatio * currentScale);
 
             drawTrail();
             drawPortal();
@@ -848,6 +862,8 @@
                 ctx.fillStyle = '#475569'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
                 ctx.fillText('INICIO', startPos.x, startPos.y - 25);
             }
+            
+            ctx.restore();
         }
 
         function drawBlock(b) {
@@ -921,7 +937,7 @@
             ctx.beginPath(); ctx.moveTo(trail[0].x, trail[0].y);
             for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
             ctx.lineWidth = ball.r; ctx.strokeStyle = 'rgba(251, 191, 36, 0.3)'; ctx.stroke();
-            for(let p of trail) p.life -= 0.05; // El trail no necesita DT estricto, es estético
+            for(let p of trail) p.life -= 0.05; 
             trail = trail.filter(p => p.life > 0);
             ctx.restore();
         }
@@ -953,7 +969,6 @@
         }
 
         function updateAndDrawParticles() {
-            // Estético, simplificado sin DT para rendimiento
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
                 p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.03;
@@ -964,15 +979,14 @@
             }
         }
 
-        // Bucle Principal robusto con Delta Time
         function gameLoop(time) {
             requestAnimationFrame(gameLoop);
             
             if (!lastTime) lastTime = time;
-            let dt = (time - lastTime) / 16.666; // Normalize a 60fps (~16ms)
+            let dt = (time - lastTime) / 16.666; 
             lastTime = time;
             
-            if (dt > 3) dt = 3; // Limitar lag spikes (ej. cambio de pestaña)
+            if (dt > 3) dt = 3; 
 
             updatePhysics(dt);
             draw();
