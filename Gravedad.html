@@ -2,250 +2,833 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gravity Lab Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Gravity Studio Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --accent: #00d2ff; --wood: #d2a679; --bounce: #ff4b91; --metal: #95a5a6; }
-        body { margin: 0; background: #050505; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
-        canvas { display: block; background: radial-gradient(circle, #151520 0%, #050505 100%); }
+        :root {
+            --bg-cad: #0f172a;
+            --grid-color: rgba(56, 189, 248, 0.15); /* Slate 800ish with cyan tint */
+            --grid-color-play: rgba(244, 63, 94, 0.1); /* Changes when simulating */
+        }
+        body {
+            margin: 0; padding: 0;
+            overflow: hidden;
+            background: var(--bg-cad);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+            touch-action: none; 
+            -webkit-tap-highlight-color: transparent;
+            color: white;
+        }
         
-        #ui-layer { position: absolute; top: 0; width: 100%; pointer-events: none; }
-        .header { background: rgba(0,0,0,0.8); padding: 10px; display: flex; justify-content: space-around; border-bottom: 2px solid #333; }
-        .stat { font-weight: bold; color: var(--accent); font-size: 14px; }
+        /* Cuadrícula estilo Blueprint */
+        .cad-background {
+            background-color: var(--bg-cad);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            transition: background-image 0.5s ease;
+        }
+        .cad-background.playing {
+            background-image: 
+                linear-gradient(var(--grid-color-play) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color-play) 1px, transparent 1px);
+        }
 
-        #controls { position: absolute; bottom: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 15px 0; border-top: 2px solid #444; }
-        .tool { width: 60px; height: 50px; border: 1px solid #555; background: #222; border-radius: 5px; color: white; font-size: 9px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .tool.active { border-color: var(--accent); background: #333; box-shadow: 0 0 10px rgba(0,210,255,0.2); }
-        .icon { width: 25px; height: 6px; margin-bottom: 4px; border-radius: 2px; }
-
-        .side-btns { position: absolute; right: 15px; bottom: 100px; display: flex; flex-direction: column; gap: 10px; }
-        .btn { width: 65px; height: 65px; border-radius: 50%; border: none; color: white; font-weight: bold; font-size: 11px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-        #play-btn { background: #2ecc71; }
-        #reset-btn { background: #e74c3c; }
-        #rotate-btn { background: #f39c12; display: none; }
+        /* Utilidades UI */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
         
-        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; pointer-events: none; }
-        #overlay h1 { font-size: 40px; margin: 0; color: #ff4b4b; text-shadow: 0 0 20px rgba(0,0,0,1); }
+        /* Ocultar scrollbar */
+        ::-webkit-scrollbar { display: none; }
+
+        .block-btn {
+            transition: transform 0.1s;
+        }
+        .block-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Animaciones para paneles */
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen w-screen" onload="initApp()">
 
-<div id="ui-layer">
-    <div class="header">
-        <span class="stat" id="lvl-txt">NIVEL 1</span>
-        <span class="stat" id="inv-txt">PIEZAS: 0/3</span>
+    <!-- TOP HEADER (Estilo CAD) -->
+    <header class="h-14 glass-panel border-b border-slate-700 flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center gap-2">
+            <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            <div>
+                <h1 class="font-bold text-sm tracking-wide text-slate-100">GRAVITY STUDIO</h1>
+                <p class="text-[10px] text-cyan-400 uppercase tracking-widest font-mono" id="level-indicator">Nivel 1</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="resetLevel()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- WORKSPACE / CANVAS -->
+    <main class="flex-1 relative overflow-hidden">
+        <div id="grid-bg" class="absolute inset-0 cad-background"></div>
+        <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
+
+        <!-- Botón flotante eliminar pieza seleccionada -->
+        <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-4">
+            <button onclick="deleteSelected()" class="bg-red-500/90 backdrop-blur text-white p-2 rounded-full shadow-lg hover:bg-red-600 border border-red-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        </div>
+        
+        <!-- FAB PRINCIPAL: PLAY / STOP -->
+        <button id="btn-play" onclick="togglePlay()" class="absolute bottom-32 right-6 z-30 w-16 h-16 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] flex items-center justify-center text-white border-2 border-cyan-300/50 hover:scale-105 transition-transform">
+            <svg id="icon-play" class="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="icon-stop" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+        </button>
+    </main>
+
+    <!-- BOTTOM TRAY (Estilo Lego) -->
+    <footer id="tray" class="absolute bottom-0 w-full glass-panel rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-40 pb-6 transition-transform duration-300">
+        <div class="w-12 h-1.5 bg-slate-600 rounded-full mx-auto my-3" id="tray-handle"></div>
+        
+        <div class="px-6 mb-2 flex justify-between items-center">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Módulos de Física</h3>
+            <span class="text-xs text-cyan-500 font-mono" id="budget-info">Disponibles</span>
+        </div>
+
+        <div class="flex gap-4 px-6 overflow-x-auto pb-2">
+            <!-- Item: Madera -->
+            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('wood')">
+                <div class="w-16 h-16 rounded-xl bg-slate-800 border-2 border-amber-700/50 flex items-center justify-center shadow-inner relative overflow-hidden group">
+                    <!-- Icono Visual -->
+                    <div class="w-10 h-4 bg-gradient-to-r from-amber-800 to-amber-600 rounded-sm"></div>
+                    <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                <span class="text-[10px] text-slate-300 font-medium">Madera</span>
+            </div>
+
+            <!-- Item: Rebote -->
+            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('bounce')">
+                <div class="w-16 h-16 rounded-xl bg-slate-800 border-2 border-pink-500/50 flex items-center justify-center shadow-inner relative overflow-hidden group">
+                    <div class="w-10 h-4 bg-slate-900 rounded-sm border border-pink-500 flex items-center justify-center">
+                        <div class="w-8 h-1 bg-pink-500 rounded-full shadow-[0_0_8px_#ec4899]"></div>
+                    </div>
+                </div>
+                <span class="text-[10px] text-slate-300 font-medium">Rebote</span>
+            </div>
+
+            <!-- Item: Metal -->
+            <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('metal')">
+                <div class="w-16 h-16 rounded-xl bg-slate-800 border-2 border-slate-500 flex items-center justify-center shadow-inner relative overflow-hidden group">
+                    <div class="w-10 h-4 bg-gradient-to-b from-slate-300 to-slate-500 rounded-sm flex justify-between px-1 items-center">
+                        <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
+                        <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
+                    </div>
+                </div>
+                <span class="text-[10px] text-slate-300 font-medium">Metal</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- OVERLAYS (Win/Lose) -->
+    <div id="overlay-msg" class="absolute inset-0 z-50 hidden items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+        <div class="bg-slate-800 border border-slate-600 p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-4 transform scale-95 opacity-0 transition-all duration-300" id="overlay-box">
+            <h2 id="msg-title" class="text-3xl font-bold mb-2 text-white">¡Nivel Completado!</h2>
+            <p id="msg-desc" class="text-slate-400 mb-6">Secuencia de simulación exitosa.</p>
+            <button id="msg-btn" onclick="nextLevel()" class="w-full py-3 rounded-xl bg-cyan-600 text-white font-bold tracking-wide hover:bg-cyan-500">Siguiente Nivel</button>
+        </div>
     </div>
-</div>
 
-<div id="overlay"><h1>FALLO</h1><p>Reset para editar</p></div>
+    <script>
+        // ==========================================
+        // CONFIGURACIÓN Y ESTADO
+        // ==========================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        let width, height;
+        let gameState = 'EDIT'; // EDIT, PLAY, DONE
+        let currentLevelIdx = 0;
+        
+        // Elementos Físicos
+        let ball = { x: 0, y: 0, vx: 0, vy: 0, r: 12 };
+        let startPos = { x: 0, y: 0 };
+        let goalPortal = { x: 0, y: 0, r: 25 };
+        
+        // Entornos y Objetos
+        let staticBlocks = []; // Propios del nivel (inmóviles, no borrables)
+        let userBlocks = [];   // Puestos por el usuario
+        
+        // Interacción UI
+        let selectedBlock = null;
+        let draggingBlock = null;
+        let dragOffset = { x: 0, y: 0 };
+        
+        // Efectos Visuales
+        let particles = [];
+        let trail = [];
 
-<div class="side-btns">
-    <button id="rotate-btn" class="btn">GIRAR</button>
-    <button id="reset-btn" class="btn">LIMPIAR</button>
-    <button id="play-btn" class="btn">START</button>
-</div>
+        // Definición de Materiales
+        const MATERIALS = {
+            wood: { w: 100, h: 20, bounce: 0.4, color: '#b45309', type: 'wood' },
+            bounce: { w: 80, h: 20, bounce: 1.2, color: '#ec4899', type: 'bounce' },
+            metal: { w: 60, h: 20, bounce: 0.1, color: '#94a3b8', type: 'metal' }
+        };
 
-<div id="controls">
-    <div class="tool active" onclick="setTool('wood', this)"><div class="icon" style="background:var(--wood)"></div>MADERA</div>
-    <div class="tool" onclick="setTool('bounce', this)"><div class="icon" style="background:var(--bounce)"></div>GOMA</div>
-    <div class="tool" onclick="setTool('metal', this)"><div class="icon" style="background:var(--metal)"></div>METAL</div>
-</div>
+        // Niveles
+        const levels = [
+            {
+                name: "Caída Libre",
+                start: { x: 150, y: 100 },
+                goal: { x: 150, y: 600 },
+                static: [],
+                inventory: { wood: 99, bounce: 99, metal: 99 }
+            },
+            {
+                name: "Rebote Preciso",
+                start: { x: 50, y: 100 },
+                goal: { x: 300, y: 200 },
+                static: [
+                    { x: 150, y: 350, w: 200, h: 20, type: 'metal' }
+                ],
+                inventory: { wood: 99, bounce: 99, metal: 99 }
+            },
+            {
+                name: "El Cañón",
+                start: { x: 50, y: 50 },
+                goal: { x: 300, y: 550 },
+                static: [
+                    { x: 0, y: 250, w: 250, h: 20, type: 'wood' },
+                    { x: 150, y: 400, w: 300, h: 20, type: 'wood' }
+                ],
+                inventory: { wood: 99, bounce: 99, metal: 99 }
+            }
+        ];
 
-<canvas id="gameCanvas"></canvas>
-
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-// Niveles con OBSTÁCULOS FIJOS (Gris Oscuro)
-const levels = [
-    {
-        name: "Nivel 1: El Desvío", limit: 2,
-        ball: {x: 50, y: 80}, goal: {x: 250, y: 550, w: 80},
-        obs: [{x: 0, y: 300, w: 200, h: 20}] // Obstáculo que bloquea caída directa
-    },
-    {
-        name: "Nivel 2: Laberinto", limit: 3,
-        ball: {x: 50, y: 50}, goal: {x: 50, y: 550, w: 80},
-        obs: [
-            {x: 150, y: 0, w: 20, h: 400}, // Muro vertical
-            {x: 150, y: 400, w: 200, h: 20} // Muro horizontal
-        ]
-    },
-    {
-        name: "Nivel 3: Precisión", limit: 4,
-        ball: {x: 300, y: 50}, goal: {x: 300, y: 550, w: 60},
-        obs: [
-            {x: 100, y: 200, w: 300, h: 20},
-            {x: 0, y: 400, w: 250, h: 20}
-        ]
-    }
-];
-
-let curIdx = 0;
-let gameState = 'EDIT'; // EDIT, RUNNING, FAIL
-let tool = 'wood';
-let userParts = [];
-let activePart = null;
-let ball = { x: 0, y: 0, vx: 2, vy: 0, r: 10 };
-
-const PHYSICS = { wood: 0.7, bounce: 1.5, metal: 0.1 };
-
-function setTool(t, el) {
-    tool = t;
-    document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-}
-
-document.getElementById('reset-btn').onclick = () => {
-    userParts = [];
-    activePart = null;
-    gameState = 'EDIT';
-    resetBall();
-    updateUI();
-};
-
-document.getElementById('play-btn').onclick = () => {
-    if (gameState === 'EDIT') {
-        gameState = 'RUNNING';
-        document.getElementById('play-btn').innerText = 'RESET';
-    } else {
-        gameState = 'EDIT';
-        document.getElementById('play-btn').innerText = 'START';
-        resetBall();
-    }
-};
-
-document.getElementById('rotate-btn').ontouchstart = (e) => {
-    e.preventDefault();
-    if(activePart) activePart.angle += Math.PI / 8;
-};
-
-canvas.ontouchstart = (e) => {
-    if (gameState !== 'EDIT') return;
-    const t = e.touches[0];
-    const l = levels[curIdx];
-
-    let found = userParts.find(p => Math.hypot(p.x - t.clientX, p.y - t.clientY) < 40);
-    if (found) {
-        activePart = found;
-    } else if (userParts.length < l.limit) {
-        activePart = { x: t.clientX, y: t.clientY, w: 80, h: 15, angle: 0, type: tool };
-        userParts.push(activePart);
-    }
-    document.getElementById('rotate-btn').style.display = activePart ? 'block' : 'none';
-    updateUI();
-};
-
-canvas.ontouchmove = (e) => {
-    if (gameState === 'EDIT' && activePart) {
-        activePart.x = e.touches[0].clientX;
-        activePart.y = e.touches[0].clientY;
-    }
-};
-
-function resetBall() {
-    const l = levels[curIdx];
-    ball.x = l.ball.x;
-    ball.y = l.ball.y;
-    ball.vx = 2.5;
-    ball.vy = 0;
-    document.getElementById('overlay').style.display = 'none';
-}
-
-function updateUI() {
-    const l = levels[curIdx];
-    document.getElementById('lvl-txt').innerText = l.name.toUpperCase();
-    document.getElementById('inv-txt').innerText = `PIEZAS: ${userParts.length}/${l.limit}`;
-}
-
-function checkCollision(p, isStatic = false) {
-    let dx = ball.x - p.x;
-    let dy = ball.y - p.y;
-    let cos = Math.cos(-(p.angle || 0));
-    let sin = Math.sin(-(p.angle || 0));
-    let lx = dx * cos - dy * sin;
-    let ly = dx * sin + dy * cos;
-
-    if (lx > -p.w/2 && lx < p.w/2 && Math.abs(ly) < ball.r + p.h/2) {
-        let b = isStatic ? 0.5 : PHYSICS[p.type];
-        let vLx = ball.vx * cos - ball.vy * sin;
-        let vLy = (ball.vx * sin + ball.vy * cos) * -b;
-        ball.vx = vLx * Math.cos(p.angle || 0) - vLy * Math.sin(p.angle || 0);
-        ball.vy = vLx * Math.sin(p.angle || 0) + vLy * Math.cos(p.angle || 0);
-        ball.y -= 5; // Separación para evitar doble colisión
-        return true;
-    }
-    return false;
-}
-
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const l = levels[curIdx];
-
-    // Meta (Cesta)
-    ctx.fillStyle = '#2ecc71';
-    ctx.fillRect(l.goal.x, l.goal.y, l.goal.w, 15);
-
-    // Obstáculos fijos (No se mueven, bloquean el paso)
-    ctx.fillStyle = '#444';
-    l.obs.forEach(o => {
-        ctx.fillRect(o.x, o.y, o.w, o.h);
-        if (gameState === 'RUNNING') checkCollision({...o, x: o.x + o.w/2, y: o.y + o.h/2}, true);
-    });
-
-    // Piezas del jugador
-    userParts.forEach(p => {
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle);
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--' + p.type);
-        if (p === activePart && gameState === 'EDIT') {
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(-p.w/2, -p.h/2, p.w, p.h);
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        function initApp() {
+            window.addEventListener('resize', resize);
+            resize();
+            setupInput();
+            loadLevel(0);
+            requestAnimationFrame(gameLoop);
         }
-        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-        ctx.restore();
-        if (gameState === 'RUNNING') checkCollision(p);
-    });
 
-    if (gameState === 'RUNNING') {
-        ball.vy += 0.25;
-        ball.x += ball.vx;
-        ball.y += ball.vy;
+        function resize() {
+            width = canvas.parentElement.clientWidth;
+            height = canvas.parentElement.clientHeight;
+            // Soporte para pantallas Retina
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            // Si el nivel está cargado, reposicionar portal si estaba fuera de pantalla (Responsive simple)
+            if (goalPortal.y > height) goalPortal.y = height - 100;
+        }
 
-        // Victoria
-        if (ball.x > l.goal.x && ball.x < l.goal.x + l.goal.w && Math.abs(ball.y - l.goal.y) < 20) {
-            alert("SISTEMA OPTIMIZADO: ¡Nivel superado!");
-            curIdx = (curIdx + 1) % levels.length;
-            userParts = [];
+        function loadLevel(idx) {
+            currentLevelIdx = idx;
+            let lvl = levels[idx];
+            
+            document.getElementById('level-indicator').innerText = `Nivel ${idx + 1}: ${lvl.name}`;
+            
+            // Setup Entorno
+            startPos = { x: lvl.start.x, y: lvl.start.y };
+            goalPortal = { x: lvl.goal.x, y: lvl.goal.y, r: 35 };
+            staticBlocks = lvl.static.map(b => ({...b}));
+            userBlocks = [];
+            selectedBlock = null;
+            
+            resetSim();
+        }
+
+        function resetSim() {
             gameState = 'EDIT';
-            resetBall();
-            updateUI();
+            ball.x = startPos.x;
+            ball.y = startPos.y;
+            ball.vx = 0;
+            ball.vy = 0;
+            trail = [];
+            particles = [];
+            
+            // UI Updates
+            document.getElementById('grid-bg').classList.remove('playing');
+            document.getElementById('icon-play').classList.remove('hidden');
+            document.getElementById('icon-stop').classList.add('hidden');
+            updateContextMenu();
         }
 
-        // FALLO: La bola se detiene si sale de la pantalla
-        if (ball.y > canvas.height || ball.x > canvas.width || ball.x < 0) {
-            gameState = 'FAIL';
-            document.getElementById('overlay').style.display = 'block';
+        // ==========================================
+        // UI & INTERACCIÓN
+        // ==========================================
+        function togglePlay() {
+            if (gameState === 'EDIT') {
+                gameState = 'PLAY';
+                selectedBlock = null;
+                updateContextMenu();
+                document.getElementById('grid-bg').classList.add('playing');
+                document.getElementById('icon-play').classList.add('hidden');
+                document.getElementById('icon-stop').classList.remove('hidden');
+                spawnParticles(startPos.x, startPos.y, '#facc15', 20); // Chispa de inicio
+            } else {
+                resetSim();
+            }
         }
-    }
 
-    // Bola
-    ctx.fillStyle = '#ff0';
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
-    ctx.fill();
+        function spawnBlock(type) {
+            if (gameState !== 'EDIT') resetSim();
+            const template = MATERIALS[type];
+            // Aparece en el centro de la pantalla
+            const newBlock = {
+                x: width / 2 - template.w / 2,
+                y: height / 2 - template.h / 2,
+                w: template.w,
+                h: template.h,
+                bounce: template.bounce,
+                color: template.color,
+                type: type,
+                id: Date.now()
+            };
+            userBlocks.push(newBlock);
+            selectedBlock = newBlock;
+            updateContextMenu();
+            
+            // Pequeña animación visual
+            spawnParticles(newBlock.x + newBlock.w/2, newBlock.y + newBlock.h/2, '#ffffff', 10);
+        }
 
-    requestAnimationFrame(loop);
-}
+        function deleteSelected() {
+            if (selectedBlock) {
+                userBlocks = userBlocks.filter(b => b.id !== selectedBlock.id);
+                spawnParticles(selectedBlock.x + selectedBlock.w/2, selectedBlock.y + selectedBlock.h/2, '#ef4444', 15);
+                selectedBlock = null;
+                updateContextMenu();
+            }
+        }
 
-resetBall();
-updateUI();
-loop();
-</script>
+        function updateContextMenu() {
+            const menu = document.getElementById('context-menu');
+            if (selectedBlock && gameState === 'EDIT') {
+                menu.classList.remove('hidden');
+                // Posicionar encima del bloque
+                menu.style.left = `${selectedBlock.x + selectedBlock.w / 2}px`;
+                menu.style.top = `${selectedBlock.y - 10}px`;
+            } else {
+                menu.classList.add('hidden');
+            }
+        }
+
+        function showMessage(title, desc, isWin) {
+            gameState = 'DONE';
+            const overlay = document.getElementById('overlay-msg');
+            const box = document.getElementById('overlay-box');
+            
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-title').className = `text-3xl font-bold mb-2 ${isWin ? 'text-cyan-400' : 'text-rose-500'}`;
+            document.getElementById('msg-desc').innerText = desc;
+            
+            const btn = document.getElementById('msg-btn');
+            if (isWin) {
+                btn.innerText = "Siguiente Nivel";
+                btn.className = "w-full py-3 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-500";
+                btn.onclick = nextLevel;
+            } else {
+                btn.innerText = "Reintentar";
+                btn.className = "w-full py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-500";
+                btn.onclick = hideMessage;
+            }
+            
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function hideMessage() {
+            const overlay = document.getElementById('overlay-msg');
+            const box = document.getElementById('overlay-box');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.style.display = '';
+                resetSim();
+            }, 300);
+        }
+
+        function nextLevel() {
+            hideMessage();
+            if (currentLevelIdx < levels.length - 1) {
+                loadLevel(currentLevelIdx + 1);
+            } else {
+                alert("¡Has completado todos los niveles de Gravity Studio!");
+                loadLevel(0);
+            }
+        }
+
+        function resetLevel() {
+            loadLevel(currentLevelIdx);
+        }
+
+        // ==========================================
+        // INPUTS (Touch & Mouse)
+        // ==========================================
+        function setupInput() {
+            const getPos = (e) => {
+                if (e.touches) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                return { x: e.clientX, y: e.clientY };
+            };
+
+            const down = (e) => {
+                if (gameState !== 'EDIT') return;
+                const pos = getPos(e);
+                
+                // Buscar colisión con bloques de usuario
+                // Recorrer en reversa para agarrar el de más arriba
+                for (let i = userBlocks.length - 1; i >= 0; i--) {
+                    let b = userBlocks[i];
+                    // Área extendida de toque para móvil
+                    let pad = 10; 
+                    if (pos.x >= b.x - pad && pos.x <= b.x + b.w + pad &&
+                        pos.y >= b.y - pad && pos.y <= b.y + b.h + pad) {
+                        
+                        selectedBlock = b;
+                        draggingBlock = b;
+                        dragOffset.x = pos.x - b.x;
+                        dragOffset.y = pos.y - b.y;
+                        
+                        // Traer al frente
+                        userBlocks.splice(i, 1);
+                        userBlocks.push(b);
+                        
+                        updateContextMenu();
+                        return;
+                    }
+                }
+                selectedBlock = null;
+                updateContextMenu();
+            };
+
+            const move = (e) => {
+                if (draggingBlock) {
+                    const pos = getPos(e);
+                    draggingBlock.x = pos.x - dragOffset.x;
+                    draggingBlock.y = pos.y - dragOffset.y;
+                    updateContextMenu();
+                }
+            };
+
+            const up = () => {
+                draggingBlock = null;
+            };
+
+            canvas.addEventListener('mousedown', down);
+            canvas.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', up);
+
+            canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); down(e); }, {passive: false});
+            canvas.addEventListener('touchmove', (e)=>{ e.preventDefault(); move(e); }, {passive: false});
+            window.addEventListener('touchend', up);
+        }
+
+
+        // ==========================================
+        // FÍSICAS Y SIMULACIÓN
+        // ==========================================
+        function updatePhysics() {
+            if (gameState !== 'PLAY') return;
+
+            // Gravedad
+            ball.vy += 0.35;
+            
+            // Guardar posición para Trail
+            if (Math.abs(ball.vx) > 0.1 || Math.abs(ball.vy) > 0.1) {
+                trail.push({ x: ball.x, y: ball.y, life: 1.0 });
+                if (trail.length > 20) trail.shift();
+            }
+
+            // Mover
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Fricción del aire sutil
+            ball.vx *= 0.995;
+            ball.vy *= 0.995;
+
+            // Colisiones con bloques
+            const allBlocks = [...staticBlocks, ...userBlocks];
+            for (let b of allBlocks) {
+                let col = circleRectCollide(ball, b);
+                if (col.hit) {
+                    // Resolver penetración
+                    let overlap = ball.r - col.distance;
+                    let nx = col.distX / col.distance;
+                    let ny = col.distY / col.distance;
+
+                    ball.x += nx * overlap;
+                    ball.y += ny * overlap;
+
+                    // Calcular nueva velocidad (Reflexión)
+                    let dot = ball.vx * nx + ball.vy * ny;
+                    
+                    // Solo rebotar si se acerca
+                    if (dot < 0) {
+                        let bounceFactor = b.bounce || 0.5;
+                        
+                        // Límite de rebote para evitar exploits de energía infinita en la placa de rebote
+                        let speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
+                        if (b.type === 'bounce' && speed > 20) bounceFactor = 0.8;
+
+                        ball.vx = ball.vx - (1 + bounceFactor) * dot * nx;
+                        ball.vy = ball.vy - (1 + bounceFactor) * dot * ny;
+
+                        // Fricción lateral al tocar superficie
+                        let tangentX = -ny;
+                        let tangentY = nx;
+                        let tangentDot = ball.vx * tangentX + ball.vy * tangentY;
+                        ball.vx -= tangentDot * 0.1 * tangentX;
+                        ball.vy -= tangentDot * 0.1 * tangentY;
+
+                        // Efecto visual
+                        let colorHex = b.type === 'bounce' ? '#ec4899' : (b.type === 'wood' ? '#d97706' : '#cbd5e1');
+                        spawnParticles(ball.x - nx*ball.r, ball.y - ny*ball.r, colorHex, b.type==='bounce'?15:5);
+                    }
+                }
+            }
+
+            // Límites de Pantalla (Muerte por caer)
+            if (ball.y > height + 50 || ball.x < -50 || ball.x > width + 50) {
+                showMessage("Simulación Fallida", "El sujeto de prueba se ha perdido en el vacío.", false);
+            }
+
+            // Chequear Victoria (Llegar al Portal)
+            let distToGoal = Math.hypot(ball.x - goalPortal.x, ball.y - goalPortal.y);
+            if (distToGoal < goalPortal.r) {
+                // Atraer hacia el centro suavemente
+                ball.vx += (goalPortal.x - ball.x) * 0.1;
+                ball.vy += (goalPortal.y - ball.y) * 0.1;
+                ball.vx *= 0.8;
+                ball.vy *= 0.8;
+                
+                if (distToGoal < 5) {
+                    spawnParticles(goalPortal.x, goalPortal.y, '#00f0ff', 50);
+                    showMessage("¡Conexión Establecida!", "Precisión de trayectoria: 99.8%", true);
+                }
+            }
+        }
+
+        // Detección Círculo - Rectángulo
+        function circleRectCollide(circle, rect) {
+            let testX = circle.x;
+            let testY = circle.y;
+
+            if (circle.x < rect.x) testX = rect.x;
+            else if (circle.x > rect.x + rect.w) testX = rect.x + rect.w;
+
+            if (circle.y < rect.y) testY = rect.y;
+            else if (circle.y > rect.y + rect.h) testY = rect.y + rect.h;
+
+            let distX = circle.x - testX;
+            let distY = circle.y - testY;
+            let distance = Math.sqrt((distX*distX) + (distY*distY));
+
+            if (distance <= circle.r) {
+                return { hit: true, distX, distY, distance };
+            }
+            return { hit: false };
+        }
+
+        // ==========================================
+        // RENDER / DIBUJO
+        // ==========================================
+        function draw() {
+            // Limpiar fondo transparente (el CSS maneja el grid)
+            ctx.clearRect(0, 0, width, height);
+
+            // Actualizar y dibujar Trails
+            drawTrail();
+
+            // Dibujar Portal / Meta (Efecto Increíble)
+            drawPortal();
+
+            // Dibujar Bloques
+            const allBlocks = [...staticBlocks, ...userBlocks];
+            for (let b of allBlocks) {
+                drawBlock(b);
+            }
+
+            // Dibujar Bola (Sujeto de prueba)
+            drawBall();
+
+            // Partículas
+            updateAndDrawParticles();
+
+            // Emisor de inicio (si estamos en EDIT)
+            if (gameState === 'EDIT') {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(startPos.x, startPos.y, 20, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('START', startPos.x, startPos.y - 25);
+            }
+        }
+
+        function drawBlock(b) {
+            ctx.save();
+            ctx.translate(b.x, b.y);
+
+            // Sombras para dar profundidad
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
+
+            if (b.type === 'wood') {
+                // Madera: Gradiente marrón
+                let grad = ctx.createLinearGradient(0, 0, 0, b.h);
+                grad.addColorStop(0, '#d97706');
+                grad.addColorStop(1, '#92400e');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, b.w, b.h);
+                // Veta
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(0, b.h/2 - 2, b.w, 4);
+                
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0, 0, b.w, b.h);
+
+            } else if (b.type === 'bounce') {
+                // Rebote: Base oscura, centro neón
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(0, 0, b.w, b.h);
+                
+                // Línea de Neón
+                ctx.shadowColor = '#ec4899';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = '#ec4899';
+                let pad = 4;
+                ctx.fillRect(pad, pad, b.w - pad*2, b.h - pad*2);
+                
+                ctx.strokeStyle = '#be185d';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, b.w, b.h);
+
+            } else if (b.type === 'metal') {
+                // Metal: Gradiente gris industrial
+                let grad = ctx.createLinearGradient(0, 0, 0, b.h);
+                grad.addColorStop(0, '#cbd5e1');
+                grad.addColorStop(0.5, '#94a3b8');
+                grad.addColorStop(1, '#64748b');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, b.w, b.h);
+                
+                // Remaches
+                ctx.fillStyle = '#475569';
+                ctx.beginPath(); ctx.arc(6, b.h/2, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(b.w-6, b.h/2, 2, 0, Math.PI*2); ctx.fill();
+                
+                ctx.strokeStyle = '#f8fafc';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0, 0, b.w, b.h);
+            }
+
+            ctx.restore();
+
+            // Resaltado de selección
+            if (b === selectedBlock && gameState === 'EDIT') {
+                ctx.strokeStyle = '#06b6d4'; // Cyan 500
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                // Rotar línea punteada para animar
+                ctx.lineDashOffset = -Date.now() / 50; 
+                ctx.strokeRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8);
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawBall() {
+            ctx.save();
+            ctx.translate(ball.x, ball.y);
+            
+            // Core
+            ctx.shadowColor = '#facc15';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Anillo interior tecnológico
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#ca8a04';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.r * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawTrail() {
+            if (trail.length < 2) return;
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.shadowColor = '#facc15';
+            ctx.shadowBlur = 10;
+            
+            ctx.beginPath();
+            ctx.moveTo(trail[0].x, trail[0].y);
+            for (let i = 1; i < trail.length; i++) {
+                ctx.lineTo(trail[i].x, trail[i].y);
+            }
+            // Ancho basado en la simulación activa o decay
+            ctx.lineWidth = ball.r;
+            // Gradiente a lo largo del trazo es complejo en canvas 2D, usamos alpha general
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.2)'; 
+            ctx.stroke();
+
+            // Reducir opacidad (Decay)
+            for(let p of trail) p.life -= 0.05;
+            trail = trail.filter(p => p.life > 0);
+
+            ctx.restore();
+        }
+
+        function drawPortal() {
+            const time = Date.now() / 1000;
+            ctx.save();
+            ctx.translate(goalPortal.x, goalPortal.y);
+            
+            // Animación flotante suave
+            let floatY = Math.sin(time * 2) * 5;
+            ctx.translate(0, floatY);
+
+            ctx.rotate(time * 0.5); // Giro constante
+
+            // Anillo exterior holográfico
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00f0ff';
+            
+            ctx.beginPath();
+            ctx.setLineDash([15, 20]);
+            ctx.arc(0, 0, goalPortal.r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Anillo intermedio inverso
+            ctx.rotate(-time); 
+            ctx.beginPath();
+            ctx.setLineDash([5, 15]);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.arc(0, 0, goalPortal.r * 0.7, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+
+            // Núcleo pulsante
+            let pulse = 0.5 + Math.sin(time * 5) * 0.2;
+            ctx.fillStyle = `rgba(0, 240, 255, ${pulse})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, goalPortal.r * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            // Texto indicador (NO ROTA)
+            if (gameState === 'EDIT') {
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.7)';
+                ctx.font = '10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('META', goalPortal.x, goalPortal.y - goalPortal.r - 15 + Math.sin(time*2)*5);
+            }
+        }
+
+        // ==========================================
+        // SISTEMA DE PARTÍCULAS
+        // ==========================================
+        function spawnParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 4 + 1;
+                particles.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: color,
+                    life: 1.0,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1; // Gravedad partícula
+                p.life -= 0.03;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 0;
+            }
+        }
+
+
+        // ==========================================
+        // MAIN LOOP
+        // ==========================================
+        function gameLoop() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+    </script>
 </body>
 </html>
