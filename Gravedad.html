@@ -7,9 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --bg-cad: #0f172a;
-            --grid-color: rgba(56, 189, 248, 0.15); /* Slate 800ish with cyan tint */
-            --grid-color-play: rgba(244, 63, 94, 0.1); /* Changes when simulating */
+            --bg-cad: #f0f4f8; /* Fondo claro estilo Lego */
+            --grid-color: #cbd5e1; /* Líneas de la cuadrícula */
+            --grid-color-play: rgba(244, 63, 94, 0.2); /* Rojo suave al simular */
+            --grid-size: 20px;
         }
         body {
             margin: 0; padding: 0;
@@ -19,17 +20,17 @@
             user-select: none;
             touch-action: none; 
             -webkit-tap-highlight-color: transparent;
-            color: white;
+            color: #1e293b;
         }
         
-        /* Cuadrícula estilo Blueprint */
+        /* Cuadrícula de precisión 20px */
         .cad-background {
             background-color: var(--bg-cad);
             background-image: 
                 linear-gradient(var(--grid-color) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-            background-size: 40px 40px;
-            background-position: center center;
+            background-size: var(--grid-size) var(--grid-size);
+            background-position: top left;
             transition: background-image 0.5s ease;
         }
         .cad-background.playing {
@@ -38,50 +39,56 @@
                 linear-gradient(90deg, var(--grid-color-play) 1px, transparent 1px);
         }
 
-        /* Utilidades UI */
+        /* Utilidades UI Light Mode */
         .glass-panel {
-            background: rgba(30, 41, 59, 0.85);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .glass-tray {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+            border-top: 1px solid #e2e8f0;
         }
         
-        /* Ocultar scrollbar */
         ::-webkit-scrollbar { display: none; }
 
-        .block-btn {
-            transition: transform 0.1s;
-        }
-        .block-btn:active {
-            transform: scale(0.95);
-        }
+        .block-btn { transition: transform 0.1s; }
+        .block-btn:active { transform: scale(0.95); }
         
-        /* Animaciones para paneles */
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
+        /* Tray Animation */
+        #tray {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .tray-closed {
+            transform: translateY(calc(100% - 24px));
         }
     </style>
 </head>
 <body class="flex flex-col h-screen w-screen" onload="initApp()">
 
-    <!-- TOP HEADER (Estilo CAD) -->
-    <header class="h-14 glass-panel border-b border-slate-700 flex items-center justify-between px-4 z-20 shrink-0">
+    <!-- TOP HEADER -->
+    <header class="h-14 glass-panel flex items-center justify-between px-4 z-20 shrink-0 relative">
         <div class="flex items-center gap-2">
-            <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
             <div>
-                <h1 class="font-bold text-sm tracking-wide text-slate-100">GRAVITY STUDIO</h1>
-                <p class="text-[10px] text-cyan-400 uppercase tracking-widest font-mono" id="level-indicator">Nivel 1</p>
+                <h1 class="font-bold text-sm tracking-wide text-slate-800" id="main-title">GRAVITY STUDIO</h1>
+                <p class="text-[10px] text-blue-600 uppercase tracking-widest font-mono font-bold" id="level-indicator">Nivel 1</p>
             </div>
         </div>
         
-        <div class="flex items-center gap-3">
-            <button onclick="resetLevel()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <div class="flex items-center gap-2">
+            <!-- Botón Modo Creador -->
+            <button onclick="toggleCreatorMode()" id="btn-creator" class="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors">
+                ⚙️ CREADOR
+            </button>
+            <!-- Botón Reset -->
+            <button onclick="resetLevel()" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             </button>
         </div>
     </header>
@@ -91,70 +98,80 @@
         <div id="grid-bg" class="absolute inset-0 cad-background"></div>
         <canvas id="gameCanvas" class="absolute inset-0 z-10 touch-none"></canvas>
 
-        <!-- Botón flotante eliminar pieza seleccionada -->
-        <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-4">
-            <button onclick="deleteSelected()" class="bg-red-500/90 backdrop-blur text-white p-2 rounded-full shadow-lg hover:bg-red-600 border border-red-400">
+        <!-- Botón flotante eliminar pieza -->
+        <div id="context-menu" class="hidden absolute z-30 transform -translate-x-1/2 -translate-y-full pb-3">
+            <button onclick="deleteSelected()" class="bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 border border-red-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
         </div>
         
-        <!-- FAB PRINCIPAL: PLAY / STOP -->
-        <button id="btn-play" onclick="togglePlay()" class="absolute bottom-32 right-6 z-30 w-16 h-16 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] flex items-center justify-center text-white border-2 border-cyan-300/50 hover:scale-105 transition-transform">
+        <!-- FAB PRINCIPAL: PLAY / STOP / SAVE -->
+        <button id="btn-play" onclick="handleMainAction()" class="absolute bottom-32 right-6 z-30 w-16 h-16 rounded-full bg-blue-600 shadow-[0_5px_15px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border-2 border-white hover:scale-105 transition-transform">
+            <!-- Icono Play -->
             <svg id="icon-play" class="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <!-- Icono Stop -->
             <svg id="icon-stop" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+            <!-- Icono Save (Modo Creador) -->
+            <svg id="icon-save" class="w-8 h-8 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         </button>
     </main>
 
-    <!-- BOTTOM TRAY (Estilo Lego) -->
-    <footer id="tray" class="absolute bottom-0 w-full glass-panel rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-40 pb-6 transition-transform duration-300">
-        <div class="w-12 h-1.5 bg-slate-600 rounded-full mx-auto my-3" id="tray-handle"></div>
+    <!-- BOTTOM TRAY (Módulos) -->
+    <footer id="tray" class="absolute bottom-0 w-full glass-tray rounded-t-3xl z-40 pb-6">
+        <!-- Handle Area para colapsar/expandir -->
+        <div class="h-6 w-full flex justify-center items-center cursor-pointer" onclick="toggleTray()">
+            <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
+        </div>
         
         <div class="px-6 mb-2 flex justify-between items-center">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Módulos de Física</h3>
-            <span class="text-xs text-cyan-500 font-mono" id="budget-info">Disponibles</span>
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider" id="tray-title">Inventario de Construcción</h3>
+            <span class="text-[10px] text-blue-500 font-bold bg-blue-100 px-2 py-1 rounded-md" id="tray-status">ACTIVO</span>
         </div>
 
-        <div class="flex gap-4 px-6 overflow-x-auto pb-2">
+        <div class="flex gap-4 px-6 overflow-x-auto pb-2" id="tray-items">
             <!-- Item: Madera -->
             <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('wood')">
-                <div class="w-16 h-16 rounded-xl bg-slate-800 border-2 border-amber-700/50 flex items-center justify-center shadow-inner relative overflow-hidden group">
-                    <!-- Icono Visual -->
-                    <div class="w-10 h-4 bg-gradient-to-r from-amber-800 to-amber-600 rounded-sm"></div>
-                    <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-10 h-4 bg-amber-600 rounded-sm border border-amber-800"></div>
                 </div>
-                <span class="text-[10px] text-slate-300 font-medium">Madera</span>
+                <span class="text-[10px] text-slate-600 font-bold">Madera</span>
             </div>
 
             <!-- Item: Rebote -->
             <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('bounce')">
-                <div class="w-16 h-16 rounded-xl bg-slate-800 border-2 border-pink-500/50 flex items-center justify-center shadow-inner relative overflow-hidden group">
-                    <div class="w-10 h-4 bg-slate-900 rounded-sm border border-pink-500 flex items-center justify-center">
-                        <div class="w-8 h-1 bg-pink-500 rounded-full shadow-[0_0_8px_#ec4899]"></div>
+                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-10 h-4 bg-slate-800 rounded-sm border border-pink-500 flex items-center justify-center">
+                        <div class="w-8 h-1 bg-pink-500 rounded-full"></div>
                     </div>
                 </div>
-                <span class="text-[10px] text-slate-300 font-medium">Rebote</span>
+                <span class="text-[10px] text-slate-600 font-bold">Rebote</span>
             </div>
 
             <!-- Item: Metal -->
             <div class="block-btn flex flex-col items-center gap-2 min-w-[70px] cursor-pointer" onclick="spawnBlock('metal')">
-                <div class="w-16 h-16 rounded-xl bg-slate-800 border-2 border-slate-500 flex items-center justify-center shadow-inner relative overflow-hidden group">
-                    <div class="w-10 h-4 bg-gradient-to-b from-slate-300 to-slate-500 rounded-sm flex justify-between px-1 items-center">
+                <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shadow-inner relative overflow-hidden">
+                    <div class="w-10 h-4 bg-slate-400 rounded-sm border border-slate-500 flex justify-between px-1 items-center">
                         <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
                         <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
                     </div>
                 </div>
-                <span class="text-[10px] text-slate-300 font-medium">Metal</span>
+                <span class="text-[10px] text-slate-600 font-bold">Metal</span>
             </div>
         </div>
     </footer>
 
-    <!-- OVERLAYS (Win/Lose) -->
-    <div id="overlay-msg" class="absolute inset-0 z-50 hidden items-center justify-center bg-slate-900/80 backdrop-blur-sm">
-        <div class="bg-slate-800 border border-slate-600 p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-4 transform scale-95 opacity-0 transition-all duration-300" id="overlay-box">
-            <h2 id="msg-title" class="text-3xl font-bold mb-2 text-white">¡Nivel Completado!</h2>
-            <p id="msg-desc" class="text-slate-400 mb-6">Secuencia de simulación exitosa.</p>
-            <button id="msg-btn" onclick="nextLevel()" class="w-full py-3 rounded-xl bg-cyan-600 text-white font-bold tracking-wide hover:bg-cyan-500">Siguiente Nivel</button>
+    <!-- OVERLAYS (Win/Lose/Toast) -->
+    <div id="overlay-msg" class="absolute inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white border-2 border-slate-200 p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-4 transform scale-95 opacity-0 transition-all duration-300" id="overlay-box">
+            <h2 id="msg-title" class="text-3xl font-black mb-2 text-slate-800">¡Completado!</h2>
+            <p id="msg-desc" class="text-slate-500 mb-6 font-medium">Secuencia exitosa.</p>
+            <button id="msg-btn" onclick="nextLevel()" class="w-full py-3 rounded-xl bg-blue-600 text-white font-bold tracking-wide hover:bg-blue-700 shadow-md">Siguiente Nivel</button>
         </div>
+    </div>
+
+    <!-- Toast simple para avisos rápidos -->
+    <div id="toast" class="absolute top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-bold opacity-0 transition-opacity z-50 pointer-events-none">
+        Aviso
     </div>
 
     <script>
@@ -165,62 +182,69 @@
         const ctx = canvas.getContext('2d', { alpha: false });
         
         let width, height;
+        const GRID = 20; // Tamaño estricto de cuadrícula
+        
         let gameState = 'EDIT'; // EDIT, PLAY, DONE
+        let isCreatorMode = false;
+        let trayOpen = true;
         let currentLevelIdx = 0;
         
-        // Elementos Físicos
-        let ball = { x: 0, y: 0, vx: 0, vy: 0, r: 12 };
+        // Físicas
+        let ball = { x: 0, y: 0, vx: 0, vy: 0, r: 10 };
         let startPos = { x: 0, y: 0 };
-        let goalPortal = { x: 0, y: 0, r: 25 };
+        let goalPortal = { x: 0, y: 0, r: 30 };
         
-        // Entornos y Objetos
-        let staticBlocks = []; // Propios del nivel (inmóviles, no borrables)
-        let userBlocks = [];   // Puestos por el usuario
+        // Arrays de Bloques
+        let staticBlocks = []; // Inmóviles (del nivel o puestos por creador)
+        let userBlocks = [];   // Puestos por jugador normal
         
-        // Interacción UI
+        // Interacción
         let selectedBlock = null;
         let draggingBlock = null;
+        let draggingSpecial = null; // 'start' o 'goal' en modo creador
         let dragOffset = { x: 0, y: 0 };
         
-        // Efectos Visuales
         let particles = [];
         let trail = [];
 
-        // Definición de Materiales
+        // Definición de Materiales (Tamaños múltiplos de 20)
         const MATERIALS = {
-            wood: { w: 100, h: 20, bounce: 0.4, color: '#b45309', type: 'wood' },
+            wood: { w: 100, h: 20, bounce: 0.4, color: '#d97706', type: 'wood' },
             bounce: { w: 80, h: 20, bounce: 1.2, color: '#ec4899', type: 'bounce' },
             metal: { w: 60, h: 20, bounce: 0.1, color: '#94a3b8', type: 'metal' }
         };
 
-        // Niveles
-        const levels = [
-            {
-                name: "Caída Libre",
-                start: { x: 150, y: 100 },
-                goal: { x: 150, y: 600 },
-                static: [],
-                inventory: { wood: 99, bounce: 99, metal: 99 }
-            },
-            {
-                name: "Rebote Preciso",
-                start: { x: 50, y: 100 },
-                goal: { x: 300, y: 200 },
-                static: [
-                    { x: 150, y: 350, w: 200, h: 20, type: 'metal' }
-                ],
-                inventory: { wood: 99, bounce: 99, metal: 99 }
-            },
-            {
-                name: "El Cañón",
-                start: { x: 50, y: 50 },
-                goal: { x: 300, y: 550 },
-                static: [
-                    { x: 0, y: 250, w: 250, h: 20, type: 'wood' },
-                    { x: 150, y: 400, w: 300, h: 20, type: 'wood' }
-                ],
-                inventory: { wood: 99, bounce: 99, metal: 99 }
-            }
+        // ==========================================
+        // NIVELES (10 Niveles Progresivos)
+        // ==========================================
+        let levels = [
+            { name: "Caída Directa", start: {x:100, y:60}, goal: {x:100, y:500}, static: [] },
+            { name: "El Trampolín", start: {x:60, y:60}, goal: {x:240, y:200}, static: [{x:60, y:300, w:60, h:20, type:'metal', id:1}] },
+            { name: "Pasaje Estrecho", start: {x:180, y:60}, goal: {x:180, y:560}, static: [
+                {x:100, y:260, w:60, h:20, type:'wood', id:1}, {x:200, y:260, w:60, h:20, type:'wood', id:2}
+            ]},
+            { name: "Zig Zag", start: {x:40, y:40}, goal: {x:300, y:560}, static: [
+                {x:0, y:200, w:200, h:20, type:'metal', id:1}, {x:140, y:400, w:260, h:20, type:'metal', id:2}
+            ]},
+            { name: "Salto Largo", start: {x:40, y:100}, goal: {x:280, y:100}, static: [
+                {x:140, y:460, w:60, h:20, type:'wood', id:1}
+            ]},
+            { name: "Caída con Desvío", start: {x:160, y:40}, goal: {x:280, y:500}, static: [
+                {x:100, y:300, w:140, h:20, type:'wood', id:1}
+            ]},
+            { name: "Túnel de Viento", start: {x:60, y:40}, goal: {x:60, y:560}, static: [
+                {x:20, y:200, w:20, h:200, type:'wood', id:1}, {x:80, y:200, w:20, h:200, type:'wood', id:2}
+            ]},
+            { name: "Doble Rebote", start: {x:40, y:60}, goal: {x:320, y:60}, static: [
+                {x:140, y:300, w:80, h:20, type:'metal', id:1}
+            ]},
+            { name: "Precisión Pura", start: {x:200, y:40}, goal: {x:200, y:600}, static: [
+                {x:0, y:300, w:180, h:20, type:'metal', id:1}, {x:220, y:300, w:180, h:20, type:'metal', id:2}
+            ]},
+            { name: "El Guantelete", start: {x:40, y:40}, goal: {x:300, y:600}, static: [
+                {x:0, y:140, w:140, h:20, type:'metal', id:1}, {x:160, y:280, w:200, h:20, type:'metal', id:2},
+                {x:0, y:440, w:180, h:20, type:'metal', id:3}
+            ]}
         ];
 
         // ==========================================
@@ -237,89 +261,159 @@
         function resize() {
             width = canvas.parentElement.clientWidth;
             height = canvas.parentElement.clientHeight;
-            // Soporte para pantallas Retina
             canvas.width = width * window.devicePixelRatio;
             canvas.height = height * window.devicePixelRatio;
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            
-            // Si el nivel está cargado, reposicionar portal si estaba fuera de pantalla (Responsive simple)
-            if (goalPortal.y > height) goalPortal.y = height - 100;
+            // Asegurar que portal no quede fuera en resize
+            if (goalPortal.y > height) goalPortal.y = Math.floor((height - 100)/GRID)*GRID;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 2000);
+        }
+
+        function toggleTray() {
+            trayOpen = !trayOpen;
+            const tray = document.getElementById('tray');
+            if(trayOpen) tray.classList.remove('tray-closed');
+            else tray.classList.add('tray-closed');
         }
 
         function loadLevel(idx) {
             currentLevelIdx = idx;
             let lvl = levels[idx];
             
-            document.getElementById('level-indicator').innerText = `Nivel ${idx + 1}: ${lvl.name}`;
+            document.getElementById('level-indicator').innerText = isCreatorMode ? 'MODO CREADOR' : `Nivel ${idx + 1}`;
             
-            // Setup Entorno
             startPos = { x: lvl.start.x, y: lvl.start.y };
-            goalPortal = { x: lvl.goal.x, y: lvl.goal.y, r: 35 };
-            staticBlocks = lvl.static.map(b => ({...b}));
-            userBlocks = [];
+            goalPortal = { x: lvl.goal.x, y: lvl.goal.y, r: 30 };
+            
+            // Clonación profunda de los estáticos
+            staticBlocks = JSON.parse(JSON.stringify(lvl.static));
+            userBlocks = []; 
             selectedBlock = null;
             
             resetSim();
+            showToast(`Cargando Nivel ${idx + 1}`);
         }
 
         function resetSim() {
             gameState = 'EDIT';
+            // Snap a grid initial pos
             ball.x = startPos.x;
             ball.y = startPos.y;
-            ball.vx = 0;
-            ball.vy = 0;
-            trail = [];
-            particles = [];
+            ball.vx = 0; ball.vy = 0;
+            trail = []; particles = [];
             
-            // UI Updates
             document.getElementById('grid-bg').classList.remove('playing');
             document.getElementById('icon-play').classList.remove('hidden');
             document.getElementById('icon-stop').classList.add('hidden');
             updateContextMenu();
         }
 
+        function toggleCreatorMode() {
+            isCreatorMode = !isCreatorMode;
+            const btn = document.getElementById('btn-creator');
+            const title = document.getElementById('main-title');
+            
+            if (isCreatorMode) {
+                btn.classList.add('bg-blue-600', 'text-white');
+                btn.classList.remove('bg-slate-100', 'text-slate-600');
+                title.innerText = "CREATOR STUDIO";
+                document.getElementById('tray-title').innerText = "Bloques Estáticos";
+                document.getElementById('icon-play').classList.add('hidden');
+                document.getElementById('icon-save').classList.remove('hidden');
+                
+                // Limpiar jugador, mantener estáticos como base
+                userBlocks = [];
+                resetSim();
+                showToast("Modo Creador Activado");
+            } else {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+                title.innerText = "GRAVITY STUDIO";
+                document.getElementById('tray-title').innerText = "Inventario de Construcción";
+                document.getElementById('icon-play').classList.remove('hidden');
+                document.getElementById('icon-save').classList.add('hidden');
+                
+                loadLevel(currentLevelIdx); // Recargar original
+            }
+        }
+
         // ==========================================
         // UI & INTERACCIÓN
         // ==========================================
-        function togglePlay() {
-            if (gameState === 'EDIT') {
-                gameState = 'PLAY';
-                selectedBlock = null;
-                updateContextMenu();
-                document.getElementById('grid-bg').classList.add('playing');
-                document.getElementById('icon-play').classList.add('hidden');
-                document.getElementById('icon-stop').classList.remove('hidden');
-                spawnParticles(startPos.x, startPos.y, '#facc15', 20); // Chispa de inicio
+        function handleMainAction() {
+            if (isCreatorMode) {
+                // Guardar Nivel
+                const newLvl = {
+                    name: "Nivel de Usuario",
+                    start: {x: startPos.x, y: startPos.y},
+                    goal: {x: goalPortal.x, y: goalPortal.y},
+                    static: JSON.parse(JSON.stringify(staticBlocks))
+                };
+                levels.push(newLvl);
+                showToast("¡Nivel Guardado!");
+                toggleCreatorMode();
+                loadLevel(levels.length - 1); // Jugarlo
             } else {
-                resetSim();
+                // Toggle Play/Stop
+                if (gameState === 'EDIT') {
+                    gameState = 'PLAY';
+                    selectedBlock = null;
+                    updateContextMenu();
+                    document.getElementById('grid-bg').classList.add('playing');
+                    document.getElementById('icon-play').classList.add('hidden');
+                    document.getElementById('icon-stop').classList.remove('hidden');
+                    spawnParticles(startPos.x, startPos.y, '#f59e0b', 20); 
+                } else {
+                    resetSim();
+                }
             }
         }
 
         function spawnBlock(type) {
             if (gameState !== 'EDIT') resetSim();
             const template = MATERIALS[type];
-            // Aparece en el centro de la pantalla
+            
+            // Snap center of screen to grid
+            let bx = Math.round((width/2 - template.w/2) / GRID) * GRID;
+            let by = Math.round((height/2 - template.h/2) / GRID) * GRID;
+
             const newBlock = {
-                x: width / 2 - template.w / 2,
-                y: height / 2 - template.h / 2,
-                w: template.w,
-                h: template.h,
-                bounce: template.bounce,
-                color: template.color,
-                type: type,
-                id: Date.now()
+                x: bx, y: by, w: template.w, h: template.h,
+                bounce: template.bounce, color: template.color,
+                type: type, id: Date.now()
             };
-            userBlocks.push(newBlock);
+
+            // Evitar spawnear si hay solapamiento exacto en el centro
+            if(checkOverlap(newBlock)) {
+                showToast("Espacio ocupado");
+                return;
+            }
+
+            if (isCreatorMode) {
+                staticBlocks.push(newBlock);
+            } else {
+                userBlocks.push(newBlock);
+            }
+            
             selectedBlock = newBlock;
             updateContextMenu();
-            
-            // Pequeña animación visual
-            spawnParticles(newBlock.x + newBlock.w/2, newBlock.y + newBlock.h/2, '#ffffff', 10);
+            spawnParticles(newBlock.x + newBlock.w/2, newBlock.y + newBlock.h/2, '#94a3b8', 10);
         }
 
         function deleteSelected() {
             if (selectedBlock) {
-                userBlocks = userBlocks.filter(b => b.id !== selectedBlock.id);
+                const id = selectedBlock.id;
+                if(isCreatorMode) {
+                    staticBlocks = staticBlocks.filter(b => b.id !== id);
+                } else {
+                    userBlocks = userBlocks.filter(b => b.id !== id);
+                }
                 spawnParticles(selectedBlock.x + selectedBlock.w/2, selectedBlock.y + selectedBlock.h/2, '#ef4444', 15);
                 selectedBlock = null;
                 updateContextMenu();
@@ -330,7 +424,6 @@
             const menu = document.getElementById('context-menu');
             if (selectedBlock && gameState === 'EDIT') {
                 menu.classList.remove('hidden');
-                // Posicionar encima del bloque
                 menu.style.left = `${selectedBlock.x + selectedBlock.w / 2}px`;
                 menu.style.top = `${selectedBlock.y - 10}px`;
             } else {
@@ -338,23 +431,26 @@
             }
         }
 
+        // ==========================================
+        // SISTEMA DE OVERLAYS (Win / Lose)
+        // ==========================================
         function showMessage(title, desc, isWin) {
             gameState = 'DONE';
             const overlay = document.getElementById('overlay-msg');
             const box = document.getElementById('overlay-box');
             
             document.getElementById('msg-title').innerText = title;
-            document.getElementById('msg-title').className = `text-3xl font-bold mb-2 ${isWin ? 'text-cyan-400' : 'text-rose-500'}`;
+            document.getElementById('msg-title').className = `text-3xl font-black mb-2 ${isWin ? 'text-blue-600' : 'text-red-500'}`;
             document.getElementById('msg-desc').innerText = desc;
             
             const btn = document.getElementById('msg-btn');
             if (isWin) {
                 btn.innerText = "Siguiente Nivel";
-                btn.className = "w-full py-3 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-500";
+                btn.className = "w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700";
                 btn.onclick = nextLevel;
             } else {
                 btn.innerText = "Reintentar";
-                btn.className = "w-full py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-500";
+                btn.className = "w-full py-3 rounded-xl bg-slate-200 text-slate-800 font-bold hover:bg-slate-300";
                 btn.onclick = hideMessage;
             }
             
@@ -374,7 +470,7 @@
             setTimeout(() => {
                 overlay.classList.add('hidden');
                 overlay.style.display = '';
-                resetSim();
+                resetSim(); // Reinicia la bola, NO borra las piezas.
             }, 300);
         }
 
@@ -383,7 +479,7 @@
             if (currentLevelIdx < levels.length - 1) {
                 loadLevel(currentLevelIdx + 1);
             } else {
-                alert("¡Has completado todos los niveles de Gravity Studio!");
+                alert("¡Felicidades! Has completado todos los niveles de Gravity Studio.");
                 loadLevel(0);
             }
         }
@@ -393,13 +489,11 @@
         }
 
         // ==========================================
-        // INPUTS (Touch & Mouse)
+        // INPUTS (Snapping & Dragging)
         // ==========================================
         function setupInput() {
             const getPos = (e) => {
-                if (e.touches) {
-                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                }
+                if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
                 return { x: e.clientX, y: e.clientY };
             };
 
@@ -407,23 +501,38 @@
                 if (gameState !== 'EDIT') return;
                 const pos = getPos(e);
                 
-                // Buscar colisión con bloques de usuario
-                // Recorrer en reversa para agarrar el de más arriba
-                for (let i = userBlocks.length - 1; i >= 0; i--) {
-                    let b = userBlocks[i];
-                    // Área extendida de toque para móvil
+                // En modo creador, permitir arrastrar Inicio y Meta
+                if (isCreatorMode) {
+                    if (Math.hypot(pos.x - goalPortal.x, pos.y - goalPortal.y) < goalPortal.r + 10) {
+                        draggingSpecial = 'goal'; return;
+                    }
+                    if (Math.hypot(pos.x - startPos.x, pos.y - startPos.y) < 25) {
+                        draggingSpecial = 'start'; return;
+                    }
+                }
+
+                // Determinar qué array buscar
+                let arr = isCreatorMode ? staticBlocks : userBlocks;
+                
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    let b = arr[i];
                     let pad = 10; 
                     if (pos.x >= b.x - pad && pos.x <= b.x + b.w + pad &&
                         pos.y >= b.y - pad && pos.y <= b.y + b.h + pad) {
                         
                         selectedBlock = b;
                         draggingBlock = b;
+                        // Offset desde la esquina superior izquierda
                         dragOffset.x = pos.x - b.x;
                         dragOffset.y = pos.y - b.y;
                         
-                        // Traer al frente
-                        userBlocks.splice(i, 1);
-                        userBlocks.push(b);
+                        // Guardar posición previa para hacer "revert" si hay solapamiento
+                        b.prevX = b.x; 
+                        b.prevY = b.y;
+                        
+                        // Traer al frente visualmente
+                        arr.splice(i, 1);
+                        arr.push(b);
                         
                         updateContextMenu();
                         return;
@@ -434,16 +543,41 @@
             };
 
             const move = (e) => {
-                if (draggingBlock) {
-                    const pos = getPos(e);
-                    draggingBlock.x = pos.x - dragOffset.x;
-                    draggingBlock.y = pos.y - dragOffset.y;
+                const pos = getPos(e);
+                if (draggingSpecial === 'goal') {
+                    goalPortal.x = Math.round(pos.x / GRID) * GRID;
+                    goalPortal.y = Math.round(pos.y / GRID) * GRID;
+                } else if (draggingSpecial === 'start') {
+                    startPos.x = Math.round(pos.x / GRID) * GRID;
+                    startPos.y = Math.round(pos.y / GRID) * GRID;
+                } else if (draggingBlock) {
+                    let rawX = pos.x - dragOffset.x;
+                    let rawY = pos.y - dragOffset.y;
+                    // Strict Grid Snapping
+                    draggingBlock.x = Math.round(rawX / GRID) * GRID;
+                    draggingBlock.y = Math.round(rawY / GRID) * GRID;
                     updateContextMenu();
                 }
             };
 
             const up = () => {
+                if (draggingBlock) {
+                    // Chequear superposición al soltar (como Lego)
+                    if (checkOverlap(draggingBlock)) {
+                        // Revertir a posición anterior
+                        if (draggingBlock.prevX !== undefined) {
+                            draggingBlock.x = draggingBlock.prevX;
+                            draggingBlock.y = draggingBlock.prevY;
+                        } else {
+                            // Era nuevo y se solapó, destruirlo
+                            deleteSelected();
+                        }
+                        showToast("Piezas solapadas");
+                        updateContextMenu();
+                    }
+                }
                 draggingBlock = null;
+                draggingSpecial = null;
             };
 
             canvas.addEventListener('mousedown', down);
@@ -455,6 +589,20 @@
             window.addEventListener('touchend', up);
         }
 
+        // Lógica para detectar si un bloque se superpone con cualquier otro
+        function checkOverlap(b1) {
+            let all = [...staticBlocks, ...userBlocks];
+            // Tolerancia de 1px para permitir que se toquen (Lego snap) sin considerarse overlap
+            const shrink = 1; 
+            for (let b2 of all) {
+                if (b1.id === b2.id) continue;
+                if (b1.x + shrink < b2.x + b2.w && b1.x + b1.w - shrink > b2.x &&
+                    b1.y + shrink < b2.y + b2.h && b1.y + b1.h - shrink > b2.y) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         // ==========================================
         // FÍSICAS Y SIMULACIÓN
@@ -463,28 +611,24 @@
             if (gameState !== 'PLAY') return;
 
             // Gravedad
-            ball.vy += 0.35;
+            ball.vy += 0.4;
             
-            // Guardar posición para Trail
             if (Math.abs(ball.vx) > 0.1 || Math.abs(ball.vy) > 0.1) {
                 trail.push({ x: ball.x, y: ball.y, life: 1.0 });
                 if (trail.length > 20) trail.shift();
             }
 
-            // Mover
             ball.x += ball.vx;
             ball.y += ball.vy;
 
-            // Fricción del aire sutil
-            ball.vx *= 0.995;
-            ball.vy *= 0.995;
+            // Fricción
+            ball.vx *= 0.99;
+            ball.vy *= 0.99;
 
-            // Colisiones con bloques
             const allBlocks = [...staticBlocks, ...userBlocks];
             for (let b of allBlocks) {
                 let col = circleRectCollide(ball, b);
                 if (col.hit) {
-                    // Resolver penetración
                     let overlap = ball.r - col.distance;
                     let nx = col.distX / col.distance;
                     let ny = col.distY / col.distance;
@@ -492,73 +636,58 @@
                     ball.x += nx * overlap;
                     ball.y += ny * overlap;
 
-                    // Calcular nueva velocidad (Reflexión)
                     let dot = ball.vx * nx + ball.vy * ny;
-                    
-                    // Solo rebotar si se acerca
                     if (dot < 0) {
                         let bounceFactor = b.bounce || 0.5;
-                        
-                        // Límite de rebote para evitar exploits de energía infinita en la placa de rebote
                         let speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
                         if (b.type === 'bounce' && speed > 20) bounceFactor = 0.8;
 
                         ball.vx = ball.vx - (1 + bounceFactor) * dot * nx;
                         ball.vy = ball.vy - (1 + bounceFactor) * dot * ny;
 
-                        // Fricción lateral al tocar superficie
                         let tangentX = -ny;
                         let tangentY = nx;
                         let tangentDot = ball.vx * tangentX + ball.vy * tangentY;
                         ball.vx -= tangentDot * 0.1 * tangentX;
                         ball.vy -= tangentDot * 0.1 * tangentY;
 
-                        // Efecto visual
-                        let colorHex = b.type === 'bounce' ? '#ec4899' : (b.type === 'wood' ? '#d97706' : '#cbd5e1');
+                        let colorHex = b.type === 'bounce' ? '#ec4899' : (b.type === 'wood' ? '#d97706' : '#94a3b8');
                         spawnParticles(ball.x - nx*ball.r, ball.y - ny*ball.r, colorHex, b.type==='bounce'?15:5);
                     }
                 }
             }
 
-            // Límites de Pantalla (Muerte por caer)
+            // Fallo
             if (ball.y > height + 50 || ball.x < -50 || ball.x > width + 50) {
-                showMessage("Simulación Fallida", "El sujeto de prueba se ha perdido en el vacío.", false);
+                showMessage("Fallo Estructural", "El sujeto cayó fuera del área de prueba.", false);
             }
 
-            // Chequear Victoria (Llegar al Portal)
+            // Victoria
             let distToGoal = Math.hypot(ball.x - goalPortal.x, ball.y - goalPortal.y);
             if (distToGoal < goalPortal.r) {
-                // Atraer hacia el centro suavemente
                 ball.vx += (goalPortal.x - ball.x) * 0.1;
                 ball.vy += (goalPortal.y - ball.y) * 0.1;
                 ball.vx *= 0.8;
                 ball.vy *= 0.8;
                 
                 if (distToGoal < 5) {
-                    spawnParticles(goalPortal.x, goalPortal.y, '#00f0ff', 50);
-                    showMessage("¡Conexión Establecida!", "Precisión de trayectoria: 99.8%", true);
+                    spawnParticles(goalPortal.x, goalPortal.y, '#0ea5e9', 40); // blue-500
+                    showMessage("¡Conexión Perfecta!", "Precisión calculada exitosamente.", true);
                 }
             }
         }
 
-        // Detección Círculo - Rectángulo
         function circleRectCollide(circle, rect) {
-            let testX = circle.x;
-            let testY = circle.y;
-
+            let testX = circle.x; let testY = circle.y;
             if (circle.x < rect.x) testX = rect.x;
             else if (circle.x > rect.x + rect.w) testX = rect.x + rect.w;
-
             if (circle.y < rect.y) testY = rect.y;
             else if (circle.y > rect.y + rect.h) testY = rect.y + rect.h;
 
-            let distX = circle.x - testX;
-            let distY = circle.y - testY;
+            let distX = circle.x - testX; let distY = circle.y - testY;
             let distance = Math.sqrt((distX*distX) + (distY*distY));
 
-            if (distance <= circle.r) {
-                return { hit: true, distX, distY, distance };
-            }
+            if (distance <= circle.r) return { hit: true, distX, distY, distance };
             return { hit: false };
         }
 
@@ -566,41 +695,34 @@
         // RENDER / DIBUJO
         // ==========================================
         function draw() {
-            // Limpiar fondo transparente (el CSS maneja el grid)
-            ctx.clearRect(0, 0, width, height);
+            // Fondo claro, limpiar
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-cad');
+            ctx.fillRect(0, 0, width, height);
+            ctx.clearRect(0, 0, width, height); // Mantiene el grid CSS detrás
 
-            // Actualizar y dibujar Trails
             drawTrail();
-
-            // Dibujar Portal / Meta (Efecto Increíble)
             drawPortal();
 
-            // Dibujar Bloques
             const allBlocks = [...staticBlocks, ...userBlocks];
-            for (let b of allBlocks) {
-                drawBlock(b);
-            }
+            for (let b of allBlocks) drawBlock(b);
 
-            // Dibujar Bola (Sujeto de prueba)
             drawBall();
-
-            // Partículas
             updateAndDrawParticles();
 
-            // Emisor de inicio (si estamos en EDIT)
             if (gameState === 'EDIT') {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.setLineDash([5, 5]);
+                // Emisor
+                ctx.strokeStyle = isCreatorMode ? '#3b82f6' : 'rgba(100, 116, 139, 0.4)';
+                ctx.setLineDash([4, 4]);
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(startPos.x, startPos.y, 20, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.setLineDash([]);
                 
-                ctx.fillStyle = 'white';
+                ctx.fillStyle = '#475569';
                 ctx.font = '10px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('START', startPos.x, startPos.y - 25);
+                ctx.fillText('INICIO', startPos.x, startPos.y - 25);
             }
         }
 
@@ -608,72 +730,61 @@
             ctx.save();
             ctx.translate(b.x, b.y);
 
-            // Sombras para dar profundidad
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetY = 5;
+            // Sombra sutil para el tema claro
+            ctx.shadowColor = 'rgba(0,0,0,0.15)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetY = 3;
 
             if (b.type === 'wood') {
-                // Madera: Gradiente marrón
-                let grad = ctx.createLinearGradient(0, 0, 0, b.h);
-                grad.addColorStop(0, '#d97706');
-                grad.addColorStop(1, '#92400e');
-                ctx.fillStyle = grad;
+                ctx.fillStyle = '#f59e0b';
                 ctx.fillRect(0, 0, b.w, b.h);
-                // Veta
-                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillStyle = 'rgba(0,0,0,0.05)';
                 ctx.fillRect(0, b.h/2 - 2, b.w, 4);
-                
-                ctx.strokeStyle = '#f59e0b';
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#b45309';
+                ctx.lineWidth = 2;
                 ctx.strokeRect(0, 0, b.w, b.h);
 
             } else if (b.type === 'bounce') {
-                // Rebote: Base oscura, centro neón
-                ctx.fillStyle = '#1e293b';
+                ctx.fillStyle = '#334155';
                 ctx.fillRect(0, 0, b.w, b.h);
-                
-                // Línea de Neón
                 ctx.shadowColor = '#ec4899';
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 10;
                 ctx.fillStyle = '#ec4899';
-                let pad = 4;
-                ctx.fillRect(pad, pad, b.w - pad*2, b.h - pad*2);
-                
+                ctx.fillRect(4, 4, b.w - 8, b.h - 8);
                 ctx.strokeStyle = '#be185d';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(0, 0, b.w, b.h);
 
             } else if (b.type === 'metal') {
-                // Metal: Gradiente gris industrial
-                let grad = ctx.createLinearGradient(0, 0, 0, b.h);
-                grad.addColorStop(0, '#cbd5e1');
-                grad.addColorStop(0.5, '#94a3b8');
-                grad.addColorStop(1, '#64748b');
-                ctx.fillStyle = grad;
+                ctx.fillStyle = '#cbd5e1';
                 ctx.fillRect(0, 0, b.w, b.h);
-                
-                // Remaches
-                ctx.fillStyle = '#475569';
+                ctx.fillStyle = '#64748b';
                 ctx.beginPath(); ctx.arc(6, b.h/2, 2, 0, Math.PI*2); ctx.fill();
                 ctx.beginPath(); ctx.arc(b.w-6, b.h/2, 2, 0, Math.PI*2); ctx.fill();
-                
-                ctx.strokeStyle = '#f8fafc';
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
                 ctx.strokeRect(0, 0, b.w, b.h);
             }
 
             ctx.restore();
 
-            // Resaltado de selección
+            // Selección técnica
             if (b === selectedBlock && gameState === 'EDIT') {
-                ctx.strokeStyle = '#06b6d4'; // Cyan 500
+                ctx.strokeStyle = '#ef4444'; // Rojo para borrar
                 ctx.lineWidth = 2;
                 ctx.setLineDash([4, 4]);
-                // Rotar línea punteada para animar
                 ctx.lineDashOffset = -Date.now() / 50; 
-                ctx.strokeRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8);
+                ctx.strokeRect(b.x - 2, b.y - 2, b.w + 4, b.h + 4);
                 ctx.setLineDash([]);
+            }
+            
+            // Si es estático y no estamos en creador, dibujarle "anclajes" visuales
+            if (!isCreatorMode && staticBlocks.includes(b)) {
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.moveTo(b.x, b.y); ctx.lineTo(b.x+8, b.y); ctx.lineTo(b.x, b.y+8); ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(b.x+b.w, b.y); ctx.lineTo(b.x+b.w-8, b.y); ctx.lineTo(b.x+b.w, b.y+8); ctx.fill();
             }
         }
 
@@ -681,21 +792,15 @@
             ctx.save();
             ctx.translate(ball.x, ball.y);
             
-            // Core
-            ctx.shadowColor = '#facc15';
-            ctx.shadowBlur = 20;
-            ctx.fillStyle = '#fef08a';
-            ctx.beginPath();
-            ctx.arc(0, 0, ball.r, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.shadowColor = 'rgba(245, 158, 11, 0.4)';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath(); ctx.arc(0, 0, ball.r, 0, Math.PI * 2); ctx.fill();
 
-            // Anillo interior tecnológico
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = '#ca8a04';
+            ctx.strokeStyle = '#b45309';
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, ball.r * 0.6, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, ball.r - 2, 0, Math.PI * 2); ctx.stroke();
 
             ctx.restore();
         }
@@ -705,21 +810,14 @@
             ctx.save();
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.shadowColor = '#facc15';
-            ctx.shadowBlur = 10;
             
             ctx.beginPath();
             ctx.moveTo(trail[0].x, trail[0].y);
-            for (let i = 1; i < trail.length; i++) {
-                ctx.lineTo(trail[i].x, trail[i].y);
-            }
-            // Ancho basado en la simulación activa o decay
+            for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
             ctx.lineWidth = ball.r;
-            // Gradiente a lo largo del trazo es complejo en canvas 2D, usamos alpha general
-            ctx.strokeStyle = 'rgba(250, 204, 21, 0.2)'; 
+            ctx.strokeStyle = 'rgba(251, 191, 36, 0.3)'; 
             ctx.stroke();
 
-            // Reducir opacidad (Decay)
             for(let p of trail) p.life -= 0.05;
             trail = trail.filter(p => p.life > 0);
 
@@ -731,65 +829,51 @@
             ctx.save();
             ctx.translate(goalPortal.x, goalPortal.y);
             
-            // Animación flotante suave
-            let floatY = Math.sin(time * 2) * 5;
+            let floatY = Math.sin(time * 2) * 3;
             ctx.translate(0, floatY);
+            ctx.rotate(time * 0.5);
 
-            ctx.rotate(time * 0.5); // Giro constante
-
-            // Anillo exterior holográfico
-            ctx.strokeStyle = '#00f0ff';
+            // Colores oscurecidos para el tema claro
+            ctx.strokeStyle = '#0284c7';
             ctx.lineWidth = 3;
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#00f0ff';
             
             ctx.beginPath();
             ctx.setLineDash([15, 20]);
             ctx.arc(0, 0, goalPortal.r, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Anillo intermedio inverso
             ctx.rotate(-time); 
             ctx.beginPath();
             ctx.setLineDash([5, 15]);
-            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeStyle = '#0ea5e9';
             ctx.arc(0, 0, goalPortal.r * 0.7, 0, Math.PI * 2);
             ctx.stroke();
-            
             ctx.setLineDash([]);
 
-            // Núcleo pulsante
-            let pulse = 0.5 + Math.sin(time * 5) * 0.2;
-            ctx.fillStyle = `rgba(0, 240, 255, ${pulse})`;
+            let pulse = 0.3 + Math.sin(time * 5) * 0.2;
+            ctx.fillStyle = `rgba(14, 165, 233, ${pulse})`;
             ctx.beginPath();
             ctx.arc(0, 0, goalPortal.r * 0.4, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.restore();
 
-            // Texto indicador (NO ROTA)
             if (gameState === 'EDIT') {
-                ctx.fillStyle = 'rgba(0, 240, 255, 0.7)';
+                ctx.fillStyle = '#0369a1';
                 ctx.font = '10px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('META', goalPortal.x, goalPortal.y - goalPortal.r - 15 + Math.sin(time*2)*5);
+                ctx.fillText('META', goalPortal.x, goalPortal.y - goalPortal.r - 10 + Math.sin(time*2)*3);
             }
         }
 
-        // ==========================================
-        // SISTEMA DE PARTÍCULAS
-        // ==========================================
         function spawnParticles(x, y, color, count) {
             for (let i = 0; i < count; i++) {
                 let angle = Math.random() * Math.PI * 2;
                 let speed = Math.random() * 4 + 1;
                 particles.push({
                     x: x, y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    color: color,
-                    life: 1.0,
-                    size: Math.random() * 4 + 2
+                    vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                    color: color, life: 1.0, size: Math.random() * 3 + 2
                 });
             }
         }
@@ -797,32 +881,18 @@
         function updateAndDrawParticles() {
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.1; // Gravedad partícula
-                p.life -= 0.03;
+                p.x += p.vx; p.y += p.vy;
+                p.vy += 0.1; p.life -= 0.03;
 
-                if (p.life <= 0) {
-                    particles.splice(i, 1);
-                    continue;
-                }
+                if (p.life <= 0) { particles.splice(i, 1); continue; }
 
                 ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1.0;
-                ctx.shadowBlur = 0;
             }
         }
 
-
-        // ==========================================
-        // MAIN LOOP
-        // ==========================================
         function gameLoop() {
             updatePhysics();
             draw();
