@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¿Quién se va? - Juego de Eliminación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .pop-in {
+            animation: popIn 0.5s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .btn-tap {
+            touch-action: manipulation;
+        }
+
+        /* Estilo para items eliminados en la lista de referencia */
+        .item-eliminated {
+            opacity: 0.2;
+            text-decoration: line-through;
+            filter: grayscale(1);
+            transition: all 0.5s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-4 py-10">
+
+    <div class="max-w-md w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden p-6 text-center border-4 border-white mb-6">
+        
+        <!-- Header -->
+        <header class="mb-4">
+            <h1 class="text-3xl font-bold text-gray-800 mb-1">¿Quién se va?</h1>
+            <p class="text-gray-500 text-sm italic">¡Elige uno de la lista de abajo!</p>
+        </header>
+
+        <!-- Selección de Categoría -->
+        <div class="mb-6">
+            <select id="categorySelect" 
+                    class="w-full p-3 bg-gray-100 border-none rounded-xl text-gray-700 font-semibold focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer"
+                    onchange="resetGame()">
+                <option value="animales">🐾 Animales</option>
+                <option value="frutas">🍎 Frutas</option>
+                <option value="comida">🍔 Comida</option>
+                <option value="objetos">🎸 Objetos</option>
+                <option value="profesiones">🧑‍🚀 Profesiones</option>
+            </select>
+        </div>
+
+        <!-- Área de Display Principal -->
+        <div id="displayContainer" class="relative h-56 flex flex-col items-center justify-center bg-blue-50 rounded-3xl mb-6 border-2 border-dashed border-blue-200 overflow-hidden">
+            <div id="emojiDisplay" class="text-7xl mb-2 transition-all duration-300">🎮</div>
+            <div id="textDisplay" class="text-2xl font-bold text-blue-900 px-4 uppercase tracking-wide">¡Listos!</div>
+            
+            <div id="eliminatedTag" class="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full opacity-0 transition-opacity">
+                ELIMINADO
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="grid grid-cols-1 gap-3">
+            <button onclick="nextItem()" 
+                    class="btn-tap bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-4 rounded-2xl shadow-lg transition-all text-xl">
+                ¡Siguiente! ➔
+            </button>
+            
+            <button onclick="resetGame()" 
+                    class="btn-tap text-gray-400 hover:text-gray-600 font-semibold py-1 text-xs transition-colors">
+                🔄 Reiniciar Juego
+            </button>
+        </div>
+    </div>
+
+    <!-- Lista de Referencia (Lo que falta por elegir) -->
+    <div class="max-w-md w-full bg-white/80 backdrop-blur-sm rounded-[1.5rem] shadow-lg p-6">
+        <h3 class="text-gray-600 text-xs font-bold uppercase mb-4 flex justify-between">
+            <span>Opciones en juego</span>
+            <span id="counter" class="text-blue-600">0/0</span>
+        </h3>
+        <div id="referenceGrid" class="grid grid-cols-3 gap-2 text-[10px] text-gray-500 font-medium">
+            <!-- Los items se cargarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <script>
+        const database = {
+            animales: [
+                {n: "León", e: "🦁"}, {n: "Tigre", e: "🐯"}, {n: "Elefante", e: "🐘"}, {n: "Perro", e: "🐶"},
+                {n: "Gato", e: "🐱"}, {n: "Jirafa", e: "🦒"}, {n: "Mono", e: "🐒"}, {n: "Tiburón", e: "🦈"},
+                {n: "Águila", e: "🦅"}, {n: "Canguro", e: "🦘"}, {n: "Panda", e: "🐼"}, {n: "Lobo", e: "🐺"},
+                {n: "Oso", e: "🐻"}, {n: "Zorro", e: "🦊"}, {n: "Cebra", e: "🦓"}, {n: "Hipopótamo", e: "🦛"},
+                {n: "Cocodrilo", e: "🐊"}, {n: "Pingüino", e: "🐧"}, {n: "Loro", e: "🦜"}, {n: "Búho", e: "🦉"},
+                {n: "Caballo", e: "🐴"}, {n: "Conejo", e: "🐰"}, {n: "Cerdo", e: "🐷"}, {n: "Vaca", e: "🐮"}
+            ],
+            frutas: [
+                {n: "Manzana", e: "🍎"}, {n: "Banana", e: "🍌"}, {n: "Fresa", e: "🍓"}, {n: "Uva", e: "🍇"},
+                {n: "Piña", e: "🍍"}, {n: "Mango", e: "🥭"}, {n: "Sandía", e: "🍉"}, {n: "Kiwi", e: "🥝"},
+                {n: "Cereza", e: "🍒"}, {n: "Pera", e: "🍐"}, {n: "Durazno", e: "🍑"}, {n: "Ciruela", e: "🫐"},
+                {n: "Limón", e: "🍋"}, {n: "Naranja", e: "🍊"}, {n: "Aguacate", e: "🥑"}, {n: "Coco", e: "🥥"},
+                {n: "Melón", e: "🍈"}, {n: "Oliva", e: "🫒"}, {n: "Tomate", e: "🍅"}, {n: "Papaya", e: "🥭"}
+            ],
+            comida: [
+                {n: "Pizza", e: "🍕"}, {n: "Burger", e: "🍔"}, {n: "Tacos", e: "🌮"}, {n: "Sushi", e: "🍣"},
+                {n: "Pasta", e: "🍝"}, {n: "Ensalada", e: "🥗"}, {n: "Sopa", e: "🥣"}, {n: "Paella", e: "🥘"},
+                {n: "Hot Dog", e: "🌭"}, {n: "Lasaña", e: "🍲"}, {n: "Carne", e: "🥩"}, {n: "Ramen", e: "🍜"},
+                {n: "Queso", e: "🧀"}, {n: "Pollo", e: "🍗"}, {n: "Papas", e: "🍟"}, {n: "Sandwich", e: "🥪"},
+                {n: "Burrito", e: "🌯"}, {n: "Donut", e: "🍩"}, {n: "Helado", e: "🍦"}, {n: "Pastel", e: "🍰"},
+                {n: "Huevo", e: "🍳"}, {n: "Croissant", e: "🥐"}, {n: "Pan", e: "🍞"}, {n: "Arroz", e: "🍚"}
+            ],
+            objetos: [
+                {n: "Llave", e: "🔑"}, {n: "Reloj", e: "⌚"}, {n: "Teléfono", e: "📱"}, {n: "Libro", e: "📖"},
+                {n: "Guitarra", e: "🎸"}, {n: "Lámpara", e: "💡"}, {n: "Bici", e: "🚲"}, {n: "Cámara", e: "📷"},
+                {n: "Silla", e: "🪑"}, {n: "Martillo", e: "🔨"}, {n: "Espejo", e: "🪞"}, {n: "Mochila", e: "🎒"},
+                {n: "Gafas", e: "👓"}, {n: "Paraguas", e: "☂️"}, {n: "Maleta", e: "🧳"}, {n: "Laptop", e: "💻"},
+                {n: "Biberón", e: "🍼"}, {n: "Pelota", e: "⚽"}, {n: "Pincel", e: "🖌️"}, {n: "Tijeras", e: "✂️"},
+                {n: "Globo", e: "🎈"}, {n: "Caja", e: "📦"}, {n: "Radio", e: "📻"}, {n: "Brújula", e: "🧭"}
+            ],
+            profesiones: [
+                {n: "Astronauta", e: "🧑‍🚀"}, {n: "Bombero", e: "👨‍🚒"}, {n: "Doctor", e: "👨‍⚕️"}, {n: "Chef", e: "👨‍🍳"},
+                {n: "Policía", e: "👮"}, {n: "Piloto", e: "👨‍✈️"}, {n: "Maestro", e: "👨‍🏫"}, {n: "Pintor", e: "👨‍🎨"},
+                {n: "Científico", e: "👨‍🔬"}, {n: "Granjero", e: "👨‍🌾"}, {n: "Obrero", e: "👷"}, {n: "Músico", e: "👨‍🎤"},
+                {n: "Detective", e: "🕵️"}, {n: "Juez", e: "👨‍⚖️"}, {n: "Mago", e: "🧙"}, {n: "Ninja", e: "🥷"}
+            ]
+        };
+
+        let currentList = [];
+        let fullListCount = 0;
+
+        function resetGame() {
+            const category = document.getElementById('categorySelect').value;
+            currentList = [...database[category]];
+            fullListCount = currentList.length;
+            
+            // UI Reset
+            document.getElementById('emojiDisplay').innerText = "🎮";
+            document.getElementById('textDisplay').innerText = "¡Listos!";
+            document.getElementById('eliminatedTag').style.opacity = "0";
+            
+            buildReferenceGrid();
+            updateCounter();
+        }
+
+        function buildReferenceGrid() {
+            const grid = document.getElementById('referenceGrid');
+            grid.innerHTML = "";
+            
+            // Usamos la base de datos original para mostrar todos al inicio
+            const category = document.getElementById('categorySelect').value;
+            database[category].forEach(item => {
+                const div = document.createElement('div');
+                div.id = `ref-${item.n.replace(/\s+/g, '')}`;
+                div.className = "flex items-center gap-1 p-1 bg-white rounded-md border border-gray-100 shadow-sm";
+                div.innerHTML = `<span>${item.e}</span><span class="truncate">${item.n}</span>`;
+                grid.appendChild(div);
+            });
+        }
+
+        function nextItem() {
+            const emojiDisp = document.getElementById('emojiDisplay');
+            const textDisp = document.getElementById('textDisplay');
+            const elimTag = document.getElementById('eliminatedTag');
+
+            if (currentList.length === 0) {
+                emojiDisp.innerText = "🏁";
+                textDisp.innerText = "¡Fin del juego!";
+                elimTag.style.opacity = "0";
+                return;
+            }
+
+            textDisp.classList.remove('pop-in');
+            
+            const index = Math.floor(Math.random() * currentList.length);
+            const item = currentList.splice(index, 1)[0];
+
+            // Marcar como eliminado en la lista de abajo
+            const refItem = document.getElementById(`ref-${item.n.replace(/\s+/g, '')}`);
+            if (refItem) {
+                refItem.classList.add('item-eliminated');
+            }
+
+            setTimeout(() => {
+                emojiDisp.innerText = item.e;
+                textDisp.innerText = item.n;
+                textDisp.classList.add('pop-in');
+                elimTag.style.opacity = "1";
+                updateCounter();
+            }, 50);
+        }
+
+        function updateCounter() {
+            document.getElementById('counter').innerText = `${currentList.length} / ${fullListCount}`;
+        }
+
+        resetGame();
+    </script>
+</body>
+</html>
