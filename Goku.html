@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Choque de Energía - DBZ Edition</title>
+    <style>
+        /* Estilos base y optimización para móviles OLED */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #4A90E2; /* Azul cielo de fondo base */
+            overflow: hidden;
+            touch-action: none; /* Previene gestos del navegador (zoom, scroll) */
+            user-select: none;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Capa de Interfaz de Usuario */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px 50px;
+            border-radius: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #ffcc00;
+            text-shadow: 3px 3px 0 #cc3300, 0 0 15px #ffcc00;
+            -webkit-text-stroke: 1px black;
+        }
+
+        p {
+            font-size: 1.3rem;
+            color: #fff;
+            margin-bottom: 25px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            font-weight: bold;
+        }
+
+        button {
+            background: linear-gradient(to bottom, #ff9900, #ff5500);
+            border: 2px solid white;
+            padding: 15px 50px;
+            font-size: 1.8rem;
+            color: white;
+            border-radius: 40px;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 8px 0 #cc3300, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        button:active {
+            transform: translateY(8px);
+            box-shadow: 0 0px 0 #cc3300, 0 5px 10px rgba(0,0,0,0.4);
+        }
+
+        /* Texto gigante del conteo regresivo */
+        #countdown-text {
+            font-size: 8rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 4px 4px 0 #cc3300, 0 0 30px #ffcc00;
+            -webkit-text-stroke: 2px black;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        /* Zonas táctiles invisibles (ocupan mitad y mitad de la pantalla) */
+        .touch-zone {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+            z-index: 5;
+        }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
+
+        /* Advertencia de rotación para asegurar modo horizontal */
+        #rotate-warning {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        @media screen and (orientation: landscape) {
+            #rotate-warning { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="rotate-warning">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px;">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <path d="M12 18h.01"></path>
+            <path d="M4 12v-2a8 8 0 0 1 12.8-6.4l2.2 2.4"></path>
+            <path d="M16 6h4v-4"></path>
+        </svg>
+        Por favor, gira tu dispositivo<br>a modo horizontal para jugar.
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="left-zone" class="touch-zone hidden"></div>
+    <div id="right-zone" class="touch-zone hidden"></div>
+
+    <div id="ui-layer">
+        <div id="start-screen" class="panel">
+            <h1>DUELO DE KI</h1>
+            <p>J1 (Izquierda) vs J2 (Derecha)<br>¡Pulsa rapidísimo tu lado para ganar!</p>
+            <button id="start-btn">¡LUCHAR!</button>
+        </div>
+
+        <div id="countdown-text" class="hidden">3</div>
+
+        <div id="win-screen" class="panel hidden">
+            <h1 id="winner-text">¡GOKU GANA!</h1>
+            <p>Un poder abrumador.</p>
+            <button id="restart-btn">REVANCHA</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimización de renderizado
+        
+        // Elementos DOM
+        const startScreen = document.getElementById('start-screen');
+        const winScreen = document.getElementById('win-screen');
+        const countdownEl = document.getElementById('countdown-text');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const winnerText = document.getElementById('winner-text');
+        const leftZone = document.getElementById('left-zone');
+        const rightZone = document.getElementById('right-zone');
+
+        // Variables de entorno adaptativas
+        let width, height;
+        let lastTime = performance.now();
+        let cameraShake = 0;
+
+        // Máquina de estados
+        let gameState = 'MENU'; // MENU, COUNTDOWN, PLAYING, END
+        let countdownStart = 0;
+        
+        // Físicas del rayo
+        let balance = 50; // 50 = Centro. 100 = Gana Izq (J1). 0 = Gana Der (J2).
+        let visualBalance = 50; 
+        const PUSH_AMOUNT = 1.8; // Fuerza de cada tap
+        const NEUTRAL_DRIFT = 0.05; // El rayo tiende a estabilizarse muy levemente
+
+        // Configuración de Jugadores
+        // P1 (Goku - Naranja/Azul) | P2 (Vegeta - Azul/Blanco/Dorado)
+        const p1 = { name: "JUGADOR 1", color: "#00d2ff", core: "#ffffff", x: 0, y: 0, giLight: "#ff8800", giDark: "#cc4400", belt: "#0000ff", skin: "#ffcc99", hair: "#111" };
+        const p2 = { name: "JUGADOR 2", color: "#ff00aa", core: "#ffffff", x: 0, y: 0, giLight: "#2255ff", giDark: "#0011aa", belt: "#ffcc00", skin: "#ffcc99", hair: "#111" };
+
+        // Entidades visuales
+        let particles = [];
+        let clouds = [];
+
+        class Particle {
+            constructor(x, y, color, isExplosion = false) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.size = Math.random() * (isExplosion ? 12 : 5) + 2;
+                const speedMult = isExplosion ? 30 : 10;
+                this.speedX = (Math.random() - 0.5) * speedMult;
+                this.speedY = (Math.random() - 0.5) * speedMult;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.03 + 0.01;
+            }
+            update(dt) {
+                const ts = dt / 16.66; // Time scale ajustado para 60/120Hz
+                this.x += this.speedX * ts;
+                this.y += this.speedY * ts;
+                this.life -= this.decay * ts;
+                this.size *= 0.95;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(0.1, this.size), 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class Cloud {
+            constructor() {
+                this.reset();
+                this.x = Math.random() * width; // Posición inicial aleatoria
+            }
+            reset() {
+                this.y = Math.random() * (height * 0.4); // Nubes en el tercio superior
+                this.speed = Math.random() * 0.3 + 0.1;
+                this.size = Math.random() * 60 + 40;
+                this.x = -this.size * 2;
+                this.alpha = Math.random() * 0.6 + 0.4;
+            }
+            update(dt) {
+                this.x += this.speed * (dt / 16.66);
+                if (this.x > width + this.size * 2) this.reset();
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                ctx.arc(this.x + this.size*0.8, this.y - this.size*0.3, this.size*0.8, 0, Math.PI*2);
+                ctx.arc(this.x + this.size*1.5, this.y, this.size*0.9, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Posicionar personajes en el suelo (15% desde los bordes)
+            p1.x = width * 0.15;
+            p1.y = height * 0.75;
+            p2.x = width * 0.85;
+            p2.y = height * 0.75;
+            
+            clouds = [];
+            for(let i=0; i<8; i++) clouds.push(new Cloud());
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Control de toques (Multitouch S24 sin lag)
+        function handleTap(side) {
+            if (gameState !== 'PLAYING') return;
+            
+            if (side === 'LEFT') {
+                balance += PUSH_AMOUNT;
+                cameraShake = 4;
+            } else {
+                balance -= PUSH_AMOUNT;
+                cameraShake = 4;
+            }
+            spawnClashParticles(3);
+        }
+
+        leftZone.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap('LEFT'); });
+        rightZone.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap('RIGHT'); });
+        leftZone.addEventListener('mousedown', () => { handleTap('LEFT'); });
+        rightZone.addEventListener('mousedown', () => { handleTap('RIGHT'); });
+
+        function startCountdown() {
+            gameState = 'COUNTDOWN';
+            balance = 50;
+            visualBalance = 50;
+            particles = [];
+            startScreen.classList.add('hidden');
+            winScreen.classList.add('hidden');
+            countdownEl.classList.remove('hidden');
+            countdownStart = performance.now();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame(winner) {
+            gameState = 'END';
+            leftZone.classList.add('hidden');
+            rightZone.classList.add('hidden');
+            
+            // Forzar visualBalance para que la explosión ocurra exactamente en el personaje
+            visualBalance = winner === 'LEFT' ? 100 : 0; 
+            
+            setTimeout(() => {
+                winScreen.classList.remove('hidden');
+                if(winner === 'LEFT') {
+                    winnerText.innerText = p1.name + " GANA!";
+                    winnerText.style.color = p1.color;
+                } else {
+                    winnerText.innerText = p2.name + " GANA!";
+                    winnerText.style.color = p2.color;
+                }
+            }, 1000); // 1 segundo de retraso para disfrutar la explosión
+            
+            cameraShake = 20; // Gran temblor de impacto
+            spawnClashParticles(300, true); // Súper explosión
+        }
+
+        startBtn.addEventListener('click', startCountdown);
+        restartBtn.addEventListener('click', startCountdown);
+
+        function spawnClashParticles(count, mega = false) {
+            // Calcular posición exacta en X basándose en las manos de los personajes
+            const p1HandX = p1.x + 50; 
+            const p2HandX = p2.x - 50;
+            const clashX = p1HandX + (p2HandX - p1HandX) * (visualBalance / 100);
+            const clashY = p1.y - 35; // Altura de las manos
+            
+            for (let i = 0; i < count; i++) {
+                const color = Math.random() > 0.5 ? p1.color : p2.color;
+                particles.push(new Particle(clashX, clashY + (Math.random()-0.5)*50, color, mega));
+            }
+        }
+
+        function drawBackground(ctx, w, h) {
+            // 1. Cielo Despejado
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h*0.6);
+            skyGrad.addColorStop(0, '#3a8dff'); // Azul profundo arriba
+            skyGrad.addColorStop(1, '#87cefa'); // Celeste cerca del horizonte
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            // 2. Nubes
+            clouds.forEach(c => c.draw(ctx));
+
+            // 3. Montañas de fondo (Verde Oscuro)
+            ctx.fillStyle = '#2e7d32'; 
+            ctx.beginPath();
+            ctx.moveTo(0, h * 0.65);
+            ctx.lineTo(w * 0.2, h * 0.45);
+            ctx.lineTo(w * 0.45, h * 0.6);
+            ctx.lineTo(w * 0.7, h * 0.4);
+            ctx.lineTo(w, h * 0.65);
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.fill();
+
+            // 4. Praderas / Colinas frontales (Verde Vibrante)
+            ctx.fillStyle = '#4caf50';
+            ctx.beginPath();
+            ctx.moveTo(0, h * 0.75);
+            ctx.quadraticCurveTo(w * 0.25, h * 0.65, w * 0.5, h * 0.75);
+            ctx.quadraticCurveTo(w * 0.75, h * 0.85, w, h * 0.7);
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.fill();
+            
+            // 5. Suelo de combate (Verde claro / Tierra)
+            ctx.fillStyle = '#66bb6a';
+            ctx.fillRect(0, h * 0.85, w, h * 0.15);
+        }
+
+        // Dibuja el personaje usando un esqueleto vectorial
+        function drawCharacter(ctx, x, y, isLeft, player, isCharging) {
+            ctx.save();
+            ctx.translate(x, y);
+            const scale = isLeft ? 1 : -1;
+            ctx.scale(scale, 1);
+
+            const animPulse = Math.sin(performance.now() * 0.01) * 2; // Ligera respiración/carga
+
+            // Aura de carga (solo se dibuja si no están jugando o es el ganador)
+            if (isCharging || gameState === 'END') {
+                ctx.shadowBlur = 40;
+                ctx.shadowColor = player.color;
+                ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+                ctx.beginPath();
+                ctx.ellipse(0, -30, 40 + animPulse, 60 + animPulse, 0, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Configuraciones de línea para extremidades
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            // Pierna Trasera (Oscura para profundidad)
+            ctx.strokeStyle = player.giDark;
+            ctx.lineWidth = 14;
+            ctx.beginPath();
+            ctx.moveTo(0, -10); // Cadera
+            ctx.lineTo(-20, 15); // Rodilla atrás
+            ctx.lineTo(-30, 45); // Tobillo
+            ctx.stroke();
+
+            // Pierna Delantera (Clara)
+            ctx.strokeStyle = player.giLight;
+            ctx.beginPath();
+            ctx.moveTo(0, -10); // Cadera
+            ctx.lineTo(25, 10); // Rodilla flexionada adelante
+            ctx.lineTo(15, 45); // Tobillo
+            ctx.stroke();
+
+            // Botas
+            ctx.fillStyle = player.belt;
+            ctx.fillRect(-40, 40, 20, 10); // Bota trasera
+            ctx.fillRect(5, 40, 22, 10);  // Bota delantera
+
+            // Torso (Inclinado)
+            ctx.strokeStyle = player.giLight;
+            ctx.lineWidth = 22;
+            ctx.beginPath();
+            ctx.moveTo(0, -5);
+            ctx.lineTo(10, -40); // Hombros
+            ctx.stroke();
+
+            // Cinturón (Amarre)
+            ctx.strokeStyle = player.belt;
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            ctx.moveTo(-5, -5);
+            ctx.lineTo(15, -10);
+            ctx.stroke();
+
+            // Cabeza
+            ctx.fillStyle = player.skin;
+            ctx.beginPath();
+            ctx.arc(15, -55, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pelo puntiagudo
+            ctx.fillStyle = player.hair;
+            ctx.beginPath();
+            ctx.moveTo(5, -55); 
+            ctx.lineTo(-10, -80); 
+            ctx.lineTo(10, -68);
+            ctx.lineTo(15, -85); 
+            ctx.lineTo(22, -68); 
+            ctx.lineTo(35, -75);
+            ctx.lineTo(28, -55);
+            ctx.fill();
+
+            // Brazos
+            ctx.strokeStyle = player.skin;
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            
+            let handX, handY;
+
+            if (isCharging) {
+                // Postura de carga (Manos hacia atrás a la altura de la cadera)
+                ctx.moveTo(10, -35); // Hombro
+                ctx.lineTo(-15, -20); // Codo atrás
+                ctx.lineTo(-5, -5);   // Manos juntas
+                ctx.stroke();
+                handX = -5;
+                handY = -5;
+            } else {
+                // Postura de disparo (Manos extendidas al frente)
+                ctx.moveTo(10, -35); // Hombro
+                ctx.lineTo(30, -30); // Codo
+                ctx.lineTo(50, -35); // Manos
+                ctx.stroke();
+                
+                // Mangas rotas / Muñequeras
+                ctx.strokeStyle = player.belt;
+                ctx.lineWidth = 12;
+                ctx.beginPath();
+                ctx.moveTo(40, -35); ctx.lineTo(45, -35);
+                ctx.stroke();
+                
+                handX = 50;
+                handY = -35;
+            }
+
+            // Manos juntas y Bola de Energía
+            ctx.fillStyle = player.skin;
+            ctx.beginPath();
+            ctx.arc(handX, handY, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Esfera de energía inicial / constante en las manos
+            const energySize = isCharging ? 15 + animPulse : 25;
+            ctx.globalCompositeOperation = 'screen';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = player.color;
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(handX, handY, energySize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(handX, handY, energySize*0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+        }
+
+        function gameLoop(currentTime) {
+            const dt = currentTime - lastTime;
+            lastTime = currentTime;
+
+            // --- ESTADO: COUNTDOWN ---
+            if (gameState === 'COUNTDOWN') {
+                const elapsed = currentTime - countdownStart;
+                const secondsLeft = Math.ceil(3 - (elapsed / 1000));
+                
+                if (secondsLeft > 0) {
+                    countdownEl.innerText = secondsLeft;
+                } else if (secondsLeft === 0) {
+                    countdownEl.innerText = "¡YA!";
+                    countdownEl.style.color = "#00ff00";
+                } else {
+                    // Iniciar partida real
+                    countdownEl.classList.add('hidden');
+                    gameState = 'PLAYING';
+                    leftZone.classList.remove('hidden');
+                    rightZone.classList.remove('hidden');
+                }
+            }
+
+            // --- ESTADO: PLAYING ---
+            if (gameState === 'PLAYING') {
+                visualBalance += (balance - visualBalance) * 0.15 * (dt / 16.66);
+                
+                if (balance > 50) balance -= NEUTRAL_DRIFT * (dt / 16.66);
+                if (balance < 50) balance += NEUTRAL_DRIFT * (dt / 16.66);
+                cameraShake = Math.max(0, cameraShake - 0.5 * (dt / 16.66));
+
+                // Condición de victoria EXACTA (Toca al oponente)
+                // Si balance >= 100 -> J1 gana. Si balance <= 0 -> J2 gana.
+                if (balance >= 100) endGame('LEFT');
+                if (balance <= 0) endGame('RIGHT');
+
+                if (Math.random() < 0.6) spawnClashParticles(2);
+            } 
+            
+            // --- ESTADO: END ---
+            if (gameState === 'END') {
+                cameraShake = Math.max(0, cameraShake - 0.2 * (dt/16.66));
+            }
+
+            // Actualizar entidades
+            particles.forEach(p => p.update(dt));
+            particles = particles.filter(p => p.life > 0);
+            clouds.forEach(c => c.update(dt));
+
+            // --- RENDERIZADO ---
+            drawBackground(ctx, width, height);
+
+            ctx.save();
+            if (cameraShake > 0) {
+                const dx = (Math.random() - 0.5) * cameraShake * 2;
+                const dy = (Math.random() - 0.5) * cameraShake * 2;
+                ctx.translate(dx, dy);
+            }
+
+            const isCharging = gameState === 'MENU' || gameState === 'COUNTDOWN';
+
+            // Dibujar Personajes
+            // En PLAYING/END la mano está extendida (aprox p1.x + 50). En CARGA está retraída.
+            drawCharacter(ctx, p1.x, p1.y, true, p1, isCharging);
+            drawCharacter(ctx, p2.x, p2.y, false, p2, isCharging);
+
+            // Dibujar Rayos solo si están jugando
+            if (gameState === 'PLAYING') {
+                ctx.globalCompositeOperation = 'screen';
+
+                const p1HandX = p1.x + 50; 
+                const p2HandX = p2.x - 50;
+                const handY = p1.y - 35; // Altura coordinada de las manos
+
+                // El choque ocurre exactamente interpolado entre las dos manos
+                const clashX = p1HandX + (p2HandX - p1HandX) * (visualBalance / 100);
+                const beamThickness = 50 + (Math.sin(currentTime * 0.03) * 10);
+
+                // Rayo Izquierdo (P1)
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = p1.color;
+                const gradLeft = ctx.createLinearGradient(p1HandX, handY, clashX, handY);
+                gradLeft.addColorStop(0, p1.core);
+                gradLeft.addColorStop(0.5, p1.color);
+                gradLeft.addColorStop(1, p1.color);
+                
+                ctx.fillStyle = gradLeft;
+                ctx.beginPath();
+                ctx.moveTo(p1HandX, handY - beamThickness/3);
+                ctx.lineTo(clashX, handY - beamThickness/2);
+                ctx.lineTo(clashX, handY + beamThickness/2);
+                ctx.lineTo(p1HandX, handY + beamThickness/3);
+                ctx.fill();
+                
+                // Nucleo Blanco Rayo 1
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(p1HandX, handY - beamThickness/5, clashX - p1HandX, beamThickness/2.5);
+
+                // Rayo Derecho (P2)
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = p2.color;
+                const gradRight = ctx.createLinearGradient(clashX, handY, p2HandX, handY);
+                gradRight.addColorStop(0, p2.color);
+                gradRight.addColorStop(0.5, p2.color);
+                gradRight.addColorStop(1, p2.core);
+                
+                ctx.fillStyle = gradRight;
+                ctx.beginPath();
+                ctx.moveTo(clashX, handY - beamThickness/2);
+                ctx.lineTo(p2HandX, handY - beamThickness/3);
+                ctx.lineTo(p2HandX, handY + beamThickness/3);
+                ctx.lineTo(clashX, handY + beamThickness/2);
+                ctx.fill();
+
+                // Nucleo Blanco Rayo 2
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(clashX, handY - beamThickness/5, p2HandX - clashX, beamThickness/2.5);
+
+                // Choque central (Centro geométrico del impacto)
+                const clashRadius = 60 + Math.random() * 30;
+                ctx.shadowBlur = 50;
+                ctx.shadowColor = balance < 50 ? p2.color : p1.color; // Domina el color del que va ganando
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(clashX, handY, clashRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Anillos de energía en el choque
+                ctx.strokeStyle = balance < 50 ? p1.color : p2.color;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.ellipse(clashX, handY, clashRadius*1.5, clashRadius*2.5, 0, 0, Math.PI*2);
+                ctx.stroke();
+
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            // Partículas siempre encima
+            ctx.globalCompositeOperation = 'screen';
+            particles.forEach(p => p.draw(ctx));
+            ctx.globalCompositeOperation = 'source-over';
+
+            ctx.restore();
+
+            // Continuar loop
+            if (gameState !== 'MENU') {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Renderizado inicial para el menú
+        drawBackground(ctx, canvas.width, canvas.height);
+        drawCharacter(ctx, p1.x, p1.y, true, p1, true);
+        drawCharacter(ctx, p2.x, p2.y, false, p2, true);
+
+    </script>
+</body>
+</html>
+
+
