@@ -26,16 +26,16 @@
         /* Top UI: Barras de estado */
         .top-ui {
             position: absolute; top: 0; left: 0; width: 100%;
-            padding: 15px 15px 10px 90px; /* Margen izquierdo para no pisar botones */
+            padding: 15px 15px 10px 90px;
             box-sizing: border-box;
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
             z-index: 10; pointer-events: none;
         }
 
         .stat-card {
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            border: 2px solid rgba(255, 255, 255, 0.9); border-radius: 10px;
-            padding: 6px 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 1); border-radius: 10px;
+            padding: 6px 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -43,8 +43,8 @@
         .stat-icon { font-size: 12px; }
 
         .progress-bg {
-            width: 100%; height: 8px; background: rgba(0,0,0,0.15);
-            border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            width: 100%; height: 8px; background: rgba(0,0,0,0.2);
+            border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .progress-bar { height: 100%; border-radius: 10px; transition: width 0.3s ease, background 0.3s ease; }
@@ -68,16 +68,16 @@
         /* Left UI: Botones principales verticales */
         .left-ui {
             position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-            display: flex; flex-direction: column; gap: 12px; z-index: 10;
+            display: flex; flex-direction: column; gap: 10px; z-index: 10;
             pointer-events: none;
         }
 
         .action-btn {
             width: 60px; height: 60px;
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 1);
             border: 3px solid #fff; border-radius: 16px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            cursor: pointer; box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            cursor: pointer; box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
             pointer-events: auto; transition: transform 0.1s;
         }
 
@@ -88,9 +88,9 @@
         /* Submenús alineados a la derecha de los botones principales */
         .submenu {
             position: absolute; left: 80px; top: 50%; transform: translateY(-50%);
-            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
-            padding: 10px; border-radius: 16px; border: 2px solid #fff;
-            display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            background: rgba(255,255,255,1);
+            padding: 10px; border-radius: 16px; border: 3px solid #ddd;
+            display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
             opacity: 0; pointer-events: none; transition: all 0.2s ease-in-out;
             z-index: 20; margin-left: -20px;
         }
@@ -98,15 +98,15 @@
 
         .sub-item {
             font-size: 32px; width: 50px; height: 50px;
-            background: rgba(0,0,0,0.05); border-radius: 50%;
+            background: #f0f0f0; border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: transform 0.1s; border: 1px solid rgba(0,0,0,0.1);
+            cursor: pointer; transition: transform 0.1s; border: 2px solid #ccc;
         }
-        .sub-item:active { transform: scale(0.8); background: rgba(0,0,0,0.1); }
+        .sub-item:active { transform: scale(0.8); background: #e0e0e0; }
 
         .zone-indicator {
             position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.6); color: white; padding: 6px 24px;
+            background: rgba(0,0,0,0.8); color: white; padding: 6px 24px;
             border-radius: 20px; font-weight: bold; letter-spacing: 2px;
             font-size: 14px; text-transform: uppercase; z-index: 5;
             text-shadow: 1px 1px 2px #000; opacity: 0; transition: opacity 0.5s;
@@ -126,40 +126,32 @@
 
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(138,43,226,0.95) 0%, rgba(30,30,47,0.98) 100%);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: radial-gradient(circle, rgba(138,43,226,0.98) 0%, rgba(30,30,47,1) 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 100; text-align: center;
         }
         .overlay.hidden { display: none; }
 
         .overlay h1 { color: #fff; font-size: 32px; margin-bottom: 5px; font-weight: 900; text-shadow: 2px 2px 0 var(--secondary);}
-        .overlay p { color: #ddd; font-size: 15px; margin-bottom: 20px; padding: 0 20px; line-height: 1.4; max-width: 400px;}
+        .overlay p { color: #ddd; font-size: 15px; margin-bottom: 30px; padding: 0 20px; line-height: 1.4; max-width: 400px;}
 
-        .pet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; width: 90%; max-width: 320px; }
+        .pet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; width: 90%; max-width: 350px; }
         .pet-option {
             background: rgba(255,255,255,0.1); border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 15px; padding: 10px; cursor: pointer; transition: all 0.2s;
+            border-radius: 15px; padding: 15px; cursor: pointer; transition: all 0.2s;
             display: flex; flex-direction: column; align-items: center;
         }
-        .pet-option.selected { background: rgba(255,255,255,0.9); border-color: var(--secondary); transform: scale(1.05); }
+        .pet-option.selected { background: rgba(255,255,255,1); border-color: var(--secondary); transform: scale(1.05); }
         .pet-option.selected .pet-emoji { filter: none; }
         .pet-option.selected .pet-name { color: var(--text-dark); }
-        .pet-emoji { font-size: 40px; filter: grayscale(100%) opacity(0.7); transition: all 0.2s; }
-        .pet-name { margin-top: 5px; font-weight: 900; color: #fff; font-size: 13px; text-transform: uppercase;}
-
-        input[type="text"] {
-            padding: 12px; font-size: 16px; border-radius: 12px; border: none;
-            text-align: center; margin-bottom: 20px; width: 70%; max-width: 250px;
-            color: var(--text-dark); font-weight: bold; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            outline: none;
-        }
+        .pet-emoji { font-size: 45px; filter: grayscale(100%) opacity(0.5); transition: all 0.2s; }
+        .pet-name { margin-top: 5px; font-weight: 900; color: #fff; font-size: 14px; text-transform: uppercase;}
 
         .start-btn {
             background: linear-gradient(135deg, var(--secondary), #ff5252);
-            color: white; border: none; padding: 15px 40px; border-radius: 30px;
-            font-size: 18px; font-weight: 900; cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 10px 20px rgba(255, 0, 127, 0.4); transition: transform 0.1s;
+            color: white; border: none; padding: 18px 50px; border-radius: 30px;
+            font-size: 20px; font-weight: 900; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 10px 20px rgba(255, 0, 127, 0.5); transition: transform 0.1s;
         }
         .start-btn:active { transform: scale(0.95); }
 
@@ -188,6 +180,7 @@
             <div class="action-btn" onclick="toggleMenu('foodMenu')"><div class="btn-icon">🍔</div><div class="btn-label">Comer</div></div>
             <div class="action-btn" onclick="toggleMenu('careMenu')"><div class="btn-icon">🛁</div><div class="btn-label">Aseo</div></div>
             <div class="action-btn" onclick="toggleMenu('toyMenu')"><div class="btn-icon" id="play-icon">🎾</div><div class="btn-label" id="play-label">Jugar</div></div>
+            <div class="action-btn" onclick="toggleHat()"><div class="btn-icon">🎩</div><div class="btn-label">Gorro</div></div>
             <div class="action-btn" onclick="changeZone()"><div class="btn-icon">🗺️</div><div class="btn-label">Zona</div></div>
             <div class="action-btn" onclick="toggleSleep()"><div class="btn-icon" id="sleep-icon">🌙</div><div class="btn-label" id="sleep-label">Dormir</div></div>
         </div>
@@ -201,7 +194,6 @@
 
         <div class="submenu" id="careMenu">
             <div class="sub-item" onclick="spawnItem('sponge', '🧽'); setZone('baño');">🧽</div>
-            <div class="sub-item" onclick="spawnItem('shower', '🚿'); setZone('baño');">🚿</div>
             <div class="sub-item" onclick="spawnItem('comb', '🪮')">🪮</div>
             <div class="sub-item" onclick="spawnItem('medicine', '💊')">💊</div>
         </div>
@@ -219,14 +211,13 @@
     <!-- START SCREEN -->
     <div class="overlay" id="startScreen">
         <h1>Centro IA-Pet</h1>
-        <p>Tu mascota necesita agua, comida, baño y amor. Crecerá y se graduará en exactamente 10 minutos.</p>
+        <p>Entorno interactivo: Usa la bañera para limpiarlo, o tíralo por el tobogán del parque. Crecerá y se graduará en exactamente 10 minutos.</p>
         <div class="pet-grid">
             <div class="pet-option selected" onclick="selectPet('rabbit', this)"><div class="pet-emoji">🐰</div><div class="pet-name">Conejo</div></div>
             <div class="pet-option" onclick="selectPet('dino', this)"><div class="pet-emoji">🦖</div><div class="pet-name">Dinosaurio</div></div>
             <div class="pet-option" onclick="selectPet('lion', this)"><div class="pet-emoji">🦁</div><div class="pet-name">León</div></div>
             <div class="pet-option" onclick="selectPet('dog', this)"><div class="pet-emoji">🐶</div><div class="pet-name">Perro</div></div>
         </div>
-        <input type="text" id="petName" placeholder="Nombra a tu mascota" maxlength="12">
         <button class="start-btn" onclick="startGame()">Adoptar</button>
     </div>
 
@@ -234,7 +225,7 @@
     <div class="overlay hidden" id="goodEndScreen">
         <div class="emoji-big">🎓</div>
         <h1>¡Se graduó!</h1>
-        <p>Has criado a tu mascota excelentemente durante 10 minutos. Ahora ha crecido y se mudará a Múnich para estudiar Ingeniería de Producción. ¡Qué orgullo!</p>
+        <p>Has criado a tu mascota excelentemente durante 10 minutos. Ahora ha crecido y se mudará a Múnich para estudiar Ingeniería de Producción. ¡Qué orgullo, Alejandro!</p>
         <button class="start-btn" onclick="location.reload()">Volver a jugar</button>
     </div>
 
@@ -301,10 +292,12 @@
         let lastTime = 0;
         let isPlaying = false;
         
-        const ZONES = ['casa', 'cocina', 'baño', 'jardin', 'cuarto'];
+        const ZONES = ['casa', 'cocina', 'baño', 'jardin', 'parque', 'cuarto'];
         let currentZoneIdx = 0;
         let waterBowlX = 0;
         let waterLevel = 100; 
+        let isShowerOn = false;
+        let isHatOn = false;
 
         // ETAPAS EXACTAS (10 min = 600 seg)
         const LIFE_STAGES = [
@@ -319,11 +312,9 @@
             type: 'rabbit', name: "Mascota",
             hunger: 100, thirst: 100, happy: 100, energy: 100, clean: 100,
             isSleeping: false, isSick: false, state: 'idle', 
-            soapLevel: 0, // Nivel de jabón en el cuerpo
-            
+            soapLevel: 0, 
             x: 0, y: 0, targetX: 0,
             breath: 0, timePhase: 0, jumpY: 0,
-            
             playTime: 0, stageIdx: 0, scale: 0.8, targetScale: 0.8,
             actionTimer: 0, poopTimer: 0, inactiveTimer: 0
         };
@@ -336,10 +327,16 @@
             width = appContainer.clientWidth; height = appContainer.clientHeight;
             canvas.width = width; canvas.height = height;
             if(pet.x === 0) pet.x = width / 2;
-            pet.y = height * 0.75; 
             waterBowlX = width * 0.85; 
         }
         window.addEventListener('resize', resize);
+
+        function getFloorY() {
+            let zone = ZONES[currentZoneIdx];
+            if (zone === 'baño') return height * 0.70; // Profundidad bañera
+            if (zone === 'cuarto') return height * 0.70; // Alfombra/Cama
+            return height * 0.75;
+        }
 
         // --- SISTEMA INTERACTIVO ---
         let dragOffsetX = 0, dragOffsetY = 0;
@@ -349,12 +346,21 @@
             if(!isPlaying || isEnding) return;
             const touchX = e.touches[0].clientX; const touchY = e.touches[0].clientY;
 
-            // Despertar si duerme al tocarla
             if (pet.isSleeping) { toggleSleep(); return; }
+
+            // Interacción Ducha Fija
+            if (ZONES[currentZoneIdx] === 'baño') {
+                let showerX = width / 2; let showerY = height * 0.15;
+                if (Math.hypot(touchX - showerX, touchY - showerY) < 80) {
+                    isShowerOn = !isShowerOn;
+                    if(isShowerOn) playSound('water_pour');
+                    return;
+                }
+            }
 
             // Limpiar popó
             for (let i = poops.length - 1; i >= 0; i--) {
-                if (Math.hypot(touchX - poops[i].x, touchY - poops[i].y) < 50) {
+                if (Math.hypot(touchX - poops[i].x, touchY - poops[i].y) < 60) {
                     poops.splice(i, 1); pet.clean = Math.min(100, pet.clean + 10);
                     createParticles(touchX, touchY, 'star', 3, '#fff'); playSound('wash');
                     if(navigator.vibrate) navigator.vibrate(20); return; 
@@ -362,7 +368,7 @@
             }
 
             // Agarrar Item
-            if (activeItem && Math.hypot(touchX - activeItem.x, touchY - activeItem.y) < 60) {
+            if (activeItem && Math.hypot(touchX - activeItem.x, touchY - activeItem.y) < 70) {
                 activeItem.isDragging = true;
                 dragOffsetX = activeItem.x - touchX; dragOffsetY = activeItem.y - touchY;
                 return;
@@ -386,36 +392,27 @@
 
                 let distToPet = Math.hypot(activeItem.x - pet.x, activeItem.y - (pet.y - 40 * pet.scale));
                 
-                // Interacciones continuas al arrastrar sobre la mascota
+                // Aplicar Jabón o Peinar
                 if (distToPet < 90 * pet.scale) {
                     if (activeItem.type === 'sponge') {
                         if (Math.random() < 0.2) { 
                             createParticles(activeItem.x + (Math.random()-0.5)*40, activeItem.y + (Math.random()-0.5)*40, 'soap', 1, '#fff'); 
                             playSound('wash'); 
                         }
-                        pet.soapLevel = Math.min(100, pet.soapLevel + 2);
+                        pet.soapLevel = Math.min(100, pet.soapLevel + 3);
                     } 
-                    else if (activeItem.type === 'shower') {
-                        createParticles(activeItem.x, activeItem.y + 20, 'drop', 2, '#40c4ff');
-                        playSound('water_pour');
-                        if (pet.soapLevel > 0) {
-                            pet.soapLevel = Math.max(0, pet.soapLevel - 4);
-                            pet.clean = Math.min(100, pet.clean + 2);
-                            if(pet.soapLevel === 0) { createParticles(pet.x, pet.y-40, 'star', 10, '#fff'); pet.happy += 10; }
-                        }
-                    }
                     else if (activeItem.type === 'comb') {
                         if (Math.random() < 0.1) { createParticles(pet.x, pet.y - 60, 'heart', 1, '#ff007f'); playSound('animal'); }
-                        pet.happy = Math.min(100, pet.happy + 0.5);
+                        pet.happy = Math.min(100, pet.happy + 1);
                     }
                 }
 
-                // Interacción continua: Llenar Pote
+                // Llenar Pote de Agua
                 if (activeItem.type === 'pitcher') {
                     let distToBowl = Math.hypot(activeItem.x - waterBowlX, activeItem.y - (height*0.75));
                     if (distToBowl < 80) {
                         createParticles(waterBowlX, height*0.75, 'drop', 1, '#40c4ff'); playSound('water_pour');
-                        waterLevel = Math.min(100, waterLevel + 2);
+                        waterLevel = Math.min(100, waterLevel + 3);
                     }
                 }
 
@@ -430,13 +427,24 @@
 
         canvas.addEventListener('touchend', () => {
             if(!isPlaying || isEnding) return; pet.inactiveTimer = 0;
-            if (pet.state === 'dragging' || pet.state === 'scared') pet.state = 'idle';
+            
+            if (pet.state === 'dragging' || pet.state === 'scared') {
+                // Interacción Tobogán
+                if (ZONES[currentZoneIdx] === 'parque') {
+                    let slideTopX = width * 0.35; let slideTopY = height * 0.35;
+                    if (Math.hypot(pet.x - slideTopX, pet.y - slideTopY) < 100) {
+                        pet.state = 'sliding'; pet.x = slideTopX; pet.y = slideTopY; pet.jumpY = 0;
+                        playSound('tada');
+                    } else { pet.state = 'idle'; }
+                } else {
+                    pet.state = 'idle';
+                }
+            }
 
             if (activeItem && activeItem.isDragging) {
                 activeItem.isDragging = false;
                 let distToPet = Math.hypot(activeItem.x - pet.x, activeItem.y - (pet.y - 40 * pet.scale));
                 
-                // Interacciones de soltar (One-shot)
                 if (distToPet < 90 * pet.scale) {
                     if (activeItem.type === 'food') {
                         if (pet.isSick) { showFloatingText(pet.x, pet.y - 100, "¡No quiero!"); pet.state = 'sad'; playSound('reject'); activeItem = null; return; }
@@ -455,7 +463,7 @@
                     }
                 } else {
                     if (activeItem.type === 'toy' || activeItem.type === 'study') { droppedToy = activeItem; activeItem = null; if(!pet.isSick) { pet.state = 'chasing'; pet.targetX = droppedToy.x; } }
-                    else if (activeItem.type === 'sponge' || activeItem.type === 'shower' || activeItem.type === 'pitcher' || activeItem.type === 'comb') { activeItem = null; } // Desaparecen si se sueltan lejos
+                    else if (activeItem.type === 'sponge' || activeItem.type === 'pitcher' || activeItem.type === 'comb') { activeItem = null; } 
                 }
             }
         });
@@ -473,8 +481,8 @@
         }
 
         function startGame() {
-            initAudio(); let name = document.getElementById('petName').value.trim(); if (name) pet.name = name;
-            document.getElementById('startScreen').classList.add('hidden'); resize(); isPlaying = true; lastTime = performance.now(); requestAnimationFrame(gameLoop); showZoneName();
+            initAudio(); document.getElementById('startScreen').classList.add('hidden'); 
+            resize(); isPlaying = true; lastTime = performance.now(); requestAnimationFrame(gameLoop); showZoneName();
         }
 
         function toggleMenu(menuId) {
@@ -482,11 +490,7 @@
             let targetMenu = document.getElementById(menuId);
             let isActive = targetMenu.classList.contains('active');
             document.querySelectorAll('.submenu').forEach(m => m.classList.remove('active'));
-            if (!isActive) {
-                // Posicionar dinámicamente al lado
-                targetMenu.style.top = '50%';
-                targetMenu.classList.add('active');
-            }
+            if (!isActive) { targetMenu.style.top = '50%'; targetMenu.classList.add('active'); }
         }
 
         function spawnItem(type, emoji) {
@@ -495,13 +499,23 @@
             activeItem = { type: type, emoji: emoji, x: width / 2, y: 100, vy: 0, isDragging: false };
         }
 
+        function toggleHat() {
+            if(pet.isSleeping || isEnding) return;
+            isHatOn = !isHatOn; playSound('tada');
+        }
+
         function changeZone() {
             if(pet.isSleeping || isEnding) return;
-            currentZoneIdx = (currentZoneIdx + 1) % ZONES.length; showZoneName(); pet.jumpY = -20;
+            currentZoneIdx = (currentZoneIdx + 1) % ZONES.length; 
+            isShowerOn = false; // Apagar ducha al salir
+            pet.y = getFloorY();
+            showZoneName(); pet.jumpY = -20;
         }
         function setZone(name) {
             let idx = ZONES.indexOf(name);
-            if(idx !== -1 && currentZoneIdx !== idx) { currentZoneIdx = idx; showZoneName(); }
+            if(idx !== -1 && currentZoneIdx !== idx) { 
+                currentZoneIdx = idx; pet.y = getFloorY(); showZoneName(); 
+            }
         }
 
         function showZoneName() {
@@ -514,7 +528,7 @@
             pet.isSleeping = !pet.isSleeping;
             const icon = document.getElementById('sleep-icon'); const label = document.getElementById('sleep-label');
             if (pet.isSleeping) {
-                icon.innerText = "☀️"; label.innerText = "Despertar"; pet.state = 'idle'; activeItem = null; droppedToy = null;
+                icon.innerText = "☀️"; label.innerText = "Despertar"; pet.state = 'idle'; activeItem = null; droppedToy = null; isShowerOn = false;
                 showFloatingText(width/2, height/2, "Buenas noches zZz");
             } else {
                 icon.innerText = "🌙"; label.innerText = "Dormir"; pet.jumpY = -40; playSound('animal'); showFloatingText(width/2, height/2, "¡Buen día!");
@@ -555,8 +569,8 @@
         function createParticles(x, y, type, count, color) {
             for(let i=0; i<count; i++) {
                 particles.push({
-                    x: x, y: y, vx: (Math.random() - 0.5) * ((type==='drop')?50:200),
-                    vy: (type === 'soap') ? -Math.random()*50 : (type==='drop' ? Math.random()*100 : -Math.random()*250 - 50),
+                    x: x, y: y, vx: (Math.random() - 0.5) * ((type==='drop')?100:200),
+                    vy: (type === 'soap') ? -Math.random()*50 : (type==='drop' ? Math.random()*200 : -Math.random()*250 - 50),
                     life: 1.0, type: type, color: color, size: Math.random() * 15 + 10
                 });
             }
@@ -570,7 +584,7 @@
                 if(p.type === 'drop') { p.vy += 800 * dt; } 
                 else if(p.type === 'star' || p.type === 'heart') { p.vy += 400 * dt; }
                 else if(p.type === 'soap') { p.x += Math.sin(p.life * 20) * 1; p.vy = -20; }
-                else if(p.type === 'shootingStar') { p.x += 800*dt; p.y += 300*dt; } // Estrellas fugaces
+                else if(p.type === 'shootingStar') { p.x += 800*dt; p.y += 300*dt; } 
 
                 p.life -= (p.type === 'shootingStar') ? dt * 1.5 : dt * 0.8; 
                 
@@ -579,13 +593,13 @@
                 else if (p.type === 'zzz') { ctx.fillStyle = '#fff'; ctx.font = `bold ${p.size}px Arial`; ctx.fillText('Z', 0, 0); } 
                 else if (p.type === 'soap' || p.type === 'drop') {
                     ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI*2); ctx.fillStyle = p.color; ctx.fill();
-                    if(p.type==='soap') { ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth=1; ctx.stroke(); }
+                    if(p.type==='soap') { ctx.strokeStyle = 'rgba(255,255,255,1)'; ctx.lineWidth=1; ctx.stroke(); }
                 } else if (p.type === 'sick') { ctx.fillStyle = '#64dd17'; ctx.font = `bold ${p.size}px Arial`; ctx.fillText('🦠', 0, 0); }
                 else if (p.type === 'shootingStar') { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0,0, 3, 0, Math.PI*2); ctx.fill(); ctx.fillRect(-40, -1, 40, 2); }
                 ctx.restore();
                 if(p.life <= 0) particles.splice(i, 1);
             }
-            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent'; // Clean reset
+            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent'; 
         }
 
         // --- LÓGICA CORE ---
@@ -602,15 +616,29 @@
             }
             if (pet.isSick) { drainRate = 1.5; if (Math.random() < 0.02) createParticles(pet.x + (Math.random()-0.5)*40, pet.y - 40, 'sick', 1, '#000'); }
 
+            // Lógica Ducha Fija
+            if (isShowerOn && ZONES[currentZoneIdx] === 'baño') {
+                if (Math.random() < 0.6) createParticles(width/2 + (Math.random()-0.5)*30, height*0.15, 'drop', 1, '#40c4ff');
+                if (Math.abs(pet.x - width/2) < 80) {
+                    if (pet.soapLevel > 0) {
+                        pet.soapLevel = Math.max(0, pet.soapLevel - 30 * dt);
+                        pet.clean = Math.min(100, pet.clean + 15 * dt);
+                        if(pet.soapLevel === 0) { createParticles(pet.x, pet.y-40, 'star', 10, '#fff'); pet.happy += 10; }
+                    } else {
+                        pet.clean = Math.min(100, pet.clean + 3 * dt);
+                    }
+                }
+            } else { isShowerOn = false; }
+
             if (pet.isSleeping) {
                 pet.energy = Math.min(100, pet.energy + 8 * dt); pet.hunger -= 0.1 * dt; pet.thirst -= 0.1 * dt; pet.happy -= 0.1 * dt;
                 if (Math.random() < 0.01) createParticles(pet.x + 30, pet.y - 70, 'zzz', 1);
-                if (Math.random() < 0.005) createParticles(-50, Math.random()*height*0.3, 'shootingStar', 1, '#fff'); // Estrellas en la noche
+                if (Math.random() < 0.005) createParticles(-50, Math.random()*height*0.3, 'shootingStar', 1, '#fff'); 
             } else {
                 pet.hunger -= drainRate * dt; pet.thirst -= drainRate * 1.5 * dt; pet.energy -= (drainRate * 0.8) * dt;
-                pet.happy -= (pet.hunger < 40 || pet.clean < 40 || pet.thirst < 40) ? drainRate * 2 * dt : drainRate * 0.5 * dt;
+                pet.happy -= (pet.hunger < 40 || pet.clean < 40 || pet.thirst < 40 || pet.isSick) ? drainRate * 2 * dt : drainRate * 0.5 * dt;
                 pet.clean -= (drainRate * 0.4) * dt; if (poops.length > 0) pet.clean -= (poops.length * 3) * dt;
-                if (pet.soapLevel > 0) pet.soapLevel -= 2 * dt; // El jabón se seca lento si no se enjuaga
+                if (pet.soapLevel > 0 && !isShowerOn) pet.soapLevel -= 2 * dt; 
             }
 
             pet.hunger = Math.max(0, pet.hunger); pet.thirst = Math.max(0, pet.thirst); pet.happy = Math.max(0, pet.happy); pet.energy = Math.max(0, pet.energy); pet.clean = Math.max(0, pet.clean); pet.soapLevel = Math.max(0, pet.soapLevel);
@@ -623,12 +651,19 @@
             });
 
             // IA Autónoma
-            if (!pet.isSleeping && pet.state !== 'dragging' && pet.state !== 'scared' && pet.state !== 'chasing') {
-                if (pet.thirst < 40 && waterLevel > 0 && pet.state !== 'seeking_water' && pet.state !== 'drinking' && !pet.isSick) {
+            if (!pet.isSleeping && pet.state !== 'dragging' && pet.state !== 'scared' && pet.state !== 'chasing' && pet.state !== 'sliding') {
+                
+                if (pet.state === 'going_to_slide') {
+                    let ladderBottomX = width * 0.15; let slideTopY = height * 0.35;
+                    if (pet.y === getFloorY() && Math.abs(pet.x - ladderBottomX) > 10) { pet.x += Math.sign(ladderBottomX - pet.x) * 100 * dt; } 
+                    else if (pet.y > slideTopY) { pet.x = ladderBottomX; pet.y -= 150 * dt; if(pet.y <= slideTopY) pet.y = slideTopY; } 
+                    else if (Math.abs(pet.x - width * 0.35) > 5) { pet.x += 100 * dt; } 
+                    else { pet.state = 'sliding'; }
+                }
+                else if (pet.thirst < 40 && waterLevel > 0 && pet.state !== 'seeking_water' && pet.state !== 'drinking' && !pet.isSick) {
                     pet.state = 'seeking_water'; pet.targetX = waterBowlX - 40; 
                 }
-
-                if (pet.state === 'seeking_water') {
+                else if (pet.state === 'seeking_water') {
                     if (Math.abs(pet.x - pet.targetX) < 10) { pet.state = 'drinking'; pet.actionTimer = 3; playSound('drink'); }
                 } else if (pet.state === 'drinking') {
                     pet.thirst += 30 * dt; waterLevel -= 20 * dt;
@@ -639,7 +674,9 @@
                     pet.actionTimer -= dt;
                     if (pet.actionTimer <= 0) {
                         let rand = Math.random();
-                        if (pet.inactiveTimer > 20) {
+                        if (ZONES[currentZoneIdx] === 'parque' && rand < 0.3 && !pet.isSick) {
+                            pet.state = 'going_to_slide'; 
+                        } else if (pet.inactiveTimer > 20) {
                             pet.state = 'bored'; pet.actionTimer = 4; pet.inactiveTimer = 0; showFloatingText(pet.x, pet.y - 100, "¡Qué aburrimiento!");
                             pet.targetX = Math.max(120, Math.min(width - 50, pet.x + (Math.random()-0.5)*300));
                         } else if (pet.hunger < 30 || pet.happy < 30 || pet.isSick) { pet.state = 'sad'; pet.actionTimer = 2; } 
@@ -655,11 +692,11 @@
 
                 pet.poopTimer += dt;
                 if (pet.poopTimer > 40 && Math.random() < 0.05 && pet.state !== 'drinking') { 
-                    poops.push({ x: pet.x - (30 * pet.scale), y: height * 0.8 }); pet.poopTimer = 0; playSound('reject'); pet.jumpY = -20;
+                    poops.push({ x: pet.x - (30 * pet.scale), y: getFloorY() }); pet.poopTimer = 0; playSound('reject'); pet.jumpY = -20;
                 }
             }
 
-            // Movimiento Físico
+            // Física Movimiento normal
             if (pet.state === 'wandering' || pet.state === 'chasing' || pet.state === 'seeking_water' || pet.state === 'bored') {
                 let dx = pet.targetX - pet.x; let speed = (pet.state === 'chasing') ? 150 : (pet.isSick ? 30 : 70);
                 if (Math.abs(dx) > 5) {
@@ -668,15 +705,27 @@
                 else if (pet.state !== 'seeking_water') { pet.state = 'idle'; }
             }
 
-            let floorY = height * 0.75;
-            if (pet.state !== 'dragging' && pet.state !== 'scared') {
+            // Física Tobogán
+            if (pet.state === 'sliding') {
+                let startX = width * 0.35; let startY = height * 0.35;
+                let endX = width * 0.75; let endY = getFloorY();
+                pet.x += 300 * dt;
+                pet.y += 300 * ((endY - startY) / (endX - startX)) * dt;
+                if (pet.x >= endX || pet.y >= endY) {
+                    pet.x = endX; pet.y = endY; pet.state = 'idle'; pet.happy = Math.min(100, pet.happy + 15);
+                    playSound('tada'); createParticles(pet.x, pet.y, 'star', 10, '#ffeb3b');
+                }
+            }
+
+            let floorY = getFloorY();
+            if (pet.state !== 'dragging' && pet.state !== 'scared' && pet.state !== 'sliding' && pet.state !== 'going_to_slide') {
                 if (pet.jumpY < 0 || pet.y < floorY) {
                     pet.jumpY += 2000 * dt; pet.y += pet.jumpY * dt;
                     if (pet.y > floorY) { pet.y = floorY; pet.jumpY = 0; }
                 }
             }
 
-            let itemFloor = height * 0.85;
+            let itemFloor = getFloorY();
             if (activeItem && !activeItem.isDragging) {
                 activeItem.vy += 1500 * dt; activeItem.y += activeItem.vy * dt;
                 if (activeItem.y > itemFloor) { activeItem.y = itemFloor; activeItem.vy = -activeItem.vy * 0.5; if (Math.abs(activeItem.vy) < 50) activeItem.vy = 0; }
@@ -686,86 +735,120 @@
                 if (droppedToy.y > itemFloor) { droppedToy.y = itemFloor; droppedToy.vy = -droppedToy.vy * 0.5; if (Math.abs(droppedToy.vy) < 50) droppedToy.vy = 0; }
             }
 
-            pet.timePhase += dt * (pet.state === 'chasing' ? 8 : (pet.isSick ? 2 : (pet.isSleeping ? 2 : 5)));
+            pet.timePhase += dt * (pet.state === 'chasing' || pet.state === 'sliding' ? 8 : (pet.isSick ? 2 : (pet.isSleeping ? 2 : 5)));
         }
 
-        // --- RENDER ESCENARIOS ---
+        // --- RENDER PAISAJES (Rediseñados) ---
         function drawBackground(ctx) {
-            ctx.globalAlpha = 1.0; // Reset estricto
+            ctx.globalAlpha = 1.0; 
             let zone = ZONES[currentZoneIdx];
 
-            // CICLO NOCHE
             if (pet.isSleeping) {
                 let bgGrad = ctx.createLinearGradient(0, 0, 0, height*0.7);
                 bgGrad.addColorStop(0, '#0b0b2a'); bgGrad.addColorStop(1, '#1b1b4b');
                 ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, width, height);
-                // Luna
                 ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(width*0.8, height*0.2, 40, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#0b0b2a'; ctx.beginPath(); ctx.arc(width*0.8 - 15, height*0.2 - 5, 35, 0, Math.PI*2); ctx.fill();
-                // Suelo de noche
                 ctx.fillStyle = '#101020'; ctx.fillRect(0, height*0.7, width, height*0.3);
             } 
-            // CICLO DÍA
             else {
-                let bgGrad = ctx.createLinearGradient(0, 0, 0, height*0.6);
-                if(zone==='casa'){ bgGrad.addColorStop(0, '#fdfbfb'); bgGrad.addColorStop(1, '#ebedee'); }
-                else if(zone==='cocina'){ bgGrad.addColorStop(0, '#ffecd2'); bgGrad.addColorStop(1, '#fcb69f'); }
-                else if(zone==='jardin'){ bgGrad.addColorStop(0, '#89f7fe'); bgGrad.addColorStop(1, '#66a6ff'); }
-                else if(zone==='parque'){ bgGrad.addColorStop(0, '#a1c4fd'); bgGrad.addColorStop(1, '#c2e9fb'); }
-                else if(zone==='cuarto'){ bgGrad.addColorStop(0, '#a18cd1'); bgGrad.addColorStop(1, '#fbc2eb'); }
-                else if(zone==='baño'){ bgGrad.addColorStop(0, '#e0f7fa'); bgGrad.addColorStop(1, '#b2ebf2'); }
-                ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, width, height);
+                // Fondo base
+                ctx.fillStyle = (zone==='casa')?'#f5f5dc':(zone==='cocina')?'#eceff1':(zone==='baño')?'#e0f7fa':(zone==='parque'||zone==='jardin')?'#81d4fa':'#f3e5f5';
+                ctx.fillRect(0, 0, width, height);
 
                 ctx.save();
-                if(zone==='jardin' || zone==='parque') {
-                    ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(width*0.8, height*0.2, 40, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                    ctx.beginPath(); ctx.arc(width*0.3, height*0.25, 30, 0, Math.PI*2); ctx.arc(width*0.3+40, height*0.22, 40, 0, Math.PI*2); ctx.arc(width*0.3+80, height*0.25, 30, 0, Math.PI*2); ctx.fill();
-                    if(zone==='parque'){ ctx.fillStyle = '#8d6e63'; ctx.fillRect(width*0.1, height*0.4, 40, height*0.3); ctx.fillStyle = '#66bb6a'; ctx.beginPath(); ctx.arc(width*0.1+20, height*0.4, 80, 0, Math.PI*2); ctx.fill(); }
-                } else if(zone==='cuarto'){
-                    ctx.fillStyle = '#1a237e'; ctx.fillRect(width*0.6, height*0.2, 100, 120); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(width*0.6+70, height*0.2+30, 20, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = '#1a237e'; ctx.beginPath(); ctx.arc(width*0.6+60, height*0.2+25, 20, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.strokeRect(width*0.6, height*0.2, 100, 120);
+                if(zone==='casa') {
+                    // Ventana
+                    ctx.fillStyle = '#81d4fa'; ctx.fillRect(width*0.5, height*0.2, 120, 100);
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.strokeRect(width*0.5, height*0.2, 120, 100);
+                    ctx.beginPath(); ctx.moveTo(width*0.5+60, height*0.2); ctx.lineTo(width*0.5+60, height*0.2+100); ctx.stroke();
+                    // Sofá
+                    ctx.fillStyle = '#ff9800'; 
+                    ctx.beginPath(); ctx.roundRect(width*0.1, height*0.5, 160, 80, 20); ctx.fill();
+                    ctx.beginPath(); ctx.roundRect(width*0.05, height*0.55, 40, 80, 10); ctx.fill();
+                    ctx.beginPath(); ctx.roundRect(width*0.25, height*0.55, 40, 80, 10); ctx.fill();
+                    // Planta
+                    ctx.fillStyle = '#795548'; ctx.fillRect(width*0.8, height*0.6, 30, 40);
+                    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(width*0.8+15, height*0.55, 30, 0, Math.PI*2); ctx.fill();
+                } else if(zone==='cocina') {
+                    // Nevera
+                    ctx.fillStyle = '#cfd8dc'; ctx.fillRect(width*0.1, height*0.2, 100, height*0.55);
+                    ctx.fillStyle = '#90a4ae'; ctx.fillRect(width*0.1+10, height*0.4, 5, 40);
+                    // Gabinetes y Tope
+                    ctx.fillStyle = '#795548'; ctx.fillRect(width*0.4, height*0.5, width*0.5, height*0.25);
+                    ctx.fillStyle = '#263238'; ctx.fillRect(width*0.4, height*0.5, width*0.5, 10);
                 } else if(zone==='baño') {
                     // Azulejos
-                    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth=2;
+                    ctx.strokeStyle = '#b2ebf2'; ctx.lineWidth=2;
                     for(let i=0; i<width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height*0.7); ctx.stroke(); }
                     for(let j=0; j<height*0.7; j+=40) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(width, j); ctx.stroke(); }
+                    // Espejo
+                    ctx.fillStyle = '#e1f5fe'; ctx.strokeStyle = '#90a4ae'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.roundRect(width*0.7, height*0.2, 80, 100, 10); ctx.fill(); ctx.stroke();
+                    // Ducha fija
+                    ctx.strokeStyle = '#78909c'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(width/2, 0); ctx.lineTo(width/2, height*0.15); ctx.stroke();
+                    ctx.fillStyle = '#b0bec5'; ctx.beginPath(); ctx.ellipse(width/2, height*0.15, 25, 8, 0, 0, Math.PI*2); ctx.fill();
+                    // Bañera (Fondo)
+                    ctx.fillStyle = '#e0e0e0'; ctx.beginPath(); ctx.ellipse(width/2, height*0.7, 160, 60, 0, 0, Math.PI); ctx.fill();
+                } else if(zone==='jardin') {
+                    ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(width*0.8, height*0.2, 40, 0, Math.PI*2); ctx.fill(); // Sol
+                    ctx.fillStyle = '#8d6e63'; // Cerca
+                    for(let i=0; i<width; i+=50) { ctx.fillRect(i, height*0.5, 40, height*0.25); ctx.beginPath(); ctx.moveTo(i, height*0.5); ctx.lineTo(i+20, height*0.45); ctx.lineTo(i+40, height*0.5); ctx.fill(); }
+                    ctx.fillRect(0, height*0.55, width, 10); ctx.fillRect(0, height*0.65, width, 10);
+                    // Árbol
+                    ctx.fillStyle = '#5d4037'; ctx.fillRect(width*0.2, height*0.3, 40, height*0.45);
+                    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(width*0.2+20, height*0.3, 80, 0, Math.PI*2); ctx.fill();
+                } else if(zone==='parque') {
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(width*0.3, height*0.2, 30, 0, Math.PI*2); ctx.arc(width*0.4, height*0.18, 40, 0, Math.PI*2); ctx.arc(width*0.5, height*0.2, 30, 0, Math.PI*2); ctx.fill();
+                    // Tobogán
+                    ctx.strokeStyle = '#9e9e9e'; ctx.lineWidth = 10; // Escalera
+                    ctx.beginPath(); ctx.moveTo(width*0.15, height*0.75); ctx.lineTo(width*0.15, height*0.35); ctx.stroke();
+                    ctx.fillStyle = '#d32f2f'; // Plataforma y bajada
+                    ctx.fillRect(width*0.1, height*0.35, width*0.25, 10);
+                    ctx.lineWidth = 25; ctx.strokeStyle = '#d32f2f'; ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(width*0.35, height*0.35); ctx.lineTo(width*0.75, height*0.75); ctx.stroke();
+                } else if(zone==='cuarto') {
+                    // Cama
+                    ctx.fillStyle = '#795548'; ctx.fillRect(width*0.4, height*0.4, 200, 150); // Cabecera
+                    ctx.fillStyle = '#f48fb1'; ctx.fillRect(width*0.4, height*0.55, 200, 100); // Colcha
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(width*0.5, height*0.5, 80, 40, 10); ctx.fill(); // Almohada
                 }
                 ctx.restore();
 
+                // Piso
                 let floorGrad = ctx.createLinearGradient(0, height*0.7, 0, height);
                 if(zone==='jardin' || zone==='parque') { floorGrad.addColorStop(0, '#81c784'); floorGrad.addColorStop(1, '#388e3c'); }
                 else if(zone==='cocina' || zone==='baño') { floorGrad.addColorStop(0, '#cfd8dc'); floorGrad.addColorStop(1, '#90a4ae'); }
+                else if(zone==='cuarto') { floorGrad.addColorStop(0, '#ce93d8'); floorGrad.addColorStop(1, '#ab47bc'); }
                 else { floorGrad.addColorStop(0, '#d7ccc8'); floorGrad.addColorStop(1, '#8d6e63'); }
                 ctx.fillStyle = floorGrad; ctx.fillRect(0, height*0.7, width, height*0.3);
-
-                if(zone==='baño') {
-                    // Dibujar Bañera
-                    ctx.fillStyle = '#ffffff';
-                    ctx.beginPath(); ctx.ellipse(width/2, height*0.7, 140, 60, 0, 0, Math.PI); ctx.fill();
-                    ctx.fillRect(width/2 - 140, height*0.7 - 40, 280, 40);
-                    ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth=5; ctx.strokeRect(width/2 - 140, height*0.7 - 40, 280, 40);
-                }
             }
 
-            // POTE DE AGUA
-            ctx.fillStyle = '#78909c';
-            ctx.beginPath(); ctx.ellipse(waterBowlX, height*0.75 + 15, 30, 12, 0, 0, Math.PI*2); ctx.fill();
-            // Nivel de agua visual
+            // Pote de Agua en el piso
+            ctx.fillStyle = '#78909c'; ctx.beginPath(); ctx.ellipse(waterBowlX, height*0.75 + 15, 30, 12, 0, 0, Math.PI*2); ctx.fill();
             if (waterLevel > 0) {
                 let wRadius = 25 * (waterLevel/100);
                 ctx.fillStyle = '#40c4ff'; ctx.beginPath(); ctx.ellipse(waterBowlX, height*0.75 + 15 - (5 * (waterLevel/100)), wRadius, wRadius*0.3, 0, 0, Math.PI*2); ctx.fill();
             }
             ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.ellipse(waterBowlX-5, height*0.75 + 8, 10, 3, 0.5, 0, Math.PI*2); ctx.fill();
 
-            // POPÓS
+            // Popós
             ctx.font = '35px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             for(let p of poops) { ctx.fillText('💩', p.x, p.y); }
         }
 
-        // --- RENDER ANIMALES (Corregido Matemáticamente) ---
+        function drawForeground(ctx) {
+            // Elementos que van por delante de la mascota
+            if (ZONES[currentZoneIdx] === 'baño' && !pet.isSleeping) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(width/2 - 160, height*0.7, 320, height*0.15); // Frente bañera
+                ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth=6; ctx.strokeRect(width/2 - 160, height*0.7, 320, height*0.15);
+            }
+        }
+
+        // --- RENDER ANIMALES ---
         function drawPet(ctx) {
-            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent'; // Reset estricto
+            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent'; 
             let cx = pet.x; let cy = pet.y;
             let breath = Math.sin(pet.timePhase) * (pet.isSleeping || pet.state === 'sitting' ? 3 : 2);
             let wag = Math.sin(pet.timePhase * 1.5) * (pet.state === 'sad' || pet.state === 'scared' ? 0 : 0.2);
@@ -779,12 +862,11 @@
             if (pet.state === 'sitting') { ctx.translate(0, 10); ctx.scale(1.05, 0.95); }
             ctx.scale(pet.scale, pet.scale);
 
-            if (!pet.isSleeping && pet.state !== 'dragging' && pet.state !== 'scared') {
+            if (!pet.isSleeping && pet.state !== 'dragging' && pet.state !== 'scared' && pet.state !== 'sliding') {
                 ctx.fillStyle = 'rgba(0,0,0,0.15)'; let shadowRadius = Math.max(1, 45 - Math.abs(pet.jumpY) * 0.05);
                 ctx.beginPath(); ctx.ellipse(0, 50, shadowRadius, 8, 0, 0, Math.PI*2); ctx.fill();
             }
 
-            // FUNCIÓN DE ROSTRO MATEMÁTICA (Independiente Y para Ojos, Nariz y Boca)
             let drawFaceExact = (eyeColor, eyeSpread, eyeY, noseY, mouthY) => {
                 eyeY -= breath*0.5; noseY -= breath*0.5; mouthY -= breath*0.5;
                 ctx.fillStyle = eyeColor;
@@ -795,118 +877,94 @@
                     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-eyeSpread, eyeY, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(eyeSpread, eyeY, 3, 0, Math.PI*2); ctx.fill();
                 } else if (pet.isSleeping || pet.state === 'sad' || pet.isSick) {
                     ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = eyeColor; ctx.beginPath();
-                    if(pet.state === 'sad' || pet.isSick) {
-                        ctx.moveTo(-eyeSpread-5, eyeY-3); ctx.quadraticCurveTo(-eyeSpread, eyeY-8, -eyeSpread+5, eyeY); 
-                        ctx.moveTo(eyeSpread-5, eyeY); ctx.quadraticCurveTo(eyeSpread, eyeY-8, eyeSpread+5, eyeY-3);
-                    } else {
-                        ctx.moveTo(-eyeSpread-6, eyeY+2); ctx.quadraticCurveTo(-eyeSpread, eyeY+6, -eyeSpread+6, eyeY+2); 
-                        ctx.moveTo(eyeSpread-6, eyeY+2); ctx.quadraticCurveTo(eyeSpread, eyeY+6, eyeSpread+6, eyeY+2);
-                    } ctx.stroke();
+                    if(pet.state === 'sad' || pet.isSick) { ctx.moveTo(-eyeSpread-5, eyeY-3); ctx.quadraticCurveTo(-eyeSpread, eyeY-8, -eyeSpread+5, eyeY); ctx.moveTo(eyeSpread-5, eyeY); ctx.quadraticCurveTo(eyeSpread, eyeY-8, eyeSpread+5, eyeY-3); } 
+                    else { ctx.moveTo(-eyeSpread-6, eyeY+2); ctx.quadraticCurveTo(-eyeSpread, eyeY+6, -eyeSpread+6, eyeY+2); ctx.moveTo(eyeSpread-6, eyeY+2); ctx.quadraticCurveTo(eyeSpread, eyeY+6, eyeSpread+6, eyeY+2); } ctx.stroke();
                 } else {
                     ctx.beginPath(); ctx.arc(-eyeSpread, eyeY, 7, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(eyeSpread, eyeY, 7, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-eyeSpread-2, eyeY-2, 2.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(eyeSpread-2, eyeY-2, 2.5, 0, Math.PI*2); ctx.fill();
                 }
 
-                // Nariz (Opcional según animal, pero la proveemos)
-                if(noseY !== null) {
-                    ctx.fillStyle = (pet.type==='dog' || pet.type==='lion') ? '#1e1e2f' : '#ff80ab';
-                    ctx.beginPath(); ctx.ellipse(0, noseY, 5, 3, 0, 0, Math.PI*2); ctx.fill();
-                }
+                if(noseY !== null) { ctx.fillStyle = (pet.type==='dog' || pet.type==='lion') ? '#1e1e2f' : '#ff80ab'; ctx.beginPath(); ctx.ellipse(0, noseY, 5, 3, 0, 0, Math.PI*2); ctx.fill(); }
 
                 // Boca
                 ctx.strokeStyle = eyeColor; ctx.lineWidth = 3; ctx.beginPath();
-                if (pet.state === 'eating' || pet.state === 'scared') {
-                    ctx.fillStyle = pet.state==='scared' ? '#000' : '#ff1744'; 
-                    ctx.arc(0, mouthY, pet.state==='scared'?4:6, 0, Math.PI, false); ctx.fill(); ctx.stroke();
-                } else if (pet.state === 'drinking') {
-                    ctx.fillStyle = '#40c4ff'; ctx.arc(0, mouthY-2, 4, 0, Math.PI*2, false); ctx.fill();
-                } else if (pet.state === 'sad' || pet.isSick) {
-                    ctx.moveTo(-4, mouthY+4); ctx.quadraticCurveTo(0, mouthY, 4, mouthY+4); ctx.stroke();
-                } else { // Sonrisa W
-                    ctx.moveTo(-8, mouthY); ctx.quadraticCurveTo(-4, mouthY+4, 0, mouthY); ctx.quadraticCurveTo(4, mouthY+4, 8, mouthY); ctx.stroke();
-                }
+                if (pet.state === 'eating' || pet.state === 'scared') { ctx.fillStyle = pet.state==='scared' ? '#000' : '#ff1744'; ctx.arc(0, mouthY, pet.state==='scared'?4:6, 0, Math.PI, false); ctx.fill(); ctx.stroke(); } 
+                else if (pet.state === 'drinking') { ctx.fillStyle = '#40c4ff'; ctx.arc(0, mouthY-2, 4, 0, Math.PI*2, false); ctx.fill(); } 
+                else if (pet.state === 'sad' || pet.isSick) { ctx.moveTo(-4, mouthY+4); ctx.quadraticCurveTo(0, mouthY, 4, mouthY+4); ctx.stroke(); } 
+                else { ctx.moveTo(-8, mouthY); ctx.quadraticCurveTo(-4, mouthY+4, 0, mouthY); ctx.quadraticCurveTo(4, mouthY+4, 8, mouthY); ctx.stroke(); }
             };
 
             let drawDirtAndSoap = () => {
-                if (pet.clean < 50) {
-                    ctx.fillStyle = 'rgba(101, 67, 33, 0.4)';
-                    ctx.beginPath(); ctx.arc(-15, 20, 12, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(25, 10, 10, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(0, 35, 15, 0, Math.PI*2); ctx.fill();
-                }
-                if (pet.soapLevel > 0) {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
-                    for(let i=0; i<Math.min(5, pet.soapLevel/10); i++) {
-                        ctx.beginPath(); ctx.arc(-20 + i*10, 10 + (i%2)*15, 8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                    }
-                }
+                if (pet.clean < 50) { ctx.fillStyle = 'rgba(101, 67, 33, 0.6)'; ctx.beginPath(); ctx.arc(-15, 20, 12, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(25, 10, 10, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(0, 35, 15, 0, Math.PI*2); ctx.fill(); }
+                if (pet.soapLevel > 0) { ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; for(let i=0; i<Math.min(5, pet.soapLevel/10); i++) { ctx.beginPath(); ctx.arc(-20 + i*10, 10 + (i%2)*15, 8, 0, Math.PI*2); ctx.fill(); ctx.stroke(); } }
             };
 
             let drawLegs = (colorL, colorR, lx, rx) => {
-                ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 2;
-                if (pet.state === 'dragging' || pet.state === 'scared') {
-                    ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx, 45, 8, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                    ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx, 45, 8, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                } else if (pet.state === 'sitting') {
-                    ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx-5, 35, 15, 8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                    ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx+5, 35, 15, 8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                } else {
-                    ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx, 45 - breath*0.5, 12, 10, -0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                    ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx, 45 - breath*0.5, 12, 10, 0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                }
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 2;
+                if (pet.state === 'dragging' || pet.state === 'scared') { ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx, 45, 8, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx, 45, 8, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); } 
+                else if (pet.state === 'sitting' || pet.state === 'sliding') { ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx-5, 35, 15, 8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx+5, 35, 15, 8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); } 
+                else { ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx, 45 - breath*0.5, 12, 10, -0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx, 45 - breath*0.5, 12, 10, 0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
             };
 
-            // DIBUJAR MASCOTAS
             if (pet.type === 'rabbit') {
                 ctx.fillStyle = '#fff'; let ec = '#ff80ab';
                 ctx.save(); ctx.translate(-15, -30); ctx.rotate((pet.state==='sad'?-0.8:(pet.state==='scared'?0:-0.2)) + wag); ctx.beginPath(); ctx.ellipse(0, -30, 10, 35, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = ec; ctx.beginPath(); ctx.ellipse(0, -30, 5, 25, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
                 ctx.save(); ctx.translate(15, -30); ctx.rotate((pet.state==='sad'?0.8:(pet.state==='scared'?0:0.2)) - wag); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, -30, 10, 35, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = ec; ctx.beginPath(); ctx.ellipse(0, -30, 5, 25, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
-
                 ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, 10 - breath, 45 + breath*0.5, 45 - breath, 0, 0, Math.PI*2); ctx.fill();
-                drawDirtAndSoap(); 
-                // Conejo: Ojos -10, sin nariz oscura explícita (usa la predeterminada si null, o le damos null para usar solo boca), Boca 0
-                drawFaceExact('#1e1e2f', 12, -10, null, 0); 
-                drawLegs('#fff', '#fff', 25, 25);
-
+                drawDirtAndSoap(); drawFaceExact('#1e1e2f', 12, -10, null, 0); drawLegs('#fff', '#fff', 25, 25);
             } else if (pet.type === 'dino') {
-                ctx.fillStyle = '#4caf50'; ctx.save(); ctx.translate(0, 20); ctx.rotate(pet.state==='scared'?Math.PI/4:-wag);
-                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-60, 20); ctx.lineTo(0, 30); ctx.fill(); ctx.restore();
+                ctx.fillStyle = '#4caf50'; ctx.save(); ctx.translate(0, 20); ctx.rotate(pet.state==='scared'?Math.PI/4:-wag); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-60, 20); ctx.lineTo(0, 30); ctx.fill(); ctx.restore();
                 ctx.fillStyle = '#1b5e20'; ctx.beginPath(); ctx.moveTo(-35, -5); ctx.lineTo(-45, -15); ctx.lineTo(-25, 5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-25, -20); ctx.lineTo(-30, -35); ctx.lineTo(-10, -15); ctx.fill();
                 ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(0, 10 - breath, 40 + breath*0.5, 45 - breath, 0.2, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#c8e6c9'; ctx.beginPath(); ctx.ellipse(10, 15 - breath, 25 + breath*0.5, 30 - breath, 0.2, 0, Math.PI*2); ctx.fill();
-                drawDirtAndSoap(); 
-                ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(15, -20 - breath*0.5, 30, 25, -0.1, 0, Math.PI*2); ctx.fill();
-                // Dino: Ojos -25, sin nariz, Boca -5 (a la derecha)
-                drawFaceExact('#1e1e2f', 10, -25, null, -10);
-                drawLegs('#388e3c', '#388e3c', 15, 15);
-
+                drawDirtAndSoap(); ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(15, -20 - breath*0.5, 30, 25, -0.1, 0, Math.PI*2); ctx.fill();
+                drawFaceExact('#1e1e2f', 10, -25, null, -10); drawLegs('#388e3c', '#388e3c', 15, 15);
             } else if (pet.type === 'lion') {
-                ctx.strokeStyle = '#f57c00'; ctx.lineWidth = 8; ctx.lineCap = 'round';
-                ctx.beginPath(); ctx.moveTo(-30, 30); ctx.quadraticCurveTo(-60, 20 + wag*20, -50, -10 + wag*10); ctx.stroke();
+                ctx.strokeStyle = '#f57c00'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-30, 30); ctx.quadraticCurveTo(-60, 20 + wag*20, -50, -10 + wag*10); ctx.stroke();
                 ctx.fillStyle = '#5d4037'; ctx.beginPath(); ctx.arc(-50, -10 + wag*10, 8, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.ellipse(0, 20 - breath, 35 + breath*0.5, 30 - breath, 0, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#e65100'; for(let i=0; i<10; i++) { let angle = (i * Math.PI*2)/10 + wag; let mx = Math.cos(angle) * 35; let my = Math.sin(angle) * 35 - 15 - breath*0.5; if(pet.state==='scared') { mx*=1.2; my*=1.2; } ctx.beginPath(); ctx.arc(mx, my, 20, 0, Math.PI*2); ctx.fill(); }
                 ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.arc(-25, -35 - breath*0.5, 10, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(25, -35 - breath*0.5, 10, 0, Math.PI*2); ctx.fill();
                 ctx.beginPath(); ctx.arc(0, -15 - breath*0.5, 32, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#ffe082'; ctx.beginPath(); ctx.ellipse(0, -5 - breath*0.5, 18, 12, 0, 0, Math.PI*2); ctx.fill();
-                drawDirtAndSoap(); 
-                // Leon: Ojos -20, Nariz -8, Boca -2
-                drawFaceExact('#1e1e2f', 12, -20, -8, -2);
-                drawLegs('#ffb300', '#ffb300', 20, 20);
-
+                drawDirtAndSoap(); drawFaceExact('#1e1e2f', 12, -20, -8, -2); drawLegs('#ffb300', '#ffb300', 20, 20);
             } else if (pet.type === 'dog') {
-                ctx.strokeStyle = '#795548'; ctx.lineWidth = 10; ctx.lineCap = 'round';
-                ctx.beginPath(); ctx.moveTo(-30, 30); ctx.quadraticCurveTo(-50, 20 + wag*30, -40, (pet.state==='scared'?10:-5) + wag*40); ctx.stroke();
+                ctx.strokeStyle = '#795548'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-30, 30); ctx.quadraticCurveTo(-50, 20 + wag*30, -40, (pet.state==='scared'?10:-5) + wag*40); ctx.stroke();
                 ctx.fillStyle = '#a1887f'; ctx.beginPath(); ctx.ellipse(0, 15 - breath, 40 + breath*0.5, 35 - breath, 0, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, 25 - breath, 25, 20, 0, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#a1887f'; ctx.beginPath(); ctx.ellipse(0, -10 - breath*0.5, 35, 30, 0, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#795548'; ctx.beginPath(); ctx.arc(-15, -15 - breath*0.5, 15, 0, Math.PI*2); ctx.fill(); // Mancha ojo
-                ctx.fillStyle = '#5d4037';
-                ctx.save(); ctx.translate(-30, -20); ctx.rotate((pet.state==='sad'?0.2:(pet.state==='scared'?-0.5:-0.2)) + wag); ctx.beginPath(); ctx.ellipse(0, 15, 12, 25, 0.2, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                ctx.fillStyle = '#795548'; ctx.beginPath(); ctx.arc(-15, -15 - breath*0.5, 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#5d4037'; ctx.save(); ctx.translate(-30, -20); ctx.rotate((pet.state==='sad'?0.2:(pet.state==='scared'?-0.5:-0.2)) + wag); ctx.beginPath(); ctx.ellipse(0, 15, 12, 25, 0.2, 0, Math.PI*2); ctx.fill(); ctx.restore();
                 ctx.save(); ctx.translate(30, -20); ctx.rotate((pet.state==='sad'?-0.2:(pet.state==='scared'?0.5:0.2)) - wag); ctx.beginPath(); ctx.ellipse(0, 15, 12, 25, -0.2, 0, Math.PI*2); ctx.fill(); ctx.restore();
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, -breath*0.5, 20, 15, 0, 0, Math.PI*2); ctx.fill(); // Hocico blanco
-                drawDirtAndSoap(); 
-                // Perro: Ojos -15, Nariz -4, Boca 6 (Asegurando que la boca esté ABAJO de la nariz)
-                drawFaceExact('#1e1e2f', 15, -15, -4, 6);
-                drawLegs('#a1887f', '#fff', 20, 20); 
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, -breath*0.5, 20, 15, 0, 0, Math.PI*2); ctx.fill(); 
+                drawDirtAndSoap(); drawFaceExact('#1e1e2f', 15, -15, -4, 6); drawLegs('#a1887f', '#fff', 20, 20); 
+            }
+
+            // GORROS ALGORÍTMICOS
+            if (isHatOn && !pet.isSleeping) {
+                ctx.save();
+                let headY = (pet.type === 'dino') ? -45 : (pet.type === 'rabbit') ? -25 : -35;
+                ctx.translate(0, headY - breath*0.5);
+                
+                if (pet.stageIdx === 0) { // Bebé: Hélice
+                    ctx.fillStyle = '#f44336'; ctx.beginPath(); ctx.arc(0, 0, 15, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = '#ffeb3b'; ctx.fillRect(-2, -10, 4, 10);
+                    ctx.fillStyle = '#2196f3'; ctx.beginPath(); ctx.ellipse(0, -10, 18, 3, 0, 0, Math.PI*2); ctx.fill();
+                } else if (pet.stageIdx === 1) { // Niño: Gorra
+                    ctx.fillStyle = '#e91e63'; ctx.beginPath(); ctx.arc(0, 0, 18, Math.PI, 0); ctx.fill();
+                    ctx.fillRect(0, -3, 25, 4); // Visera
+                } else if (pet.stageIdx === 2) { // Adolescente: Audífonos
+                    ctx.strokeStyle = '#1e1e2f'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 15, 25, Math.PI, 0); ctx.stroke();
+                    ctx.fillStyle = '#00bcd4'; ctx.fillRect(-30, 5, 10, 20); ctx.fillRect(20, 5, 10, 20);
+                } else if (pet.stageIdx === 3) { // Adulto: Sombrero
+                    ctx.fillStyle = '#1e1e2f'; ctx.fillRect(-20, -5, 40, 5); ctx.fillRect(-12, -30, 24, 25);
+                    ctx.fillStyle = '#ff1744'; ctx.fillRect(-12, -10, 24, 5);
+                } else { // Graduado
+                    ctx.fillStyle = '#1e1e2f'; ctx.fillRect(-15, -10, 30, 10);
+                    ctx.beginPath(); ctx.moveTo(-30, -10); ctx.lineTo(0, -25); ctx.lineTo(30, -10); ctx.lineTo(0, 5); ctx.fill();
+                    ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,-10); ctx.lineTo(25, 0); ctx.stroke();
+                }
+                ctx.restore();
             }
 
             ctx.restore();
@@ -914,31 +972,21 @@
 
         // --- DRAW ITEMS ---
         function drawActiveItem(ctx) {
-            ctx.globalAlpha = 1.0; // Restricción estricta de alpha
+            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent';
             let item = activeItem || droppedToy;
             if (!item) return;
             
             ctx.save(); ctx.translate(item.x, item.y);
-            
-            if (item.isDragging) {
-                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 15;
-                ctx.scale(1.2, 1.2); 
-            } else {
-                ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 5;
-            }
+            if (item.isDragging) ctx.scale(1.2, 1.2); 
 
-            ctx.font = '45px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            // Algunos navegadores mezclan mal el fillText emoji con shadows. Lo mejor es dibujar sin shadow primero si falla.
+            // Para asegurar opacidad 100% dibujamos el emoji limpio sin sombras complejas
+            ctx.font = '50px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(item.emoji, 0, 0);
 
             if (item.type === 'sponge') {
-                ctx.shadowColor = 'transparent'; ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(-15, -10, 12, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(15, 5, 8, 0, Math.PI*2); ctx.fill();
-            }
-            if (item.type === 'shower' && item.isDragging) {
-                ctx.shadowColor = 'transparent'; ctx.fillStyle = '#40c4ff'; ctx.beginPath(); ctx.arc(0, 30, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(-10, 25, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(10, 25, 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(-15, -10, 12, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(15, 5, 8, 0, Math.PI*2); ctx.fill();
             }
             ctx.restore();
-            ctx.shadowColor = 'transparent'; // Clean exit
         }
 
         function gameLoop(timestamp) {
@@ -951,13 +999,14 @@
             ctx.clearRect(0, 0, width, height);
             drawBackground(ctx);
             drawPet(ctx);
+            drawForeground(ctx);
             drawActiveItem(ctx);
             drawParticles(dt);
 
             requestAnimationFrame(gameLoop);
         }
 
-        window.onload = () => { resize(); drawBackground(ctx); drawPet(ctx); };
+        window.onload = () => { resize(); };
 
     </script>
 </body>
