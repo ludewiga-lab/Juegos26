@@ -3,868 +3,1011 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pista Extrema Pro - V8</title>
+    <title>Mascotas Virtuales VIP - IA Evolutiva</title>
     <style>
+        :root {
+            --primary: #8a2be2;
+            --secondary: #ff007f;
+            --text-dark: #1e1e2f;
+        }
+
         body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            background-color: #4facfe; 
-            overflow: hidden;
-            touch-action: none; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none; -webkit-user-select: none;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif;
+            touch-action: none; user-select: none; -webkit-user-select: none;
+            background-color: #000;
         }
 
-        #gameCanvas {
-            display: block; width: 100%; height: 100%;
+        #app-container {
+            width: 100%; height: 100%; display: flex; flex-direction: column;
+            position: relative; transition: filter 1s ease;
         }
 
-        #ui {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
+        /* Top UI: Barras de estado */
+        .top-ui {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 15px 15px 10px 90px;
+            box-sizing: border-box;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            z-index: 10; pointer-events: none;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 1); border-radius: 10px;
+            padding: 6px 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .stat-title { font-weight: 900; font-size: 10px; color: var(--text-dark); text-transform: uppercase; }
+        .stat-icon { font-size: 12px; }
+
+        .progress-bg {
+            width: 100%; height: 8px; background: rgba(0,0,0,0.2);
+            border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .progress-bar { height: 100%; border-radius: 10px; transition: width 0.3s ease, background 0.3s ease; }
+        #bar-hunger { background: linear-gradient(90deg, #ff5252, #ff1744); }
+        #bar-thirst { background: linear-gradient(90deg, #40c4ff, #00b0ff); }
+        #bar-happy { background: linear-gradient(90deg, #ffd740, #ffab00); }
+        #bar-energy { background: linear-gradient(90deg, #69f0ae, #00e676); }
+        #bar-clean { background: linear-gradient(90deg, #e040fb, #d500f9); }
+
+        .stage-card {
+            grid-column: span 1; background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; border: none; text-align: center;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .stage-card .stat-title { color: white; font-size: 9px; }
+        .stage-card .stat-val { font-weight: 900; font-size: 11px; text-transform: uppercase; }
+
+        #canvas-container { flex: 1; width: 100%; position: relative; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Left UI: Botones principales verticales */
+        .left-ui {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 10px; z-index: 10;
             pointer-events: none;
         }
 
-        .top-hud {
-            position: absolute; top: 20px; left: 20px; right: 20px;
-            display: none; justify-content: space-between; align-items: center;
+        .action-btn {
+            width: 60px; height: 60px;
+            background: rgba(255, 255, 255, 1);
+            border: 3px solid #fff; border-radius: 16px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+            pointer-events: auto; transition: transform 0.1s;
         }
 
-        .score-box {
-            color: #fff; font-size: 26px; font-weight: 900;
-            font-style: italic; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        }
-        .score-box span { color: #ffeb3b; font-size: 34px; }
+        .action-btn:active { transform: scale(0.9); background: #eee; }
+        .btn-icon { font-size: 24px; margin-bottom: 2px;}
+        .btn-label { font-size: 10px; font-weight: 900; color: var(--text-dark); text-align: center; line-height: 1;}
 
-        .turbo-container {
-            width: 140px; height: 24px;
-            background: rgba(0,0,0,0.5);
-            border: 3px solid #fff; border-radius: 12px;
-            overflow: hidden; position: relative;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        /* Submenús alineados a la derecha de los botones principales */
+        .submenu {
+            position: absolute; left: 80px; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,1);
+            padding: 10px; border-radius: 16px; border: 3px solid #ddd;
+            display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            opacity: 0; pointer-events: none; transition: all 0.2s ease-in-out;
+            z-index: 20; margin-left: -20px;
+        }
+        .submenu.active { opacity: 1; pointer-events: auto; margin-left: 0; }
+
+        .sub-item {
+            font-size: 32px; width: 50px; height: 50px;
+            background: #f0f0f0; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: transform 0.1s; border: 2px solid #ccc;
+        }
+        .sub-item:active { transform: scale(0.8); background: #e0e0e0; }
+
+        .zone-indicator {
+            position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 6px 24px;
+            border-radius: 20px; font-weight: bold; letter-spacing: 2px;
+            font-size: 14px; text-transform: uppercase; z-index: 5;
+            text-shadow: 1px 1px 2px #000; opacity: 0; transition: opacity 0.5s;
         }
 
-        #turboBar {
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, #ff6600, #ffea00);
-            transition: width 0.1s linear;
-        }
-        
-        .turbo-text {
-            position: absolute; width: 100%; text-align: center;
-            top: 1px; color: #111; font-size: 15px;
-            font-weight: 900; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); letter-spacing: 1px;
+        .floating-text {
+            position: absolute; color: white; font-weight: 900; font-size: 22px;
+            text-shadow: 2px 2px 4px #000, 0 0 10px var(--secondary); pointer-events: none;
+            z-index: 50; animation: floatUp 2s forwards; text-align: center; width: 200px;
         }
 
-        .screen-overlay {
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            50% { transform: translateY(-40px) scale(1.1); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1); opacity: 0; }
+        }
+
+        .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 30, 60, 0.75); backdrop-filter: blur(5px);
-            pointer-events: auto; text-align: center;
+            background: radial-gradient(circle, rgba(138,43,226,0.98) 0%, rgba(30,30,47,1) 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; text-align: center;
         }
+        .overlay.hidden { display: none; }
 
-        .panel {
-            background: linear-gradient(135deg, #ffffff, #e0e0e0);
-            padding: 25px 20px; border-radius: 20px;
-            border: 4px solid #ff6600;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
-            width: 90%; max-width: 400px;
-            position: relative; overflow: hidden;
-        }
+        .overlay h1 { color: #fff; font-size: 32px; margin-bottom: 5px; font-weight: 900; text-shadow: 2px 2px 0 var(--secondary);}
+        .overlay p { color: #ddd; font-size: 15px; margin-bottom: 30px; padding: 0 20px; line-height: 1.4; max-width: 400px;}
 
-        h1 {
-            color: #ff3300; margin-top: 0;
-            text-transform: uppercase; font-style: italic;
-            font-size: 30px; text-shadow: 2px 2px 0px #ffcc00;
-            margin-bottom: 0px; letter-spacing: 1px;
-        }
-
-        p { color: #333; font-size: 14px; margin: 8px 0; font-weight: 600; }
-
-        /* Selector de autos en cuadrícula */
-        .car-selector {
-            display: flex; flex-wrap: wrap; justify-content: center;
-            margin: 15px 0; gap: 8px;
-        }
-
-        .car-option {
-            background: #fff; border: 3px solid #ccc;
-            border-radius: 12px; padding: 10px 5px;
-            width: 30%; min-width: 85px; box-sizing: border-box;
-            cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .pet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; width: 90%; max-width: 350px; }
+        .pet-option {
+            background: rgba(255,255,255,0.1); border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 15px; padding: 15px; cursor: pointer; transition: all 0.2s;
             display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        .pet-option.selected { background: rgba(255,255,255,1); border-color: var(--secondary); transform: scale(1.05); }
+        .pet-option.selected .pet-emoji { filter: none; }
+        .pet-option.selected .pet-name { color: var(--text-dark); }
+        .pet-emoji { font-size: 45px; filter: grayscale(100%) opacity(0.5); transition: all 0.2s; }
+        .pet-name { margin-top: 5px; font-weight: 900; color: #fff; font-size: 14px; text-transform: uppercase;}
 
-        .car-option.selected {
-            border-color: #ff6600; background: #fff0e6;
-            box-shadow: 0 10px 20px rgba(255, 102, 0, 0.3); 
-            transform: scale(1.08) translateY(-3px);
-            z-index: 10;
+        .start-btn {
+            background: linear-gradient(135deg, var(--secondary), #ff5252);
+            color: white; border: none; padding: 18px 50px; border-radius: 30px;
+            font-size: 20px; font-weight: 900; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 10px 20px rgba(255, 0, 127, 0.5); transition: transform 0.1s;
         }
+        .start-btn:active { transform: scale(0.95); }
 
-        .car-option-title {
-            color: #333; font-size: 11px; font-weight: 900;
-            margin-top: 8px; height: 14px; text-transform: uppercase; text-align: center;
-        }
+        #goodEndScreen { background: radial-gradient(circle, #0288d1 0%, #01579b 100%); }
+        #badEndScreen { background: radial-gradient(circle, #795548 0%, #3e2723 100%); }
+        .emoji-big { font-size: 80px; margin-bottom: 10px; }
 
-        .car-preview {
-            width: 60px; height: 30px;
-            background-size: contain; background-repeat: no-repeat; background-position: center;
-        }
-
-        .btn-play {
-            background: linear-gradient(to bottom, #ff9900, #e62e00);
-            color: white; border: none; padding: 15px 30px;
-            font-size: 22px; font-weight: 900; border-radius: 10px;
-            cursor: pointer; margin-top: 5px; text-transform: uppercase;
-            box-shadow: 0 6px 0 #991a00, 0 10px 20px rgba(0,0,0,0.3); width: 100%;
-            transition: all 0.1s; letter-spacing: 1px;
-        }
-
-        .btn-play:active { 
-            transform: translateY(6px); 
-            box-shadow: 0 0px 0 #991a00, 0 2px 5px rgba(0,0,0,0.3); 
-        }
-
-        #tutorial {
-            position: absolute; bottom: 50px; width: 100%;
-            display: flex; justify-content: space-between;
-            pointer-events: none; opacity: 0; transition: opacity 0.5s;
-        }
-        
-        .tut-zone {
-            width: 45%; text-align: center; color: white;
-            font-weight: bold; font-size: 16px; background: rgba(0,0,0,0.5);
-            padding: 15px 0; border-radius: 15px; backdrop-filter: blur(4px);
-            border: 2px dashed rgba(255,255,255,0.8); margin: 0 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .tut-zone span { font-size: 24px; color: #ffea00; display: block; margin-bottom: 5px; }
-
-        /* SVGs para Menú */
-        .svg-sport { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'%3E%3Cpath d='M5,30 L5,22 L25,12 L55,10 L85,20 L98,25 L98,30 Z' fill='url(%23gradRed)'/%3E%3Cdefs%3E%3ClinearGradient id='gradRed' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ff3333' /%3E%3Cstop offset='100%25' stop-color='%23990000' /%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M28,14 L50,12 L55,18 L30,18 Z' fill='%23111'/%3E%3Ccircle cx='20' cy='30' r='7' fill='%23222' stroke='%23ccc' stroke-width='2'/%3E%3Ccircle cx='80' cy='30' r='7' fill='%23222' stroke='%23ccc' stroke-width='2'/%3E%3C/svg%3E"); }
-        .svg-ev { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'%3E%3Cpath d='M8,30 L8,12 L25,3 L75,3 L90,15 L95,30 Z' fill='url(%23gradWhite)'/%3E%3Cdefs%3E%3ClinearGradient id='gradWhite' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' /%3E%3Cstop offset='100%25' stop-color='%23cccccc' /%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M8,30 L8,12 L25,3 L75,3 L90,15 L95,30 Z' fill='none' stroke='%23888' stroke-width='1'/%3E%3Cpath d='M30,5 L70,5 L75,14 L28,14 Z' fill='%23111'/%3E%3Cpath d='M8,28 L95,28' stroke='%2300ffff' stroke-width='3'/%3E%3Ccircle cx='25' cy='30' r='8' fill='%23222' stroke='%2300ffff' stroke-width='1.5'/%3E%3Ccircle cx='75' cy='30' r='8' fill='%23222' stroke='%2300ffff' stroke-width='1.5'/%3E%3C/svg%3E"); }
-        .svg-buggy { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'%3E%3Cpath d='M15,25 L85,25 L85,20 L15,20 Z' fill='%23ffcc00'/%3E%3Cpath d='M25,20 L35,2 L65,2 L75,20' fill='none' stroke='%23333' stroke-width='4'/%3E%3Ccircle cx='20' cy='25' r='11' fill='%23111' stroke='%23555' stroke-width='2'/%3E%3Ccircle cx='80' cy='25' r='11' fill='%23111' stroke='%23555' stroke-width='2'/%3E%3C/svg%3E"); }
-        .svg-muscle { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'%3E%3Cpath d='M5,30 L5,18 L30,15 L45,8 L75,8 L95,18 L98,30 Z' fill='%234a148c'/%3E%3Crect x='70' y='6' width='15' height='2' fill='%23fff'/%3E%3Crect x='20' y='12' width='15' height='3' fill='%23777'/%3E%3Cpath d='M47,9 L72,9 L75,15 L43,15 Z' fill='%23111'/%3E%3Ccircle cx='22' cy='30' r='8' fill='%23222' stroke='%23ddd' stroke-width='2'/%3E%3Ccircle cx='78' cy='30' r='8' fill='%23222' stroke='%23ddd' stroke-width='2'/%3E%3C/svg%3E"); }
-        .svg-van { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'%3E%3Cpath d='M10,30 L10,5 L80,5 L90,15 L95,30 Z' fill='%2300bfa5'/%3E%3Cpath d='M10,18 L92,18 L95,30 L10,30 Z' fill='%23ffffff'/%3E%3Cpath d='M15,7 L35,7 L35,16 L15,16 Z' fill='%23111'/%3E%3Cpath d='M40,7 L60,7 L60,16 L40,16 Z' fill='%23111'/%3E%3Cpath d='M65,7 L78,7 L85,16 L65,16 Z' fill='%23111'/%3E%3Ccircle cx='25' cy='30' r='7' fill='%23222' stroke='%23ccc' stroke-width='2'/%3E%3Ccircle cx='75' cy='30' r='7' fill='%23222' stroke='%23ccc' stroke-width='2'/%3E%3C/svg%3E"); }
     </style>
 </head>
 <body>
-
-    <canvas id="gameCanvas"></canvas>
-
-    <div id="ui">
-        <div class="top-hud" id="hud">
-            <div class="score-box"><span id="scoreVal">0</span> m</div>
-            <div class="turbo-container">
-                <div id="turboBar"></div>
-                <div class="turbo-text">TURBO</div>
-            </div>
-        </div>
+    <div id="app-container">
         
-        <div id="tutorial">
-            <div class="tut-zone" style="border-color: #ff6600;"><span>SALTAR</span>Mitad Izq.</div>
-            <div class="tut-zone" style="border-color: #ffea00;"><span>TURBO</span>Mitad Der.</div>
+        <div class="top-ui">
+            <div class="stat-card"><div class="stat-header"><span class="stat-title">Hambre</span><span class="stat-icon">🍖</span></div><div class="progress-bg"><div class="progress-bar" id="bar-hunger" style="width: 100%;"></div></div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-title">Sed</span><span class="stat-icon">💧</span></div><div class="progress-bg"><div class="progress-bar" id="bar-thirst" style="width: 100%;"></div></div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-title">Feliz</span><span class="stat-icon">❤️</span></div><div class="progress-bg"><div class="progress-bar" id="bar-happy" style="width: 100%;"></div></div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-title">Energía</span><span class="stat-icon">⚡</span></div><div class="progress-bg"><div class="progress-bar" id="bar-energy" style="width: 100%;"></div></div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-title">Higiene</span><span class="stat-icon">🛁</span></div><div class="progress-bg"><div class="progress-bar" id="bar-clean" style="width: 100%;"></div></div></div>
+            <div class="stat-card stage-card"><span class="stat-title">Vida</span><span class="stat-val" id="stage-text">Bebé</span></div>
         </div>
 
-        <div class="screen-overlay" id="startScreen">
-            <div class="panel">
-                <h1>GARAJE VIP</h1>
-                <p style="font-style: italic; color: #555;">Piloto: Alejandro</p>
-                
-                <div class="car-selector">
-                    <div class="car-option" onclick="selectCar('sport', this)">
-                        <div class="car-preview svg-sport"></div>
-                        <div class="car-option-title">Sport</div>
-                    </div>
-                    <div class="car-option selected" onclick="selectCar('ev', this)">
-                        <div class="car-preview svg-ev"></div>
-                        <div class="car-option-title">MG ZS EV</div>
-                    </div>
-                    <div class="car-option" onclick="selectCar('buggy', this)">
-                        <div class="car-preview svg-buggy"></div>
-                        <div class="car-option-title">Buggy</div>
-                    </div>
-                    <div class="car-option" onclick="selectCar('muscle', this)">
-                        <div class="car-preview svg-muscle"></div>
-                        <div class="car-option-title">Muscle</div>
-                    </div>
-                    <div class="car-option" onclick="selectCar('van', this)">
-                        <div class="car-preview svg-van"></div>
-                        <div class="car-option-title">Family Van</div>
-                    </div>
-                </div>
+        <div class="zone-indicator" id="zoneInd">Casa</div>
 
-                <p style="font-size: 13px;">El Turbo rompe las cajas rojas.</p>
-                <button class="btn-play" onclick="prepareGame()">ENCENDER MOTOR</button>
-            </div>
+        <!-- Left Vertical UI -->
+        <div class="left-ui" id="main-controls">
+            <div class="action-btn" onclick="toggleMenu('foodMenu')"><div class="btn-icon">🍔</div><div class="btn-label">Comer</div></div>
+            <div class="action-btn" onclick="toggleMenu('careMenu')"><div class="btn-icon">🛁</div><div class="btn-label">Aseo</div></div>
+            <div class="action-btn" onclick="toggleMenu('toyMenu')"><div class="btn-icon" id="play-icon">🎾</div><div class="btn-label" id="play-label">Jugar</div></div>
+            <div class="action-btn" onclick="toggleHat()"><div class="btn-icon">🎩</div><div class="btn-label">Gorro</div></div>
+            <div class="action-btn" onclick="changeZone()"><div class="btn-icon">🗺️</div><div class="btn-label">Zona</div></div>
+            <div class="action-btn" onclick="toggleSleep()"><div class="btn-icon" id="sleep-icon">🌙</div><div class="btn-label" id="sleep-label">Dormir</div></div>
         </div>
 
-        <div class="screen-overlay" id="gameOverScreen" style="display: none;">
-            <div class="panel">
-                <h1 id="gameOverReason">¡Destruido!</h1>
-                <p>Distancia recorrida:<br><b id="finalScore" style="color: #ff3300; font-size: 40px; text-shadow: 1px 1px 0 rgba(0,0,0,0.2);">0</b> m</p>
-                <button class="btn-play" onclick="showGarage()">Volver al Garaje</button>
-            </div>
+        <!-- Submenús -->
+        <div class="submenu" id="foodMenu">
+            <div class="sub-item" onclick="spawnItem('food', '🍎')">🍎</div>
+            <div class="sub-item" onclick="spawnItem('food', '🍖')">🍖</div>
+            <div class="sub-item" onclick="spawnItem('pitcher', '🫗')">🫗</div>
         </div>
+
+        <div class="submenu" id="careMenu">
+            <div class="sub-item" onclick="spawnItem('sponge', '🧽'); setZone('baño');">🧽</div>
+            <div class="sub-item" onclick="spawnItem('comb', '🪮')">🪮</div>
+            <div class="sub-item" onclick="spawnItem('medicine', '💊')">💊</div>
+        </div>
+
+        <div class="submenu" id="toyMenu">
+            <div class="sub-item" id="toy-1" onclick="spawnItem('toy', '⚽')">⚽</div>
+            <div class="sub-item" id="toy-2" onclick="spawnItem('toy', '🧸')">🧸</div>
+            <div class="sub-item" id="toy-3" onclick="spawnItem('toy', '🦴')">🦴</div>
+        </div>
+
+        <div id="canvas-container"><canvas id="gameCanvas"></canvas></div>
+
+    </div>
+
+    <!-- START SCREEN -->
+    <div class="overlay" id="startScreen">
+        <h1>Centro IA-Pet</h1>
+        <p>Entorno interactivo: Usa la bañera para limpiarlo, o tíralo por el tobogán del parque. Crecerá y se graduará en exactamente 10 minutos.</p>
+        <div class="pet-grid">
+            <div class="pet-option selected" onclick="selectPet('rabbit', this)"><div class="pet-emoji">🐰</div><div class="pet-name">Conejo</div></div>
+            <div class="pet-option" onclick="selectPet('dino', this)"><div class="pet-emoji">🦖</div><div class="pet-name">Dinosaurio</div></div>
+            <div class="pet-option" onclick="selectPet('lion', this)"><div class="pet-emoji">🦁</div><div class="pet-name">León</div></div>
+            <div class="pet-option" onclick="selectPet('dog', this)"><div class="pet-emoji">🐶</div><div class="pet-name">Perro</div></div>
+        </div>
+        <button class="start-btn" onclick="startGame()">Adoptar</button>
+    </div>
+
+    <!-- GOOD END SCREEN -->
+    <div class="overlay hidden" id="goodEndScreen">
+        <div class="emoji-big">🎓</div>
+        <h1>¡Se graduó!</h1>
+        <p>Has criado a tu mascota excelentemente durante 10 minutos. Ahora ha crecido y se mudará a Múnich para estudiar Ingeniería de Producción. ¡Qué orgullo, Alejandro!</p>
+        <button class="start-btn" onclick="location.reload()">Volver a jugar</button>
+    </div>
+
+    <!-- BAD END SCREEN -->
+    <div class="overlay hidden" id="badEndScreen">
+        <div class="emoji-big">🚑</div>
+        <h1>Colapso total</h1>
+        <p>Tu mascota enfermó, tenía demasiada hambre y tristeza. Ha sido rescatada por los servicios sociales virtuales.</p>
+        <button class="start-btn" onclick="location.reload()">Intentarlo de nuevo</button>
     </div>
 
     <script>
+        // --- MOTOR DE AUDIO ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        
+        function playSound(type) {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            let now = audioCtx.currentTime;
+
+            if (type === 'eat') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'drink' || type === 'water_pour') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.linearRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'heal') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(800, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.4); osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'wash') {
+                let bufferSize = audioCtx.sampleRate * 0.1; let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                let noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+                let bq = audioCtx.createBiquadFilter(); bq.type = 'bandpass'; bq.frequency.value = 800 + Math.random()*500;
+                noise.connect(bq); bq.connect(gain);
+                gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); noise.start(now);
+            } else if (type === 'reject') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(200, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'tada') { 
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now+0.2); osc.frequency.setValueAtTime(800, now+0.4);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0, now + 0.8); osc.start(now); osc.stop(now + 0.8);
+            } else if (type === 'animal') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(500, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+            }
+        }
+
+        // --- MOTOR PRINCIPAL ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const appContainer = document.getElementById('app-container');
         
-        const scoreVal = document.getElementById('scoreVal');
-        const turboBar = document.getElementById('turboBar');
-        const hud = document.getElementById('hud');
-        const startScreen = document.getElementById('startScreen');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const finalScore = document.getElementById('finalScore');
-        const gameOverReason = document.getElementById('gameOverReason');
-        const tutorial = document.getElementById('tutorial');
-
         let width, height;
         let lastTime = 0;
-        let gameState = 'MENU'; 
+        let isPlaying = false;
         
-        const GRAVITY = 2600; 
-        const JUMP_FORCE = -950;
-        const BASE_SPEED = 450; 
-        let distance = 0;
-        let cameraX = 0;
-        let particles = [];
-        let clouds = [];
-        let wheelAngle = 0; 
+        const ZONES = ['casa', 'cocina', 'baño', 'jardin', 'parque', 'cuarto'];
+        let currentZoneIdx = 0;
+        let waterBowlX = 0;
+        let waterLevel = 100; 
+        let isShowerOn = false;
+        let isHatOn = false;
 
-        // 5 Modelos de Autos
-        const CAR_MODELS = {
-            sport:  { width: 64, height: 18 },
-            ev:     { width: 60, height: 26 }, // MG ZS EV
-            buggy:  { width: 54, height: 24 },
-            muscle: { width: 68, height: 18 }, // Clásico V8
-            van:    { width: 58, height: 28 }  // Van Familiar
+        // ETAPAS EXACTAS (10 min = 600 seg)
+        const LIFE_STAGES = [
+            { id: 'baby', scale: 0.8, threshold: 0, label: 'Bebé' },
+            { id: 'child', scale: 1.1, threshold: 150, label: 'Niño' },
+            { id: 'teen', scale: 1.3, threshold: 300, label: 'Adolesc.' },
+            { id: 'adult', scale: 1.5, threshold: 450, label: 'Adulto' },
+            { id: 'graduate', scale: 1.5, threshold: 600, label: 'Graduado' }
+        ];
+
+        const pet = {
+            type: 'rabbit', name: "Mascota",
+            hunger: 100, thirst: 100, happy: 100, energy: 100, clean: 100,
+            isSleeping: false, isSick: false, state: 'idle', 
+            soapLevel: 0, 
+            x: 0, y: 0, targetX: 0,
+            breath: 0, timePhase: 0, jumpY: 0,
+            playTime: 0, stageIdx: 0, scale: 0.8, targetScale: 0.8,
+            actionTimer: 0, poopTimer: 0, inactiveTimer: 0
         };
 
-        let currentModel = 'ev'; 
-        const car = {
-            width: CAR_MODELS.ev.width,
-            height: CAR_MODELS.ev.height,
-            x: 0, y: 0, vx: BASE_SPEED, vy: 0,
-            rotation: 0, state: 'jumping',
-            turboCharge: 100, isTurboActive: false,
-            currentLoop: null, loopProgress: 0, loopAngle: 0
-        };
-
-        let platforms = [];
-        let nextPlatX = 0;
-        let nextPlatY = 0; 
-
-        const COLORS = {
-            bgBottom: '#89f7fe', bgTop: '#66a6ff',
-            track: '#ff6600', edge: '#0033cc', neon: '#ffff00',
-            mountain: '#b3d4ff'
-        };
+        let isEnding = false; let endingType = ''; 
+        let activeItem = null; let droppedToy = null; 
+        let poops = []; let particles = [];
 
         function resize() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-            if (nextPlatY === 0) nextPlatY = height * 0.7; 
-            initClouds();
+            width = appContainer.clientWidth; height = appContainer.clientHeight;
+            canvas.width = width; canvas.height = height;
+            if(pet.x === 0) pet.x = width / 2;
+            waterBowlX = width * 0.85; 
         }
         window.addEventListener('resize', resize);
 
-        function initClouds() {
-            clouds = [];
-            for(let i=0; i<8; i++) {
-                clouds.push({
-                    x: Math.random() * width * 2,
-                    y: Math.random() * (height * 0.4),
-                    size: Math.random() * 40 + 30,
-                    speed: Math.random() * 20 + 10
-                });
-            }
+        function getFloorY() {
+            let zone = ZONES[currentZoneIdx];
+            if (zone === 'baño') return height * 0.70; // Profundidad bañera
+            if (zone === 'cuarto') return height * 0.70; // Alfombra/Cama
+            return height * 0.75;
         }
 
-        function selectCar(model, element) {
-            currentModel = model;
-            car.width = CAR_MODELS[model].width;
-            car.height = CAR_MODELS[model].height;
-            document.querySelectorAll('.car-option').forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
-        }
-
-        function showGarage() {
-            gameOverScreen.style.display = 'none';
-            startScreen.style.display = 'flex';
-            gameState = 'MENU';
-        }
+        // --- SISTEMA INTERACTIVO ---
+        let dragOffsetX = 0, dragOffsetY = 0;
 
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (gameState !== 'PLAYING') return;
-            tutorial.style.opacity = '0'; 
+            e.preventDefault(); initAudio(); pet.inactiveTimer = 0;
+            if(!isPlaying || isEnding) return;
+            const touchX = e.touches[0].clientX; const touchY = e.touches[0].clientY;
 
-            for (let i = 0; i < e.touches.length; i++) {
-                let touchX = e.touches[i].clientX;
-                if (touchX < width / 2) {
-                    if ((car.state === 'normal' || car.state === 'ramp_launch') && car.vy >= -50) {
-                        car.vy = JUMP_FORCE;
-                        car.state = 'jumping';
-                        createParticles(car.x, car.y + car.height, '#ffffff', 8);
-                    }
-                } else {
-                    if (car.turboCharge >= 20 && !car.isTurboActive) {
-                        car.isTurboActive = true;
-                        if(navigator.vibrate) navigator.vibrate(40); 
-                    }
+            if (pet.isSleeping) { toggleSleep(); return; }
+
+            // Interacción Ducha Fija
+            if (ZONES[currentZoneIdx] === 'baño') {
+                let showerX = width / 2; let showerY = height * 0.15;
+                if (Math.hypot(touchX - showerX, touchY - showerY) < 80) {
+                    isShowerOn = !isShowerOn;
+                    if(isShowerOn) playSound('water_pour');
+                    return;
                 }
+            }
+
+            // Limpiar popó
+            for (let i = poops.length - 1; i >= 0; i--) {
+                if (Math.hypot(touchX - poops[i].x, touchY - poops[i].y) < 60) {
+                    poops.splice(i, 1); pet.clean = Math.min(100, pet.clean + 10);
+                    createParticles(touchX, touchY, 'star', 3, '#fff'); playSound('wash');
+                    if(navigator.vibrate) navigator.vibrate(20); return; 
+                }
+            }
+
+            // Agarrar Item
+            if (activeItem && Math.hypot(touchX - activeItem.x, touchY - activeItem.y) < 70) {
+                activeItem.isDragging = true;
+                dragOffsetX = activeItem.x - touchX; dragOffsetY = activeItem.y - touchY;
+                return;
+            }
+
+            // Agarrar Mascota
+            let petDist = Math.hypot(touchX - pet.x, touchY - (pet.y - 40 * pet.scale));
+            if (petDist < 80 * pet.scale) {
+                pet.state = 'dragging'; dragOffsetX = pet.x - touchX; dragOffsetY = pet.y - touchY;
+                pet.jumpY = 0; playSound('animal'); if(navigator.vibrate) navigator.vibrate(10); return;
             }
         }, { passive: false });
 
-        canvas.addEventListener('touchend', (e) => {
-            if (gameState !== 'PLAYING') return;
-            let rightTouch = false;
-            for (let i = 0; i < e.touches.length; i++) {
-                if (e.touches[i].clientX >= width / 2) rightTouch = true;
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); pet.inactiveTimer = 0;
+            if(!isPlaying || pet.isSleeping || isEnding) return;
+            const touchX = e.touches[0].clientX; const touchY = e.touches[0].clientY;
+
+            if (activeItem && activeItem.isDragging) {
+                activeItem.x = touchX + dragOffsetX; activeItem.y = touchY + dragOffsetY;
+
+                let distToPet = Math.hypot(activeItem.x - pet.x, activeItem.y - (pet.y - 40 * pet.scale));
+                
+                // Aplicar Jabón o Peinar
+                if (distToPet < 90 * pet.scale) {
+                    if (activeItem.type === 'sponge') {
+                        if (Math.random() < 0.2) { 
+                            createParticles(activeItem.x + (Math.random()-0.5)*40, activeItem.y + (Math.random()-0.5)*40, 'soap', 1, '#fff'); 
+                            playSound('wash'); 
+                        }
+                        pet.soapLevel = Math.min(100, pet.soapLevel + 3);
+                    } 
+                    else if (activeItem.type === 'comb') {
+                        if (Math.random() < 0.1) { createParticles(pet.x, pet.y - 60, 'heart', 1, '#ff007f'); playSound('animal'); }
+                        pet.happy = Math.min(100, pet.happy + 1);
+                    }
+                }
+
+                // Llenar Pote de Agua
+                if (activeItem.type === 'pitcher') {
+                    let distToBowl = Math.hypot(activeItem.x - waterBowlX, activeItem.y - (height*0.75));
+                    if (distToBowl < 80) {
+                        createParticles(waterBowlX, height*0.75, 'drop', 1, '#40c4ff'); playSound('water_pour');
+                        waterLevel = Math.min(100, waterLevel + 3);
+                    }
+                }
+
+            } else if (pet.state === 'dragging' || pet.state === 'scared') {
+                pet.x = touchX + dragOffsetX; pet.y = touchY + dragOffsetY;
+                if (pet.y < height * 0.4) {
+                    if (pet.state !== 'scared') playSound('reject');
+                    pet.state = 'scared';
+                } else { pet.state = 'dragging'; }
             }
-            if (!rightTouch) car.isTurboActive = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
+            if(!isPlaying || isEnding) return; pet.inactiveTimer = 0;
+            
+            if (pet.state === 'dragging' || pet.state === 'scared') {
+                // Interacción Tobogán
+                if (ZONES[currentZoneIdx] === 'parque') {
+                    let slideTopX = width * 0.35; let slideTopY = height * 0.35;
+                    if (Math.hypot(pet.x - slideTopX, pet.y - slideTopY) < 100) {
+                        pet.state = 'sliding'; pet.x = slideTopX; pet.y = slideTopY; pet.jumpY = 0;
+                        playSound('tada');
+                    } else { pet.state = 'idle'; }
+                } else {
+                    pet.state = 'idle';
+                }
+            }
+
+            if (activeItem && activeItem.isDragging) {
+                activeItem.isDragging = false;
+                let distToPet = Math.hypot(activeItem.x - pet.x, activeItem.y - (pet.y - 40 * pet.scale));
+                
+                if (distToPet < 90 * pet.scale) {
+                    if (activeItem.type === 'food') {
+                        if (pet.isSick) { showFloatingText(pet.x, pet.y - 100, "¡No quiero!"); pet.state = 'sad'; playSound('reject'); activeItem = null; return; }
+                        pet.hunger = Math.min(100, pet.hunger + 35); pet.energy = Math.min(100, pet.energy + 10); pet.clean = Math.max(0, pet.clean - 5);
+                        pet.state = 'eating'; pet.jumpY = -20; createParticles(pet.x, pet.y - 40, 'star', 5, '#ffd740'); playSound('eat'); activeItem = null;
+                        setTimeout(() => { if(pet.state === 'eating') pet.state = 'idle'; }, 1000);
+                    } 
+                    else if (activeItem.type === 'toy' || activeItem.type === 'study') { playWithToy(activeItem.type); activeItem = null; }
+                    else if (activeItem.type === 'medicine') {
+                        if (pet.isSick) {
+                            pet.isSick = false; pet.happy = Math.min(100, pet.happy + 30); pet.state = 'idle'; pet.jumpY = -40;
+                            createParticles(pet.x, pet.y - 50, 'star', 15, '#00e676'); playSound('heal'); showFloatingText(pet.x, pet.y - 100, "¡Mejor!"); activeItem = null;
+                        } else {
+                            pet.targetX = pet.x > width/2 ? pet.x - 100 : pet.x + 100; pet.state = 'wandering'; playSound('reject'); showFloatingText(pet.x, pet.y - 100, "¡Estoy sano!");
+                        }
+                    }
+                } else {
+                    if (activeItem.type === 'toy' || activeItem.type === 'study') { droppedToy = activeItem; activeItem = null; if(!pet.isSick) { pet.state = 'chasing'; pet.targetX = droppedToy.x; } }
+                    else if (activeItem.type === 'sponge' || activeItem.type === 'pitcher' || activeItem.type === 'comb') { activeItem = null; } 
+                }
+            }
         });
 
-        function spawnPlatform(forceType = null) {
-            const types = ['flat', 'flat', 'slope_up', 'slope_down', 'ramp', 'loop_full'];
-            let type = forceType || types[Math.floor(Math.random() * types.length)];
+        function playWithToy(type) {
+            if (pet.isSick) { playSound('reject'); return; }
+            if (type === 'study') { pet.happy += 20; pet.energy -= 15; pet.jumpY = -30; createParticles(pet.x, pet.y - 60, 'star', 4, '#00ffff'); } 
+            else { pet.happy += 35; pet.energy -= 10; pet.clean -= 5; pet.jumpY = -60; createParticles(pet.x, pet.y - 60, 'heart', 4, '#ff007f'); }
+            playSound('animal');
+        }
 
-            if (type === 'slope_up' && nextPlatY < height * 0.4) type = 'slope_down';
-            if (type === 'slope_down' && nextPlatY > height * 0.8) type = 'slope_up';
+        // --- MENÚS ---
+        function selectPet(type, el) {
+            pet.type = type; document.querySelectorAll('.pet-option').forEach(e => e.classList.remove('selected')); el.classList.add('selected');
+        }
 
-            let plat = { type: type, x: nextPlatX, yStart: nextPlatY, yEnd: nextPlatY, obstacles: [], passed: false };
+        function startGame() {
+            initAudio(); document.getElementById('startScreen').classList.add('hidden'); 
+            resize(); isPlaying = true; lastTime = performance.now(); requestAnimationFrame(gameLoop); showZoneName();
+        }
 
-            if (type === 'flat') {
-                plat.width = Math.random() * 300 + 300;
-                if (platforms.length > 2 && Math.random() > 0.4) {
-                    plat.obstacles.push({
-                        x: nextPlatX + plat.width / 2 + Math.random() * 100,
-                        y: nextPlatY - 45, width: 45, height: 45, destroyed: false
-                    });
-                }
-                nextPlatX += plat.width;
-                platforms.push(plat);
-            } else if (type === 'slope_up' || type === 'slope_down') {
-                plat.width = Math.random() * 250 + 250;
-                let heightDiff = (type === 'slope_up' ? -1 : 1) * (Math.random() * 100 + 60);
-                plat.yEnd = nextPlatY + heightDiff;
-                nextPlatX += plat.width;
-                nextPlatY = plat.yEnd; 
-                platforms.push(plat);
-                spawnPlatform('flat');
-            } else if (type === 'ramp') {
-                plat.width = 350; 
-                plat.rampStartX = nextPlatX + 250;
-                plat.rampHeight = 90;
-                nextPlatX += plat.width;
-                platforms.push(plat);
-                spawnGap(300);
-            } else if (type === 'loop_full') {
-                plat.radius = 130;
-                plat.width = plat.radius * 2 + 100; 
-                plat.cx = nextPlatX + plat.width / 2; 
-                plat.cy = nextPlatY - plat.radius;
-                nextPlatX += plat.width;
-                platforms.push(plat);
-                spawnPlatform('flat'); 
+        function toggleMenu(menuId) {
+            if(pet.isSleeping || isEnding) return;
+            let targetMenu = document.getElementById(menuId);
+            let isActive = targetMenu.classList.contains('active');
+            document.querySelectorAll('.submenu').forEach(m => m.classList.remove('active'));
+            if (!isActive) { targetMenu.style.top = '50%'; targetMenu.classList.add('active'); }
+        }
+
+        function spawnItem(type, emoji) {
+            document.querySelectorAll('.submenu').forEach(m => m.classList.remove('active'));
+            if(pet.isSleeping || isEnding) return;
+            activeItem = { type: type, emoji: emoji, x: width / 2, y: 100, vy: 0, isDragging: false };
+        }
+
+        function toggleHat() {
+            if(pet.isSleeping || isEnding) return;
+            isHatOn = !isHatOn; playSound('tada');
+        }
+
+        function changeZone() {
+            if(pet.isSleeping || isEnding) return;
+            currentZoneIdx = (currentZoneIdx + 1) % ZONES.length; 
+            isShowerOn = false; // Apagar ducha al salir
+            pet.y = getFloorY();
+            showZoneName(); pet.jumpY = -20;
+        }
+        function setZone(name) {
+            let idx = ZONES.indexOf(name);
+            if(idx !== -1 && currentZoneIdx !== idx) { 
+                currentZoneIdx = idx; pet.y = getFloorY(); showZoneName(); 
             }
         }
 
-        function spawnGap(gapWidth) {
-            let gap = { type: 'gap', x: nextPlatX, width: gapWidth };
-            nextPlatX += gapWidth;
-            platforms.push(gap);
-            spawnPlatform('flat'); 
+        function showZoneName() {
+            let ind = document.getElementById('zoneInd'); ind.innerText = ZONES[currentZoneIdx];
+            ind.style.opacity = '1'; setTimeout(() => ind.style.opacity = '0', 2000);
         }
 
-        function initWorld() {
-            platforms = [];
-            nextPlatX = width * 0.1; 
-            nextPlatY = height * 0.7; 
-            for(let i=0; i<8; i++) spawnPlatform();
+        function toggleSleep() {
+            if(!isPlaying || isEnding) return;
+            pet.isSleeping = !pet.isSleeping;
+            const icon = document.getElementById('sleep-icon'); const label = document.getElementById('sleep-label');
+            if (pet.isSleeping) {
+                icon.innerText = "☀️"; label.innerText = "Despertar"; pet.state = 'idle'; activeItem = null; droppedToy = null; isShowerOn = false;
+                showFloatingText(width/2, height/2, "Buenas noches zZz");
+            } else {
+                icon.innerText = "🌙"; label.innerText = "Dormir"; pet.jumpY = -40; playSound('animal'); showFloatingText(width/2, height/2, "¡Buen día!");
+            }
         }
 
-        function createParticles(x, y, color, count, explode = false) {
+        function showFloatingText(x, y, text) {
+            const el = document.createElement('div'); el.className = 'floating-text'; el.innerText = text;
+            el.style.left = (x - 100) + 'px'; el.style.top = y + 'px'; document.getElementById('app-container').appendChild(el);
+            setTimeout(() => el.remove(), 2000);
+        }
+
+        // --- SISTEMA DE CRECIMIENTO ---
+        function checkGrowth() {
+            let nextStage = LIFE_STAGES[pet.stageIdx + 1];
+            if (nextStage && pet.playTime >= nextStage.threshold) {
+                pet.stageIdx++;
+                if (nextStage.id === 'graduate') { triggerEnd('good'); return; }
+                pet.targetScale = nextStage.scale; document.getElementById('stage-text').innerText = nextStage.label;
+                
+                if (nextStage.id === 'adult') {
+                    document.getElementById('play-icon').innerText = '📚'; document.getElementById('play-label').innerText = 'Estudiar';
+                    let t1 = document.getElementById('toy-1'); t1.innerText = '📖'; t1.onclick = () => spawnItem('study', '📖');
+                    let t2 = document.getElementById('toy-2'); t2.innerText = '✏️'; t2.onclick = () => spawnItem('study', '✏️');
+                    let t3 = document.getElementById('toy-3'); t3.innerText = '🎒'; t3.onclick = () => spawnItem('study', '🎒');
+                }
+                createParticles(pet.x, pet.y - 50, 'star', 30, '#ffea00'); playSound('tada'); showFloatingText(width/2, height/2 - 50, "¡Evolución!");
+            }
+        }
+
+        function triggerEnd(type) {
+            isEnding = true; endingType = type; document.getElementById('main-controls').style.opacity = '0'; 
+            if (type === 'bad') { playSound('reject'); document.getElementById('badEndScreen').classList.remove('hidden'); } 
+            else if (type === 'good') { pet.state = 'idle'; playSound('tada'); document.getElementById('goodEndScreen').classList.remove('hidden'); }
+        }
+
+        // --- PARTÍCULAS ---
+        function createParticles(x, y, type, count, color) {
             for(let i=0; i<count; i++) {
                 particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * (explode ? 1000 : 300),
-                    vy: (Math.random() - 0.5) * (explode ? 1000 : 300),
-                    life: 1.0, decay: Math.random() * 2 + 1.5,
-                    color: color, size: Math.random() * 8 + 2
+                    x: x, y: y, vx: (Math.random() - 0.5) * ((type==='drop')?100:200),
+                    vy: (type === 'soap') ? -Math.random()*50 : (type==='drop' ? Math.random()*200 : -Math.random()*250 - 50),
+                    life: 1.0, type: type, color: color, size: Math.random() * 15 + 10
                 });
             }
         }
 
-        function updateParticles(dt) {
+        function drawParticles(dt) {
             for(let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
                 p.x += p.vx * dt; p.y += p.vy * dt;
-                p.life -= p.decay * dt;
+                
+                if(p.type === 'drop') { p.vy += 800 * dt; } 
+                else if(p.type === 'star' || p.type === 'heart') { p.vy += 400 * dt; }
+                else if(p.type === 'soap') { p.x += Math.sin(p.life * 20) * 1; p.vy = -20; }
+                else if(p.type === 'shootingStar') { p.x += 800*dt; p.y += 300*dt; } 
+
+                p.life -= (p.type === 'shootingStar') ? dt * 1.5 : dt * 0.8; 
+                
+                ctx.globalAlpha = Math.max(0, p.life); ctx.save(); ctx.translate(p.x, p.y);
+                if (p.type === 'heart' || p.type === 'star') { ctx.fillStyle = p.color; ctx.font = `${p.size*1.5}px Arial`; ctx.fillText(p.type==='heart'?'❤️':'✨', -p.size/2, p.size/2); } 
+                else if (p.type === 'zzz') { ctx.fillStyle = '#fff'; ctx.font = `bold ${p.size}px Arial`; ctx.fillText('Z', 0, 0); } 
+                else if (p.type === 'soap' || p.type === 'drop') {
+                    ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI*2); ctx.fillStyle = p.color; ctx.fill();
+                    if(p.type==='soap') { ctx.strokeStyle = 'rgba(255,255,255,1)'; ctx.lineWidth=1; ctx.stroke(); }
+                } else if (p.type === 'sick') { ctx.fillStyle = '#64dd17'; ctx.font = `bold ${p.size}px Arial`; ctx.fillText('🦠', 0, 0); }
+                else if (p.type === 'shootingStar') { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0,0, 3, 0, Math.PI*2); ctx.fill(); ctx.fillRect(-40, -1, 40, 2); }
+                ctx.restore();
                 if(p.life <= 0) particles.splice(i, 1);
             }
+            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent'; 
         }
 
-        function prepareGame() {
-            startScreen.style.display = 'none';
-            gameOverScreen.style.display = 'none';
-            hud.style.display = 'flex';
-            tutorial.style.opacity = '1';
-            
-            gameState = 'PLAYING';
-            distance = 0; particles = []; wheelAngle = 0;
-            
-            initWorld(); 
-
-            // Coche echado más hacia atrás (15% en vez de 25%) para dar más tiempo de reacción
-            car.x = width * 0.15; 
-            car.y = platforms[0].yStart - 150; 
-            car.vx = BASE_SPEED;
-            car.vy = 0; car.rotation = 0;
-            car.state = 'jumping';
-            car.turboCharge = 100; car.isTurboActive = false;
-            car.loopProgress = 0;
-            cameraX = car.x - width * 0.15;
-        }
-
-        function triggerGameOver(reason) {
-            gameState = 'GAMEOVER';
-            hud.style.display = 'none';
-            finalScore.innerText = Math.floor(distance);
-            gameOverReason.innerText = reason;
-            gameOverScreen.style.display = 'flex';
-            createParticles(car.x, car.y, '#ff3300', 50, true); 
-            createParticles(car.x, car.y, '#555555', 30, true); 
-            if(navigator.vibrate) navigator.vibrate([100, 50, 100]); 
-        }
-
+        // --- LÓGICA CORE ---
         function update(dt) {
-            for(let c of clouds) {
-                c.x -= c.speed * dt;
-                if(c.x + c.size * 3 < 0) c.x = width + c.size * 3;
+            if (isEnding) return;
+
+            pet.playTime += dt; pet.inactiveTimer += dt;
+            pet.scale += (pet.targetScale - pet.scale) * 2 * dt;
+            checkGrowth();
+
+            let drainRate = 0.5; 
+            if (!pet.isSick && (pet.clean < 20 || pet.hunger < 20 || pet.thirst < 20)) {
+                if (Math.random() < 0.05 * dt) { pet.isSick = true; showFloatingText(pet.x, pet.y - 100, "Me siento mal..."); playSound('reject'); }
             }
+            if (pet.isSick) { drainRate = 1.5; if (Math.random() < 0.02) createParticles(pet.x + (Math.random()-0.5)*40, pet.y - 40, 'sick', 1, '#000'); }
 
-            if (gameState !== 'PLAYING') { updateParticles(dt); return; }
-
-            wheelAngle += (car.vx * dt) * 0.15; 
-
-            let targetVx = BASE_SPEED + (distance / 12); 
-            if (car.isTurboActive && car.turboCharge > 0) {
-                targetVx = BASE_SPEED * 2.3; 
-                car.turboCharge -= 35 * dt;
-                createParticles(car.x - car.width/2, car.y + car.height/4, '#ff9900', 2); 
-            } else {
-                car.isTurboActive = false;
-                car.turboCharge = Math.min(100, car.turboCharge + 12 * dt); 
-            }
-            
-            turboBar.style.width = car.turboCharge + '%';
-            if(car.turboCharge < 20) turboBar.style.background = '#aa0000';
-            else turboBar.style.background = 'linear-gradient(90deg, #ff6600, #ffea00)';
-
-            car.vx += (targetVx - car.vx) * 6 * dt;
-            distance += (car.vx * dt) / 50;
-            scoreVal.innerText = Math.floor(distance);
-
-            // CÁMARA (Desplazada hacia la izquierda para ver más adelante)
-            let idealCameraX;
-            if (car.state === 'looping' && car.currentLoop) {
-                idealCameraX = car.currentLoop.cx - width / 2; 
-            } else {
-                idealCameraX = car.x - width * 0.15; // 15% (Más campo visual)
-            }
-            cameraX += (idealCameraX - cameraX) * 8 * dt;
-
-            if (platforms[0].x + platforms[0].width < cameraX - 200) {
-                platforms.shift(); spawnPlatform();
-            }
-
-            let carBottom = car.y + car.height/2;
-
-            if (car.state === 'normal' || car.state === 'jumping') {
-                car.vy += GRAVITY * dt;
-                let nextY = car.y + car.vy * dt;
-                let nextX = car.x + car.vx * dt;
-                let isGroundedThisFrame = false;
-
-                if (car.state === 'jumping') {
-                    car.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 6, car.vy * 0.0015));
+            // Lógica Ducha Fija
+            if (isShowerOn && ZONES[currentZoneIdx] === 'baño') {
+                if (Math.random() < 0.6) createParticles(width/2 + (Math.random()-0.5)*30, height*0.15, 'drop', 1, '#40c4ff');
+                if (Math.abs(pet.x - width/2) < 80) {
+                    if (pet.soapLevel > 0) {
+                        pet.soapLevel = Math.max(0, pet.soapLevel - 30 * dt);
+                        pet.clean = Math.min(100, pet.clean + 15 * dt);
+                        if(pet.soapLevel === 0) { createParticles(pet.x, pet.y-40, 'star', 10, '#fff'); pet.happy += 10; }
+                    } else {
+                        pet.clean = Math.min(100, pet.clean + 3 * dt);
+                    }
                 }
+            } else { isShowerOn = false; }
 
-                for (let plat of platforms) {
-                    if (plat.type === 'gap') continue;
+            if (pet.isSleeping) {
+                pet.energy = Math.min(100, pet.energy + 8 * dt); pet.hunger -= 0.1 * dt; pet.thirst -= 0.1 * dt; pet.happy -= 0.1 * dt;
+                if (Math.random() < 0.01) createParticles(pet.x + 30, pet.y - 70, 'zzz', 1);
+                if (Math.random() < 0.005) createParticles(-50, Math.random()*height*0.3, 'shootingStar', 1, '#fff'); 
+            } else {
+                pet.hunger -= drainRate * dt; pet.thirst -= drainRate * 1.5 * dt; pet.energy -= (drainRate * 0.8) * dt;
+                pet.happy -= (pet.hunger < 40 || pet.clean < 40 || pet.thirst < 40 || pet.isSick) ? drainRate * 2 * dt : drainRate * 0.5 * dt;
+                pet.clean -= (drainRate * 0.4) * dt; if (poops.length > 0) pet.clean -= (poops.length * 3) * dt;
+                if (pet.soapLevel > 0 && !isShowerOn) pet.soapLevel -= 2 * dt; 
+            }
 
-                    if (nextX + car.width/2 > plat.x && nextX - car.width/2 < plat.x + plat.width) {
-                        
-                        // Cajas Metálicas
-                        if (plat.obstacles) {
-                            for (let obs of plat.obstacles) {
-                                if (!obs.destroyed && nextX + car.width/2 > obs.x && nextX - car.width/2 < obs.x + obs.width) {
-                                    if (nextY + car.height/2 > obs.y) {
-                                        if (car.isTurboActive) {
-                                            obs.destroyed = true;
-                                            createParticles(obs.x + obs.width/2, obs.y + obs.height/2, '#ffaa00', 20, true);
-                                            createParticles(obs.x + obs.width/2, obs.y + obs.height/2, '#ffffff', 10, true);
-                                            if(navigator.vibrate) navigator.vibrate(30);
-                                        } else {
-                                            triggerGameOver("¡Impacto Frontal!"); return;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            pet.hunger = Math.max(0, pet.hunger); pet.thirst = Math.max(0, pet.thirst); pet.happy = Math.max(0, pet.happy); pet.energy = Math.max(0, pet.energy); pet.clean = Math.max(0, pet.clean); pet.soapLevel = Math.max(0, pet.soapLevel);
 
-                        let trackGroundY = plat.yStart;
-                        let platformAngle = 0;
+            if (pet.hunger <= 0 && pet.thirst <= 0 && pet.energy <= 0 && pet.clean <= 0) { triggerEnd('bad'); return; }
 
-                        if (plat.type === 'slope_up' || plat.type === 'slope_down') {
-                            let progress = (nextX - plat.x) / plat.width;
-                            trackGroundY = plat.yStart + progress * (plat.yEnd - plat.yStart);
-                            platformAngle = Math.atan2(plat.yEnd - plat.yStart, plat.width);
-                        } else if (plat.type === 'ramp') {
-                            if (nextX > plat.rampStartX) {
-                                let progress = (nextX - plat.rampStartX) / (plat.width - (plat.rampStartX - plat.x));
-                                trackGroundY = plat.yStart - (progress * plat.rampHeight);
-                                platformAngle = -Math.PI/8;
-                            }
-                        }
+            ['bar-hunger', 'bar-thirst', 'bar-happy', 'bar-energy', 'bar-clean'].forEach(id => {
+                let val = pet[id.replace('bar-','')] || 0; let bar = document.getElementById(id); bar.style.width = val + '%';
+                if(val < 25) bar.style.background = 'linear-gradient(90deg, #d50000, #ff1744)'; else bar.style.background = '';
+            });
 
-                        if (carBottom <= trackGroundY + 20 && nextY + car.height/2 >= trackGroundY) {
-                            nextY = trackGroundY - car.height/2;
-                            car.vy = 0; 
-                            isGroundedThisFrame = true;
-                            car.rotation = platformAngle;
-                            
-                            if (plat.type === 'ramp' && nextX >= plat.x + plat.width - 5) {
-                                car.vy = -1050; car.state = 'jumping'; isGroundedThisFrame = false;
-                            }
-                        }
-
-                        if (plat.type === 'loop_full' && car.state !== 'jumping' && !plat.passed) {
-                            if (nextX >= plat.cx - 15 && car.x < plat.cx + 15) {
-                                car.state = 'looping';
-                                car.currentLoop = plat;
-                                car.loopProgress = 0;
-                                plat.passed = true;
-                                break;
-                            }
-                        }
-
-                        if (car.state === 'jumping' && nextY + car.height/2 > plat.yStart + 15) {
-                            if (nextX + car.width/2 >= plat.x && car.x + car.width/2 < plat.x + 10) {
-                                triggerGameOver("¡Choque contra el borde!"); return;
-                            }
-                        }
+            // IA Autónoma
+            if (!pet.isSleeping && pet.state !== 'dragging' && pet.state !== 'scared' && pet.state !== 'chasing' && pet.state !== 'sliding') {
+                
+                if (pet.state === 'going_to_slide') {
+                    let ladderBottomX = width * 0.15; let slideTopY = height * 0.35;
+                    if (pet.y === getFloorY() && Math.abs(pet.x - ladderBottomX) > 10) { pet.x += Math.sign(ladderBottomX - pet.x) * 100 * dt; } 
+                    else if (pet.y > slideTopY) { pet.x = ladderBottomX; pet.y -= 150 * dt; if(pet.y <= slideTopY) pet.y = slideTopY; } 
+                    else if (Math.abs(pet.x - width * 0.35) > 5) { pet.x += 100 * dt; } 
+                    else { pet.state = 'sliding'; }
+                }
+                else if (pet.thirst < 40 && waterLevel > 0 && pet.state !== 'seeking_water' && pet.state !== 'drinking' && !pet.isSick) {
+                    pet.state = 'seeking_water'; pet.targetX = waterBowlX - 40; 
+                }
+                else if (pet.state === 'seeking_water') {
+                    if (Math.abs(pet.x - pet.targetX) < 10) { pet.state = 'drinking'; pet.actionTimer = 3; playSound('drink'); }
+                } else if (pet.state === 'drinking') {
+                    pet.thirst += 30 * dt; waterLevel -= 20 * dt;
+                    if (Math.random() < 0.2) createParticles(waterBowlX, height*0.75, 'drop', 1, '#40c4ff');
+                    pet.actionTimer -= dt;
+                    if (pet.actionTimer <= 0 || pet.thirst >= 100 || waterLevel <= 0) { pet.state = 'idle'; }
+                } else {
+                    pet.actionTimer -= dt;
+                    if (pet.actionTimer <= 0) {
+                        let rand = Math.random();
+                        if (ZONES[currentZoneIdx] === 'parque' && rand < 0.3 && !pet.isSick) {
+                            pet.state = 'going_to_slide'; 
+                        } else if (pet.inactiveTimer > 20) {
+                            pet.state = 'bored'; pet.actionTimer = 4; pet.inactiveTimer = 0; showFloatingText(pet.x, pet.y - 100, "¡Qué aburrimiento!");
+                            pet.targetX = Math.max(120, Math.min(width - 50, pet.x + (Math.random()-0.5)*300));
+                        } else if (pet.hunger < 30 || pet.happy < 30 || pet.isSick) { pet.state = 'sad'; pet.actionTimer = 2; } 
+                        else if (rand < 0.3) { pet.state = 'sitting'; pet.actionTimer = Math.random() * 4 + 2; } 
+                        else if (rand < 0.7) {
+                            pet.state = 'wandering'; 
+                            let potentialTarget = Math.max(120, Math.min(width - 50, pet.x + (Math.random()-0.5)*200));
+                            let avoid = poops.some(p => Math.abs(p.x - potentialTarget) < 60);
+                            pet.targetX = avoid ? pet.x : potentialTarget; pet.actionTimer = 3;
+                        } else { pet.state = 'idle'; pet.actionTimer = 2; }
                     }
                 }
 
-                car.x = nextX; car.y = nextY;
-                
-                if (isGroundedThisFrame && car.state === 'jumping') {
-                    car.state = 'normal';
-                    createParticles(car.x, car.y + car.height/2, '#888', 8);
-                } else if (!isGroundedThisFrame && car.state === 'normal') {
-                    car.state = 'jumping';
+                pet.poopTimer += dt;
+                if (pet.poopTimer > 40 && Math.random() < 0.05 && pet.state !== 'drinking') { 
+                    poops.push({ x: pet.x - (30 * pet.scale), y: getFloorY() }); pet.poopTimer = 0; playSound('reject'); pet.jumpY = -20;
                 }
+            }
 
-                if (car.y > height + 200) triggerGameOver("¡Caída Libre!");
+            // Física Movimiento normal
+            if (pet.state === 'wandering' || pet.state === 'chasing' || pet.state === 'seeking_water' || pet.state === 'bored') {
+                let dx = pet.targetX - pet.x; let speed = (pet.state === 'chasing') ? 150 : (pet.isSick ? 30 : 70);
+                if (Math.abs(dx) > 5) {
+                    pet.x += Math.sign(dx) * speed * dt; pet.jumpY = (pet.jumpY === 0) ? (pet.isSick ? -5 : -10) : pet.jumpY; 
+                } else if (pet.state === 'chasing') { playWithToy(droppedToy.type); droppedToy = null; pet.state = 'idle'; } 
+                else if (pet.state !== 'seeking_water') { pet.state = 'idle'; }
+            }
 
+            // Física Tobogán
+            if (pet.state === 'sliding') {
+                let startX = width * 0.35; let startY = height * 0.35;
+                let endX = width * 0.75; let endY = getFloorY();
+                pet.x += 300 * dt;
+                pet.y += 300 * ((endY - startY) / (endX - startX)) * dt;
+                if (pet.x >= endX || pet.y >= endY) {
+                    pet.x = endX; pet.y = endY; pet.state = 'idle'; pet.happy = Math.min(100, pet.happy + 15);
+                    playSound('tada'); createParticles(pet.x, pet.y, 'star', 10, '#ffeb3b');
+                }
+            }
+
+            let floorY = getFloorY();
+            if (pet.state !== 'dragging' && pet.state !== 'scared' && pet.state !== 'sliding' && pet.state !== 'going_to_slide') {
+                if (pet.jumpY < 0 || pet.y < floorY) {
+                    pet.jumpY += 2000 * dt; pet.y += pet.jumpY * dt;
+                    if (pet.y > floorY) { pet.y = floorY; pet.jumpY = 0; }
+                }
+            }
+
+            let itemFloor = getFloorY();
+            if (activeItem && !activeItem.isDragging) {
+                activeItem.vy += 1500 * dt; activeItem.y += activeItem.vy * dt;
+                if (activeItem.y > itemFloor) { activeItem.y = itemFloor; activeItem.vy = -activeItem.vy * 0.5; if (Math.abs(activeItem.vy) < 50) activeItem.vy = 0; }
+            }
+            if (droppedToy) {
+                droppedToy.vy += 1500 * dt; droppedToy.y += droppedToy.vy * dt;
+                if (droppedToy.y > itemFloor) { droppedToy.y = itemFloor; droppedToy.vy = -droppedToy.vy * 0.5; if (Math.abs(droppedToy.vy) < 50) droppedToy.vy = 0; }
+            }
+
+            pet.timePhase += dt * (pet.state === 'chasing' || pet.state === 'sliding' ? 8 : (pet.isSick ? 2 : (pet.isSleeping ? 2 : 5)));
+        }
+
+        // --- RENDER PAISAJES (Rediseñados) ---
+        function drawBackground(ctx) {
+            ctx.globalAlpha = 1.0; 
+            let zone = ZONES[currentZoneIdx];
+
+            if (pet.isSleeping) {
+                let bgGrad = ctx.createLinearGradient(0, 0, 0, height*0.7);
+                bgGrad.addColorStop(0, '#0b0b2a'); bgGrad.addColorStop(1, '#1b1b4b');
+                ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(width*0.8, height*0.2, 40, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#0b0b2a'; ctx.beginPath(); ctx.arc(width*0.8 - 15, height*0.2 - 5, 35, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#101020'; ctx.fillRect(0, height*0.7, width, height*0.3);
             } 
-            else if (car.state === 'looping') {
-                let loop = car.currentLoop;
-                let circumference = 2 * Math.PI * loop.radius;
-                
-                car.loopProgress += (car.vx * dt) / circumference;
-                car.loopAngle = Math.PI / 2 - (car.loopProgress * Math.PI * 2);
+            else {
+                // Fondo base
+                ctx.fillStyle = (zone==='casa')?'#f5f5dc':(zone==='cocina')?'#eceff1':(zone==='baño')?'#e0f7fa':(zone==='parque'||zone==='jardin')?'#81d4fa':'#f3e5f5';
+                ctx.fillRect(0, 0, width, height);
 
-                car.x = loop.cx + loop.radius * Math.cos(car.loopAngle);
-                car.y = loop.cy + loop.radius * Math.sin(car.loopAngle);
-                car.rotation = car.loopAngle - Math.PI / 2;
-
-                createParticles(car.x, car.y + car.height/2, '#ffea00', 1);
-
-                if (car.loopProgress >= 1.0) {
-                    car.state = 'normal';
-                    car.x = loop.cx + 20; 
-                    car.y = loop.yStart - car.height/2; 
-                    car.rotation = 0; car.vy = 0;
-                    car.vx += 200; 
-                    car.loopProgress = 0;
-                }
-            }
-
-            updateParticles(dt);
-        }
-
-        // --- RENDER DE VEHÍCULOS ---
-        function drawWheels(ctx, radius, yPos, tireColor, rimColor, drawSpokes) {
-            // Llanta trasera
-            ctx.save(); ctx.translate(-car.width/2 + 15, yPos); ctx.rotate(wheelAngle);
-            ctx.fillStyle = tireColor; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = rimColor; ctx.beginPath(); ctx.arc(0, 0, radius * 0.5, 0, Math.PI*2); ctx.fill();
-            if(drawSpokes) { ctx.fillStyle = '#222'; ctx.fillRect(-radius*0.4, -1, radius*0.8, 2); ctx.fillRect(-1, -radius*0.4, 2, radius*0.8); }
-            ctx.restore();
-            // Llanta delantera
-            ctx.save(); ctx.translate(car.width/2 - 12, yPos); ctx.rotate(wheelAngle);
-            ctx.fillStyle = tireColor; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = rimColor; ctx.beginPath(); ctx.arc(0, 0, radius * 0.5, 0, Math.PI*2); ctx.fill();
-            if(drawSpokes) { ctx.fillStyle = '#222'; ctx.fillRect(-radius*0.4, -1, radius*0.8, 2); ctx.fillRect(-1, -radius*0.4, 2, radius*0.8); }
-            ctx.restore();
-        }
-
-        function drawShadow(ctx) {
-            if(car.state !== 'jumping') {
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.beginPath(); ctx.ellipse(0, car.height/2 + 4, car.width/2, 4, 0, 0, Math.PI*2); ctx.fill();
-            }
-        }
-
-        function drawSportCar(ctx) {
-            drawShadow(ctx);
-            let grad = ctx.createLinearGradient(-car.width/2, 0, car.width/2, 0);
-            grad.addColorStop(0, '#cc0000'); grad.addColorStop(0.5, '#ff3333'); grad.addColorStop(1, '#ff0000');
-            ctx.fillStyle = grad;
-            ctx.beginPath(); 
-            ctx.moveTo(-car.width/2, car.height/2 - 4); ctx.lineTo(-car.width/2 + 3, -car.height/2 + 8); 
-            ctx.lineTo(-car.width/4 + 5, -car.height/2); ctx.lineTo(car.width/4 + 5, -car.height/2 + 2); 
-            ctx.lineTo(car.width/2 + 10, car.height/2 - 2); ctx.lineTo(car.width/2, car.height/2 + 2); 
-            ctx.lineTo(-car.width/2 + 5, car.height/2 + 2); ctx.fill();
-            
-            ctx.fillStyle = '#222'; ctx.fillRect(-car.width/2 + 5, car.height/2, car.width - 5, 3);
-            ctx.fillStyle = '#111'; ctx.fillRect(-car.width/2 - 8, -car.height/2 - 8, 14, 3); ctx.fillRect(-car.width/2 - 2, -car.height/2 - 5, 3, 10); 
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.moveTo(-car.width/4 + 6, -car.height/2 + 2); ctx.lineTo(car.width/4 + 2, -car.height/2 + 4);
-            ctx.lineTo(car.width/2 - 4, car.height/2 - 4); ctx.lineTo(-car.width/4 - 2, car.height/2 - 4); ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.moveTo(0, -car.height/2 + 3); ctx.lineTo(car.width/4, -car.height/2 + 4);
-            ctx.lineTo(car.width/4 - 2, car.height/2 - 4); ctx.lineTo(0, car.height/2 - 4); ctx.fill();
-            drawWheels(ctx, 7, car.height/2 + 2, '#111', '#eee', true);
-        }
-
-        function drawEVCar(ctx) {
-            drawShadow(ctx);
-            let grad = ctx.createLinearGradient(0, -car.height/2, 0, car.height/2);
-            grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#dddddd');
-            ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.roundRect(-car.width/2, -car.height/2 + 4, car.width, car.height - 6, 6); ctx.fill();
-            ctx.strokeStyle = '#888'; ctx.lineWidth = 1; ctx.stroke();
-            ctx.fillStyle = '#222'; ctx.fillRect(-car.width/4, -car.height/2 + 4, car.width/2, 2); 
-            ctx.beginPath(); ctx.roundRect(-car.width/2 + 5, -car.height/2, car.width - 15, car.height/2, 4); ctx.fill();
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(-car.width/2 - 4, -car.height/2, 10, 6, 2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#00ffff'; ctx.fillRect(-car.width/2 + 4, car.height/2 - 4, car.width - 8, 3);
-            ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fillRect(-car.width/2 + 12, -car.height/2 + 3, car.width/2 - 5, 8); 
-            drawWheels(ctx, 8, car.height/2 + 2, '#111', '#00e5ff', false); 
-        }
-
-        function drawBuggyCar(ctx) {
-            drawShadow(ctx);
-            ctx.fillStyle = '#222'; ctx.fillRect(-car.width/2, car.height/2 - 8, car.width, 6);
-            ctx.fillStyle = '#ffea00'; ctx.beginPath(); ctx.moveTo(-car.width/2 + 8, car.height/2 - 8); ctx.lineTo(-car.width/2 + 15, -car.height/2 + 6);
-            ctx.lineTo(car.width/2 - 15, -car.height/2 + 6); ctx.lineTo(car.width/2 - 5, car.height/2 - 8); ctx.fill();
-            ctx.strokeStyle = '#111'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-            ctx.beginPath(); ctx.moveTo(-car.width/2 + 5, car.height/2 - 8); ctx.lineTo(-car.width/2 + 12, -car.height/2); ctx.lineTo(car.width/2 - 12, -car.height/2); ctx.lineTo(car.width/2, car.height/2 - 8); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, -car.height/2); ctx.lineTo(10, car.height/2 - 8); ctx.stroke(); 
-            ctx.fillStyle = '#111'; ctx.fillRect(-car.width/2 - 12, -car.height/2 - 10, 18, 4); ctx.fillRect(-car.width/2 - 5, -car.height/2 - 6, 4, 12); 
-            drawWheels(ctx, 11, car.height/2 + 4, '#111', '#888', true); 
-        }
-
-        function drawMuscleCar(ctx) {
-            drawShadow(ctx);
-            // Pintura Morado Oscuro Clásico
-            let grad = ctx.createLinearGradient(-car.width/2, 0, car.width/2, 0);
-            grad.addColorStop(0, '#311b92'); grad.addColorStop(1, '#5e35b1');
-            ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.moveTo(-car.width/2, car.height/2 - 2); ctx.lineTo(-car.width/2, -car.height/2 + 6);
-            ctx.lineTo(-car.width/4, -car.height/2); ctx.lineTo(car.width/4, -car.height/2);
-            ctx.lineTo(car.width/2, -car.height/2 + 6); ctx.lineTo(car.width/2 + 6, car.height/2 - 2);
-            ctx.lineTo(car.width/2, car.height/2 + 2); ctx.lineTo(-car.width/2, car.height/2 + 2); ctx.fill();
-            
-            // Franjas Blancas Racing
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(car.width/4, -car.height/2 + 6, car.width/4 + 4, 2);
-            
-            // Motor Expuesto (Supercharger)
-            ctx.fillStyle = '#999'; ctx.fillRect(car.width/4 + 2, -car.height/2 - 4, 12, 6);
-            ctx.fillStyle = '#222'; ctx.fillRect(car.width/4 + 4, -car.height/2 - 5, 8, 2);
-            ctx.fillStyle = '#ff3300'; ctx.beginPath(); ctx.arc(car.width/4 + 8, -car.height/2 - 2, 2, 0, Math.PI*2); ctx.fill();
-
-            // Cristales
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.moveTo(-car.width/4 + 2, -car.height/2 + 2);
-            ctx.lineTo(car.width/4 - 2, -car.height/2 + 2); ctx.lineTo(car.width/4 + 2, car.height/2 - 6);
-            ctx.lineTo(-car.width/4 - 2, car.height/2 - 6); ctx.fill();
-
-            drawWheels(ctx, 8, car.height/2 + 2, '#111', '#eee', true);
-        }
-
-        function drawVanCar(ctx) {
-            drawShadow(ctx);
-            // Van Retro Familiar (Teal / Mint y Blanco)
-            ctx.fillStyle = '#ffffff'; // Parte superior blanca
-            ctx.beginPath(); ctx.roundRect(-car.width/2, -car.height/2, car.width, car.height/2 + 4, 6); ctx.fill();
-            
-            ctx.fillStyle = '#00bfa5'; // Parte inferior teal
-            ctx.beginPath(); ctx.roundRect(-car.width/2, 2, car.width, car.height/2 - 2, 4); ctx.fill();
-
-            // Ventanas cuadradas amplias
-            ctx.fillStyle = '#111';
-            ctx.fillRect(-car.width/2 + 6, -car.height/2 + 4, 12, 10);
-            ctx.fillRect(-car.width/4 + 6, -car.height/2 + 4, 12, 10);
-            ctx.fillRect(car.width/4 - 4, -car.height/2 + 4, 12, 10);
-            
-            // Reflejo
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.fillRect(-car.width/2 + 6, -car.height/2 + 4, 6, 10);
-
-            // Parachoques y luces
-            ctx.fillStyle = '#ccc'; ctx.fillRect(-car.width/2 - 2, car.height/2 - 4, car.width + 4, 4);
-            ctx.fillStyle = '#ffea00'; ctx.beginPath(); ctx.arc(car.width/2, car.height/2 - 6, 3, 0, Math.PI*2); ctx.fill();
-
-            drawWheels(ctx, 7, car.height/2 + 2, '#111', '#eee', false);
-        }
-
-        // --- RENDERIZADO GLOBAL ---
-        function draw() {
-            let bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-            bgGrad.addColorStop(0, COLORS.bgTop); bgGrad.addColorStop(1, COLORS.bgBottom);
-            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, width, height);
-
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            for(let c of clouds) {
-                ctx.beginPath(); 
-                ctx.arc(c.x, c.y, c.size, 0, Math.PI*2); 
-                ctx.arc(c.x + c.size*0.8, c.y - c.size*0.3, c.size*0.8, 0, Math.PI*2);
-                ctx.arc(c.x + c.size*1.6, c.y, c.size*0.9, 0, Math.PI*2); ctx.fill();
-            }
-
-            ctx.fillStyle = COLORS.mountain; ctx.beginPath();
-            let mOffset = -(cameraX * 0.2) % width;
-            ctx.moveTo(mOffset, height); ctx.lineTo(mOffset + 200, height*0.5); ctx.lineTo(mOffset + 400, height);
-            ctx.moveTo(mOffset + width, height); ctx.lineTo(mOffset + width + 200, height*0.5); ctx.lineTo(mOffset + width + 400, height);
-            ctx.fill();
-
-            ctx.save();
-            ctx.translate(-cameraX, 0);
-
-            // CAPA 1: Pistas base y mitad TRASERA Loops
-            for (let plat of platforms) {
-                if (plat.x > cameraX + width || plat.x + plat.width < cameraX) continue;
-
-                if (plat.type === 'flat' || plat.type === 'slope_up' || plat.type === 'slope_down') {
-                    ctx.fillStyle = COLORS.track; 
-                    ctx.beginPath(); ctx.moveTo(plat.x, plat.yStart);
-                    ctx.lineTo(plat.x + plat.width, plat.yEnd);
-                    ctx.lineTo(plat.x + plat.width, height); ctx.lineTo(plat.x, height); ctx.fill();
-
-                    ctx.strokeStyle = COLORS.neon; ctx.lineWidth = 6;
-                    ctx.beginPath(); ctx.moveTo(plat.x, plat.yStart+3); ctx.lineTo(plat.x + plat.width, plat.yEnd+3); ctx.stroke();
-                    ctx.strokeStyle = '#b34700'; ctx.lineWidth = 10;
-                    ctx.beginPath(); ctx.moveTo(plat.x, plat.yStart+10); ctx.lineTo(plat.x + plat.width, plat.yEnd+10); ctx.stroke();
-                    
-                    for (let obs of plat.obstacles) {
-                        if (!obs.destroyed) {
-                            let oGrad = ctx.createLinearGradient(obs.x, obs.y, obs.x, obs.y+obs.height);
-                            oGrad.addColorStop(0, '#ff3333'); oGrad.addColorStop(1, '#aa0000');
-                            ctx.fillStyle = oGrad; ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                            ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
-                            ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2; 
-                            ctx.beginPath(); ctx.moveTo(obs.x+3, obs.y+3); ctx.lineTo(obs.x + obs.width-3, obs.y+3); ctx.stroke();
-                        }
-                    }
-                } 
-                else if (plat.type === 'ramp') {
-                    ctx.fillStyle = COLORS.track; ctx.fillRect(plat.x, plat.yStart, plat.rampStartX - plat.x, height);
-                    ctx.fillStyle = COLORS.neon; ctx.fillRect(plat.x, plat.yStart, plat.rampStartX - plat.x, 6);
-                    ctx.beginPath(); ctx.moveTo(plat.rampStartX, plat.yStart);
-                    ctx.lineTo(plat.x + plat.width, plat.yStart - plat.rampHeight);
-                    ctx.lineTo(plat.x + plat.width, height); ctx.lineTo(plat.rampStartX, height); ctx.fill();
-                    ctx.beginPath(); ctx.moveTo(plat.rampStartX, plat.yStart);
-                    ctx.lineTo(plat.x + plat.width, plat.yStart - plat.rampHeight);
-                    ctx.lineWidth = 6; ctx.strokeStyle = COLORS.neon; ctx.stroke();
-                } 
-                else if (plat.type === 'loop_full') {
-                    ctx.fillStyle = '#333'; ctx.fillRect(plat.cx - 50, plat.yStart, 100, 40); 
-                    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.moveTo(plat.cx - 70, plat.yStart + 40);
-                    ctx.lineTo(plat.cx + 70, plat.yStart + 40); ctx.lineTo(plat.cx + 50, plat.yStart); ctx.lineTo(plat.cx - 50, plat.yStart); ctx.fill();
-
-                    ctx.fillStyle = COLORS.track; 
-                    ctx.fillRect(plat.x, plat.yStart, plat.cx - plat.x - 50, height); 
-                    ctx.fillRect(plat.cx + 50, plat.yStart, plat.width - (plat.cx + 50 - plat.x), height); 
-                    ctx.fillStyle = COLORS.neon;
-                    ctx.fillRect(plat.x, plat.yStart, plat.cx - plat.x - 50, 6);
-                    ctx.fillRect(plat.cx + 50, plat.yStart, plat.width - (plat.cx + 50 - plat.x), 6);
-
-                    ctx.beginPath(); ctx.arc(plat.cx, plat.cy, plat.radius, Math.PI/2, -Math.PI/2, true); 
-                    ctx.lineWidth = 30; ctx.strokeStyle = '#cc4400'; ctx.stroke(); 
-                    ctx.beginPath(); ctx.arc(plat.cx, plat.cy, plat.radius - 15, Math.PI/2, -Math.PI/2, true);
-                    ctx.lineWidth = 4; ctx.strokeStyle = '#aaaa00'; ctx.stroke(); 
-                }
-            }
-
-            for (let p of particles) {
-                ctx.globalAlpha = Math.max(0, p.life);
-                ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
-
-            // CAPA 3: AUTO
-            if (gameState === 'PLAYING' || (gameState === 'GAMEOVER' && particles.length > 0)) {
                 ctx.save();
-                ctx.translate(car.x, car.y);
-                ctx.rotate(car.rotation);
-                
-                if (currentModel === 'sport') drawSportCar(ctx);
-                else if (currentModel === 'ev') drawEVCar(ctx);
-                else if (currentModel === 'buggy') drawBuggyCar(ctx);
-                else if (currentModel === 'muscle') drawMuscleCar(ctx);
-                else if (currentModel === 'van') drawVanCar(ctx);
+                if(zone==='casa') {
+                    // Ventana
+                    ctx.fillStyle = '#81d4fa'; ctx.fillRect(width*0.5, height*0.2, 120, 100);
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.strokeRect(width*0.5, height*0.2, 120, 100);
+                    ctx.beginPath(); ctx.moveTo(width*0.5+60, height*0.2); ctx.lineTo(width*0.5+60, height*0.2+100); ctx.stroke();
+                    // Sofá
+                    ctx.fillStyle = '#ff9800'; 
+                    ctx.beginPath(); ctx.roundRect(width*0.1, height*0.5, 160, 80, 20); ctx.fill();
+                    ctx.beginPath(); ctx.roundRect(width*0.05, height*0.55, 40, 80, 10); ctx.fill();
+                    ctx.beginPath(); ctx.roundRect(width*0.25, height*0.55, 40, 80, 10); ctx.fill();
+                    // Planta
+                    ctx.fillStyle = '#795548'; ctx.fillRect(width*0.8, height*0.6, 30, 40);
+                    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(width*0.8+15, height*0.55, 30, 0, Math.PI*2); ctx.fill();
+                } else if(zone==='cocina') {
+                    // Nevera
+                    ctx.fillStyle = '#cfd8dc'; ctx.fillRect(width*0.1, height*0.2, 100, height*0.55);
+                    ctx.fillStyle = '#90a4ae'; ctx.fillRect(width*0.1+10, height*0.4, 5, 40);
+                    // Gabinetes y Tope
+                    ctx.fillStyle = '#795548'; ctx.fillRect(width*0.4, height*0.5, width*0.5, height*0.25);
+                    ctx.fillStyle = '#263238'; ctx.fillRect(width*0.4, height*0.5, width*0.5, 10);
+                } else if(zone==='baño') {
+                    // Azulejos
+                    ctx.strokeStyle = '#b2ebf2'; ctx.lineWidth=2;
+                    for(let i=0; i<width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height*0.7); ctx.stroke(); }
+                    for(let j=0; j<height*0.7; j+=40) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(width, j); ctx.stroke(); }
+                    // Espejo
+                    ctx.fillStyle = '#e1f5fe'; ctx.strokeStyle = '#90a4ae'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.roundRect(width*0.7, height*0.2, 80, 100, 10); ctx.fill(); ctx.stroke();
+                    // Ducha fija
+                    ctx.strokeStyle = '#78909c'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(width/2, 0); ctx.lineTo(width/2, height*0.15); ctx.stroke();
+                    ctx.fillStyle = '#b0bec5'; ctx.beginPath(); ctx.ellipse(width/2, height*0.15, 25, 8, 0, 0, Math.PI*2); ctx.fill();
+                    // Bañera (Fondo)
+                    ctx.fillStyle = '#e0e0e0'; ctx.beginPath(); ctx.ellipse(width/2, height*0.7, 160, 60, 0, 0, Math.PI); ctx.fill();
+                } else if(zone==='jardin') {
+                    ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(width*0.8, height*0.2, 40, 0, Math.PI*2); ctx.fill(); // Sol
+                    ctx.fillStyle = '#8d6e63'; // Cerca
+                    for(let i=0; i<width; i+=50) { ctx.fillRect(i, height*0.5, 40, height*0.25); ctx.beginPath(); ctx.moveTo(i, height*0.5); ctx.lineTo(i+20, height*0.45); ctx.lineTo(i+40, height*0.5); ctx.fill(); }
+                    ctx.fillRect(0, height*0.55, width, 10); ctx.fillRect(0, height*0.65, width, 10);
+                    // Árbol
+                    ctx.fillStyle = '#5d4037'; ctx.fillRect(width*0.2, height*0.3, 40, height*0.45);
+                    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(width*0.2+20, height*0.3, 80, 0, Math.PI*2); ctx.fill();
+                } else if(zone==='parque') {
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(width*0.3, height*0.2, 30, 0, Math.PI*2); ctx.arc(width*0.4, height*0.18, 40, 0, Math.PI*2); ctx.arc(width*0.5, height*0.2, 30, 0, Math.PI*2); ctx.fill();
+                    // Tobogán
+                    ctx.strokeStyle = '#9e9e9e'; ctx.lineWidth = 10; // Escalera
+                    ctx.beginPath(); ctx.moveTo(width*0.15, height*0.75); ctx.lineTo(width*0.15, height*0.35); ctx.stroke();
+                    ctx.fillStyle = '#d32f2f'; // Plataforma y bajada
+                    ctx.fillRect(width*0.1, height*0.35, width*0.25, 10);
+                    ctx.lineWidth = 25; ctx.strokeStyle = '#d32f2f'; ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(width*0.35, height*0.35); ctx.lineTo(width*0.75, height*0.75); ctx.stroke();
+                } else if(zone==='cuarto') {
+                    // Cama
+                    ctx.fillStyle = '#795548'; ctx.fillRect(width*0.4, height*0.4, 200, 150); // Cabecera
+                    ctx.fillStyle = '#f48fb1'; ctx.fillRect(width*0.4, height*0.55, 200, 100); // Colcha
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(width*0.5, height*0.5, 80, 40, 10); ctx.fill(); // Almohada
+                }
+                ctx.restore();
 
-                if (car.state === 'looping' || car.isTurboActive) {
-                    ctx.fillStyle = car.isTurboActive ? '#ffff00' : '#ff5500';
-                    ctx.beginPath(); ctx.moveTo(-car.width/2, car.height/2 - 6);
-                    ctx.lineTo(-car.width/2 - 20 - Math.random()*25, car.height/2 - 2);
-                    ctx.lineTo(-car.width/2, car.height/2 + 2); ctx.fill();
+                // Piso
+                let floorGrad = ctx.createLinearGradient(0, height*0.7, 0, height);
+                if(zone==='jardin' || zone==='parque') { floorGrad.addColorStop(0, '#81c784'); floorGrad.addColorStop(1, '#388e3c'); }
+                else if(zone==='cocina' || zone==='baño') { floorGrad.addColorStop(0, '#cfd8dc'); floorGrad.addColorStop(1, '#90a4ae'); }
+                else if(zone==='cuarto') { floorGrad.addColorStop(0, '#ce93d8'); floorGrad.addColorStop(1, '#ab47bc'); }
+                else { floorGrad.addColorStop(0, '#d7ccc8'); floorGrad.addColorStop(1, '#8d6e63'); }
+                ctx.fillStyle = floorGrad; ctx.fillRect(0, height*0.7, width, height*0.3);
+            }
+
+            // Pote de Agua en el piso
+            ctx.fillStyle = '#78909c'; ctx.beginPath(); ctx.ellipse(waterBowlX, height*0.75 + 15, 30, 12, 0, 0, Math.PI*2); ctx.fill();
+            if (waterLevel > 0) {
+                let wRadius = 25 * (waterLevel/100);
+                ctx.fillStyle = '#40c4ff'; ctx.beginPath(); ctx.ellipse(waterBowlX, height*0.75 + 15 - (5 * (waterLevel/100)), wRadius, wRadius*0.3, 0, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.ellipse(waterBowlX-5, height*0.75 + 8, 10, 3, 0.5, 0, Math.PI*2); ctx.fill();
+
+            // Popós
+            ctx.font = '35px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            for(let p of poops) { ctx.fillText('💩', p.x, p.y); }
+        }
+
+        function drawForeground(ctx) {
+            // Elementos que van por delante de la mascota
+            if (ZONES[currentZoneIdx] === 'baño' && !pet.isSleeping) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(width/2 - 160, height*0.7, 320, height*0.15); // Frente bañera
+                ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth=6; ctx.strokeRect(width/2 - 160, height*0.7, 320, height*0.15);
+            }
+        }
+
+        // --- RENDER ANIMALES ---
+        function drawPet(ctx) {
+            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent'; 
+            let cx = pet.x; let cy = pet.y;
+            let breath = Math.sin(pet.timePhase) * (pet.isSleeping || pet.state === 'sitting' ? 3 : 2);
+            let wag = Math.sin(pet.timePhase * 1.5) * (pet.state === 'sad' || pet.state === 'scared' ? 0 : 0.2);
+            
+            ctx.save();
+            if (pet.isSick) { ctx.filter = 'sepia(0.6) hue-rotate(60deg) saturate(1.5)'; }
+            if (pet.state === 'scared') { cx += (Math.random() - 0.5) * 6; cy += (Math.random() - 0.5) * 6; }
+
+            ctx.translate(cx, cy); ctx.translate(0, -(pet.scale - 1) * 45); 
+            if (pet.isSleeping) { ctx.translate(0, 20); ctx.scale(1.1, 0.9); }
+            if (pet.state === 'sitting') { ctx.translate(0, 10); ctx.scale(1.05, 0.95); }
+            ctx.scale(pet.scale, pet.scale);
+
+            if (!pet.isSleeping && pet.state !== 'dragging' && pet.state !== 'scared' && pet.state !== 'sliding') {
+                ctx.fillStyle = 'rgba(0,0,0,0.15)'; let shadowRadius = Math.max(1, 45 - Math.abs(pet.jumpY) * 0.05);
+                ctx.beginPath(); ctx.ellipse(0, 50, shadowRadius, 8, 0, 0, Math.PI*2); ctx.fill();
+            }
+
+            let drawFaceExact = (eyeColor, eyeSpread, eyeY, noseY, mouthY) => {
+                eyeY -= breath*0.5; noseY -= breath*0.5; mouthY -= breath*0.5;
+                ctx.fillStyle = eyeColor;
+
+                // Ojos
+                if (pet.state === 'scared') {
+                    ctx.beginPath(); ctx.arc(-eyeSpread, eyeY, 10, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(eyeSpread, eyeY, 10, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-eyeSpread, eyeY, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(eyeSpread, eyeY, 3, 0, Math.PI*2); ctx.fill();
+                } else if (pet.isSleeping || pet.state === 'sad' || pet.isSick) {
+                    ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = eyeColor; ctx.beginPath();
+                    if(pet.state === 'sad' || pet.isSick) { ctx.moveTo(-eyeSpread-5, eyeY-3); ctx.quadraticCurveTo(-eyeSpread, eyeY-8, -eyeSpread+5, eyeY); ctx.moveTo(eyeSpread-5, eyeY); ctx.quadraticCurveTo(eyeSpread, eyeY-8, eyeSpread+5, eyeY-3); } 
+                    else { ctx.moveTo(-eyeSpread-6, eyeY+2); ctx.quadraticCurveTo(-eyeSpread, eyeY+6, -eyeSpread+6, eyeY+2); ctx.moveTo(eyeSpread-6, eyeY+2); ctx.quadraticCurveTo(eyeSpread, eyeY+6, eyeSpread+6, eyeY+2); } ctx.stroke();
+                } else {
+                    ctx.beginPath(); ctx.arc(-eyeSpread, eyeY, 7, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(eyeSpread, eyeY, 7, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-eyeSpread-2, eyeY-2, 2.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(eyeSpread-2, eyeY-2, 2.5, 0, Math.PI*2); ctx.fill();
+                }
+
+                if(noseY !== null) { ctx.fillStyle = (pet.type==='dog' || pet.type==='lion') ? '#1e1e2f' : '#ff80ab'; ctx.beginPath(); ctx.ellipse(0, noseY, 5, 3, 0, 0, Math.PI*2); ctx.fill(); }
+
+                // Boca
+                ctx.strokeStyle = eyeColor; ctx.lineWidth = 3; ctx.beginPath();
+                if (pet.state === 'eating' || pet.state === 'scared') { ctx.fillStyle = pet.state==='scared' ? '#000' : '#ff1744'; ctx.arc(0, mouthY, pet.state==='scared'?4:6, 0, Math.PI, false); ctx.fill(); ctx.stroke(); } 
+                else if (pet.state === 'drinking') { ctx.fillStyle = '#40c4ff'; ctx.arc(0, mouthY-2, 4, 0, Math.PI*2, false); ctx.fill(); } 
+                else if (pet.state === 'sad' || pet.isSick) { ctx.moveTo(-4, mouthY+4); ctx.quadraticCurveTo(0, mouthY, 4, mouthY+4); ctx.stroke(); } 
+                else { ctx.moveTo(-8, mouthY); ctx.quadraticCurveTo(-4, mouthY+4, 0, mouthY); ctx.quadraticCurveTo(4, mouthY+4, 8, mouthY); ctx.stroke(); }
+            };
+
+            let drawDirtAndSoap = () => {
+                if (pet.clean < 50) { ctx.fillStyle = 'rgba(101, 67, 33, 0.6)'; ctx.beginPath(); ctx.arc(-15, 20, 12, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(25, 10, 10, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(0, 35, 15, 0, Math.PI*2); ctx.fill(); }
+                if (pet.soapLevel > 0) { ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; for(let i=0; i<Math.min(5, pet.soapLevel/10); i++) { ctx.beginPath(); ctx.arc(-20 + i*10, 10 + (i%2)*15, 8, 0, Math.PI*2); ctx.fill(); ctx.stroke(); } }
+            };
+
+            let drawLegs = (colorL, colorR, lx, rx) => {
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 2;
+                if (pet.state === 'dragging' || pet.state === 'scared') { ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx, 45, 8, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx, 45, 8, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); } 
+                else if (pet.state === 'sitting' || pet.state === 'sliding') { ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx-5, 35, 15, 8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx+5, 35, 15, 8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); } 
+                else { ctx.fillStyle = colorL; ctx.beginPath(); ctx.ellipse(-lx, 45 - breath*0.5, 12, 10, -0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle = colorR; ctx.beginPath(); ctx.ellipse(rx, 45 - breath*0.5, 12, 10, 0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
+            };
+
+            if (pet.type === 'rabbit') {
+                ctx.fillStyle = '#fff'; let ec = '#ff80ab';
+                ctx.save(); ctx.translate(-15, -30); ctx.rotate((pet.state==='sad'?-0.8:(pet.state==='scared'?0:-0.2)) + wag); ctx.beginPath(); ctx.ellipse(0, -30, 10, 35, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = ec; ctx.beginPath(); ctx.ellipse(0, -30, 5, 25, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                ctx.save(); ctx.translate(15, -30); ctx.rotate((pet.state==='sad'?0.8:(pet.state==='scared'?0:0.2)) - wag); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, -30, 10, 35, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = ec; ctx.beginPath(); ctx.ellipse(0, -30, 5, 25, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, 10 - breath, 45 + breath*0.5, 45 - breath, 0, 0, Math.PI*2); ctx.fill();
+                drawDirtAndSoap(); drawFaceExact('#1e1e2f', 12, -10, null, 0); drawLegs('#fff', '#fff', 25, 25);
+            } else if (pet.type === 'dino') {
+                ctx.fillStyle = '#4caf50'; ctx.save(); ctx.translate(0, 20); ctx.rotate(pet.state==='scared'?Math.PI/4:-wag); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-60, 20); ctx.lineTo(0, 30); ctx.fill(); ctx.restore();
+                ctx.fillStyle = '#1b5e20'; ctx.beginPath(); ctx.moveTo(-35, -5); ctx.lineTo(-45, -15); ctx.lineTo(-25, 5); ctx.fill(); ctx.beginPath(); ctx.moveTo(-25, -20); ctx.lineTo(-30, -35); ctx.lineTo(-10, -15); ctx.fill();
+                ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(0, 10 - breath, 40 + breath*0.5, 45 - breath, 0.2, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#c8e6c9'; ctx.beginPath(); ctx.ellipse(10, 15 - breath, 25 + breath*0.5, 30 - breath, 0.2, 0, Math.PI*2); ctx.fill();
+                drawDirtAndSoap(); ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(15, -20 - breath*0.5, 30, 25, -0.1, 0, Math.PI*2); ctx.fill();
+                drawFaceExact('#1e1e2f', 10, -25, null, -10); drawLegs('#388e3c', '#388e3c', 15, 15);
+            } else if (pet.type === 'lion') {
+                ctx.strokeStyle = '#f57c00'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-30, 30); ctx.quadraticCurveTo(-60, 20 + wag*20, -50, -10 + wag*10); ctx.stroke();
+                ctx.fillStyle = '#5d4037'; ctx.beginPath(); ctx.arc(-50, -10 + wag*10, 8, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.ellipse(0, 20 - breath, 35 + breath*0.5, 30 - breath, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#e65100'; for(let i=0; i<10; i++) { let angle = (i * Math.PI*2)/10 + wag; let mx = Math.cos(angle) * 35; let my = Math.sin(angle) * 35 - 15 - breath*0.5; if(pet.state==='scared') { mx*=1.2; my*=1.2; } ctx.beginPath(); ctx.arc(mx, my, 20, 0, Math.PI*2); ctx.fill(); }
+                ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.arc(-25, -35 - breath*0.5, 10, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(25, -35 - breath*0.5, 10, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(0, -15 - breath*0.5, 32, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ffe082'; ctx.beginPath(); ctx.ellipse(0, -5 - breath*0.5, 18, 12, 0, 0, Math.PI*2); ctx.fill();
+                drawDirtAndSoap(); drawFaceExact('#1e1e2f', 12, -20, -8, -2); drawLegs('#ffb300', '#ffb300', 20, 20);
+            } else if (pet.type === 'dog') {
+                ctx.strokeStyle = '#795548'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-30, 30); ctx.quadraticCurveTo(-50, 20 + wag*30, -40, (pet.state==='scared'?10:-5) + wag*40); ctx.stroke();
+                ctx.fillStyle = '#a1887f'; ctx.beginPath(); ctx.ellipse(0, 15 - breath, 40 + breath*0.5, 35 - breath, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, 25 - breath, 25, 20, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#a1887f'; ctx.beginPath(); ctx.ellipse(0, -10 - breath*0.5, 35, 30, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#795548'; ctx.beginPath(); ctx.arc(-15, -15 - breath*0.5, 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#5d4037'; ctx.save(); ctx.translate(-30, -20); ctx.rotate((pet.state==='sad'?0.2:(pet.state==='scared'?-0.5:-0.2)) + wag); ctx.beginPath(); ctx.ellipse(0, 15, 12, 25, 0.2, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                ctx.save(); ctx.translate(30, -20); ctx.rotate((pet.state==='sad'?-0.2:(pet.state==='scared'?0.5:0.2)) - wag); ctx.beginPath(); ctx.ellipse(0, 15, 12, 25, -0.2, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, -breath*0.5, 20, 15, 0, 0, Math.PI*2); ctx.fill(); 
+                drawDirtAndSoap(); drawFaceExact('#1e1e2f', 15, -15, -4, 6); drawLegs('#a1887f', '#fff', 20, 20); 
+            }
+
+            // GORROS ALGORÍTMICOS
+            if (isHatOn && !pet.isSleeping) {
+                ctx.save();
+                let headY = (pet.type === 'dino') ? -45 : (pet.type === 'rabbit') ? -25 : -35;
+                ctx.translate(0, headY - breath*0.5);
+                
+                if (pet.stageIdx === 0) { // Bebé: Hélice
+                    ctx.fillStyle = '#f44336'; ctx.beginPath(); ctx.arc(0, 0, 15, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = '#ffeb3b'; ctx.fillRect(-2, -10, 4, 10);
+                    ctx.fillStyle = '#2196f3'; ctx.beginPath(); ctx.ellipse(0, -10, 18, 3, 0, 0, Math.PI*2); ctx.fill();
+                } else if (pet.stageIdx === 1) { // Niño: Gorra
+                    ctx.fillStyle = '#e91e63'; ctx.beginPath(); ctx.arc(0, 0, 18, Math.PI, 0); ctx.fill();
+                    ctx.fillRect(0, -3, 25, 4); // Visera
+                } else if (pet.stageIdx === 2) { // Adolescente: Audífonos
+                    ctx.strokeStyle = '#1e1e2f'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 15, 25, Math.PI, 0); ctx.stroke();
+                    ctx.fillStyle = '#00bcd4'; ctx.fillRect(-30, 5, 10, 20); ctx.fillRect(20, 5, 10, 20);
+                } else if (pet.stageIdx === 3) { // Adulto: Sombrero
+                    ctx.fillStyle = '#1e1e2f'; ctx.fillRect(-20, -5, 40, 5); ctx.fillRect(-12, -30, 24, 25);
+                    ctx.fillStyle = '#ff1744'; ctx.fillRect(-12, -10, 24, 5);
+                } else { // Graduado
+                    ctx.fillStyle = '#1e1e2f'; ctx.fillRect(-15, -10, 30, 10);
+                    ctx.beginPath(); ctx.moveTo(-30, -10); ctx.lineTo(0, -25); ctx.lineTo(30, -10); ctx.lineTo(0, 5); ctx.fill();
+                    ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,-10); ctx.lineTo(25, 0); ctx.stroke();
                 }
                 ctx.restore();
             }
 
-            // CAPA 4: Mitad DELANTERA Loop
-            for (let plat of platforms) {
-                if (plat.type === 'loop_full') {
-                    if (plat.x > cameraX + width || plat.x + plat.width < cameraX) continue;
-                    ctx.beginPath(); ctx.arc(plat.cx, plat.cy, plat.radius, -Math.PI/2, -Math.PI*1.5, true); 
-                    ctx.lineWidth = 30; ctx.strokeStyle = COLORS.track; ctx.stroke();
-                    ctx.beginPath(); ctx.arc(plat.cx, plat.cy, plat.radius - 15, -Math.PI/2, -Math.PI*1.5, true);
-                    ctx.lineWidth = 4; ctx.strokeStyle = COLORS.neon; ctx.stroke();
-                    ctx.beginPath(); ctx.arc(plat.cx, plat.cy, plat.radius + 15, -Math.PI/2, -Math.PI*1.5, true);
-                    ctx.lineWidth = 6; ctx.strokeStyle = COLORS.edge; ctx.stroke();
-                }
-            }
+            ctx.restore();
+        }
 
-            ctx.restore(); 
+        // --- DRAW ITEMS ---
+        function drawActiveItem(ctx) {
+            ctx.globalAlpha = 1.0; ctx.shadowColor = 'transparent';
+            let item = activeItem || droppedToy;
+            if (!item) return;
+            
+            ctx.save(); ctx.translate(item.x, item.y);
+            if (item.isDragging) ctx.scale(1.2, 1.2); 
+
+            // Para asegurar opacidad 100% dibujamos el emoji limpio sin sombras complejas
+            ctx.font = '50px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(item.emoji, 0, 0);
+
+            if (item.type === 'sponge') {
+                ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(-15, -10, 12, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(15, 5, 8, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
         }
 
         function gameLoop(timestamp) {
-            let dt = timestamp - lastTime;
-            if (dt > 100) dt = 16; 
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.016; 
             lastTime = timestamp;
 
-            update(dt / 1000); draw();
+            if (isPlaying) update(dt);
+            
+            ctx.clearRect(0, 0, width, height);
+            drawBackground(ctx);
+            drawPet(ctx);
+            drawForeground(ctx);
+            drawActiveItem(ctx);
+            drawParticles(dt);
+
             requestAnimationFrame(gameLoop);
         }
 
-        window.onload = () => {
-            resize();
-            lastTime = performance.now();
-            requestAnimationFrame(gameLoop);
-        };
+        window.onload = () => { resize(); };
+
     </script>
 </body>
 </html>
-
-
