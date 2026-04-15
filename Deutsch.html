@@ -248,6 +248,7 @@
             <button class="btn-level" onclick="changeLevel(4, this)">Frases</button>
             <button class="btn-level" onclick="changeLevel(5, this)">1-20</button>
             <button class="btn-level" onclick="changeLevel(6, this)">ABC</button>
+            <button class="btn-level" onclick="changeLevel('aleatorio', this)">🔀 Aleatorio</button>
             <button class="btn-level btn-repaso" onclick="changeLevel('repaso', this)">🧠 Repaso</button>
         </div>
 
@@ -306,17 +307,15 @@
                 { de: "Boot", es: "Barco", icon: "⛵" }, { de: "LKW", es: "Camión", icon: "🚚" }, { de: "Polizei", es: "Policía", icon: "🚓" }, { de: "Feuerwehr", es: "Bomberos", icon: "🚒" }, { de: "Krankenhaus", es: "Hospital", icon: "🏥" },
                 { de: "Apotheke", es: "Farmacia", icon: "💊" }, { de: "Bäcker", es: "Panadería", icon: "🥨" }, { de: "Supermarkt", es: "Súper", icon: "🛒" }, { de: "Kino", es: "Cine", icon: "🎬" }, { de: "Park", es: "Parque", icon: "🌳" }
             ],
-            3: [ // NIVEL 3: NATURALEZA, OBJETOS Y CIENCIA (50)
-                { de: "Wald", es: "Bosque", icon: "🌲" }, { de: "Berg", es: "Montaña", icon: "⛰️" }, { de: "See", es: "Lago", icon: "🌊" }, { de: "Meer", es: "Mar", icon: "🌊" }, { de: "Fluß", es: "Río", icon: "🏞️" },
+            3: [ // NIVEL 3: NATURALEZA PURA
+                { de: "Wald", es: "Bosque", icon: "🌲" }, { de: "Berg", es: "Montaña", icon: "⛰️" }, { de: "See", es: "Lago", icon: "🌊" }, { de: "Meer", es: "Mar", icon: "🌊" }, { de: "Fluss", es: "Río", icon: "🏞️" },
                 { de: "Insel", es: "Isla", icon: "🏝️" }, { de: "Strand", es: "Playa", icon: "🏖️" }, { de: "Schnee", es: "Nieve", icon: "❄️" }, { de: "Eisberg", es: "Iceberg", icon: "🏔️" }, { de: "Wolke", es: "Nube", icon: "☁️" },
-                { de: "Wind", es: "Viento", icon: "🌬️" }, { de: "Gewitter", es: "Tormenta", icon: "⚡" }, { de: "Regenbogen", es: "Arcoíris", icon: "🌈" }, { de: "Erde", es: "Tierra", icon: "🌍" }, { de: "Weltraum", es: "Espacio", icon: "🚀" },
-                { de: "Rakete", es: "Cohete", icon: "🚀" }, { de: "Planet", es: "Planeta", icon: "🪐" }, { de: "Komet", es: "Cometa", icon: "☄️" }, { de: "Aliens", es: "Marciano", icon: "👽" }, { de: "Roboter", es: "Robot", icon: "🤖" },
-                { de: "Dinosaurier", es: "Dino", icon: "🦖" }, { de: "Drache", es: "Dragón", icon: "🐉" }, { de: "Einhorn", es: "Unicornio", icon: "🦄" }, { de: "Schloss", es: "Castillo", icon: "🏰" }, { de: "König", es: "Rey", icon: "👑" },
-                { de: "Pirat", es: "Pirata", icon: "🏴‍☠️" }, { de: "Schatz", es: "Tesoro", icon: "💰" }, { de: "Zelt", es: "Tienda", icon: "⛺" }, { de: "Feuer", es: "Fuego", icon: "🔥" }, { de: "Kompass", es: "Brújula", icon: "🧭" },
-                { de: "Taschenlampe", es: "Linterna", icon: "🔦" }, { de: "Kamera", es: "Cámara", icon: "📷" }, { de: "Gitarre", es: "Guitarra", icon: "🎸" }, { de: "Klavier", es: "Piano", icon: "🎹" }, { de: "Trommel", es: "Tambor", icon: "🥁" },
-                { de: "Pinsel", es: "Pincel", icon: "🖌️" }, { de: "Farben", es: "Colores", icon: "🎨" }, { de: "Schere", es: "Tijeras", icon: "✂️" }, { de: "Kleber", es: "Pegamento", icon: "🧪" }, { de: "Papier", es: "Papel", icon: "📄" },
-                { de: "Seife", es: "Jabón", icon: "🧼" }, { de: "Zahnbürste", es: "Cepillo", icon: "🪥" }, { de: "Handtuch", es: "Toalla", icon: "🧖" }, { de: "Badewanne", es: "Bañera", icon: "🛁" }, { de: "Spiegel", es: "Espejo", icon: "🪞" },
-                { de: "Kamm", es: "Peine", icon: "🪮" }, { de: "Fön", es: "Secador", icon: "💨" }, { de: "Pilz", es: "Seta", icon: "🍄" }, { de: "Krokodil", es: "Cocodrilo", icon: "🐊" }, { de: "Erdbeere", es: "Fresa", icon: "🍓" }
+                { de: "Wind", es: "Viento", icon: "🌬️" }, { de: "Gewitter", es: "Tormenta", icon: "⚡" }, { de: "Regenbogen", es: "Arcoíris", icon: "🌈" }, { de: "Erde", es: "Tierra", icon: "🌍" }, { de: "Stein", es: "Piedra", icon: "🪨" },
+                { de: "Blatt", es: "Hoja", icon: "🍃" }, { de: "Gras", es: "Césped", icon: "🌿" }, { de: "Vulkan", es: "Volcán", icon: "🌋" }, { de: "Wüste", es: "Desierto", icon: "🏜️" }, { de: "Höhle", es: "Cueva", icon: "🦇" },
+                { de: "Wasserfall", es: "Cascada", icon: "🏞️" }, { de: "Himmel", es: "Cielo", icon: "🌌" }, { de: "Pflanze", es: "Planta", icon: "🪴" }, { de: "Ast", es: "Rama", icon: "🪵" }, { de: "Dschungel", es: "Selva", icon: "🌴" },
+                { de: "Feuer", es: "Fuego", icon: "🔥" }, { de: "Tropfen", es: "Gota", icon: "💧" }, { de: "Eis", es: "Hielo", icon: "🧊" }, { de: "Tornado", es: "Tornado", icon: "🌪️" }, { de: "Nebel", es: "Niebla", icon: "🌫️" },
+                { de: "Pilz", es: "Seta", icon: "🍄" }, { de: "Sonne", es: "Sol", icon: "☀️" }, { de: "Mond", es: "Luna", icon: "🌙" }, { de: "Stern", es: "Estrella", icon: "⭐" }, { de: "Regen", es: "Lluvia", icon: "🌧️" },
+                { de: "Baum", es: "Árbol", icon: "🌳" }, { de: "Blume", es: "Flor", icon: "🌻" }, { de: "Kaktus", es: "Cactus", icon: "🌵" }, { de: "Sand", es: "Arena", icon: "🏖️" }, { de: "Welle", es: "Ola", icon: "🌊" }
             ],
             4: [ // NIVEL 4: FRASES DE KINDERGARTEN (Añadido el flag isPhrase)
                 { de: "Darf ich auf die Toilette gehen?", es: "¿Puedo ir al baño?", icon: "🚽", isPhrase: true },
@@ -341,17 +340,17 @@
                 { de: "Ich weiß nicht", es: "No sé", icon: "🤷", isPhrase: true }
             ],
             5: [ // NIVEL 5: NÚMEROS 1 AL 20
-                { de: "Eins", es: "Uno", icon: "1️⃣" }, { de: "Zwei", es: "Dos", icon: "2️⃣" }, { de: "Drei", es: "Tres", icon: "3️⃣" }, { de: "Vier", es: "Cuatro", icon: "4️⃣" }, { de: "Fünf", es: "Cinco", icon: "5️⃣" },
-                { de: "Sechs", es: "Seis", icon: "6️⃣" }, { de: "Sieben", es: "Siete", icon: "7️⃣" }, { de: "Acht", es: "Ocho", icon: "8️⃣" }, { de: "Neun", es: "Nueve", icon: "9️⃣" }, { de: "Zehn", es: "Diez", icon: "🔟" },
-                { de: "Elf", es: "Once", icon: "11" }, { de: "Zwölf", es: "Doce", icon: "12" }, { de: "Dreizehn", es: "Trece", icon: "13" }, { de: "Vierzehn", es: "Catorce", icon: "14" }, { de: "Fünfzehn", es: "Quince", icon: "15" },
-                { de: "Sechzehn", es: "Dieciséis", icon: "16" }, { de: "Siebzehn", es: "Diecisiete", icon: "17" }, { de: "Achtzehn", es: "Dieciocho", icon: "18" }, { de: "Neunzehn", es: "Diecinueve", icon: "19" }, { de: "Zwanzig", es: "Veinte", icon: "20" }
+                { de: "Eins", es: "Uno", icon: "1", onlyIcon: true }, { de: "Zwei", es: "Dos", icon: "2", onlyIcon: true }, { de: "Drei", es: "Tres", icon: "3", onlyIcon: true }, { de: "Vier", es: "Cuatro", icon: "4", onlyIcon: true }, { de: "Fünf", es: "Cinco", icon: "5", onlyIcon: true },
+                { de: "Sechs", es: "Seis", icon: "6", onlyIcon: true }, { de: "Sieben", es: "Siete", icon: "7", onlyIcon: true }, { de: "Acht", es: "Ocho", icon: "8", onlyIcon: true }, { de: "Neun", es: "Nueve", icon: "9", onlyIcon: true }, { de: "Zehn", es: "Diez", icon: "10", onlyIcon: true },
+                { de: "Elf", es: "Once", icon: "11", onlyIcon: true }, { de: "Zwölf", es: "Doce", icon: "12", onlyIcon: true }, { de: "Dreizehn", es: "Trece", icon: "13", onlyIcon: true }, { de: "Vierzehn", es: "Catorce", icon: "14", onlyIcon: true }, { de: "Fünfzehn", es: "Quince", icon: "15", onlyIcon: true },
+                { de: "Sechzehn", es: "Dieciséis", icon: "16", onlyIcon: true }, { de: "Siebzehn", es: "Diecisiete", icon: "17", onlyIcon: true }, { de: "Achtzehn", es: "Dieciocho", icon: "18", onlyIcon: true }, { de: "Neunzehn", es: "Diecinueve", icon: "19", onlyIcon: true }, { de: "Zwanzig", es: "Veinte", icon: "20", onlyIcon: true }
             ],
             6: [ // NIVEL 6: ABC
-                { de: "A", es: "A", icon: "A" }, { de: "B", es: "B", icon: "B" }, { de: "C", es: "C", icon: "C" }, { de: "D", es: "D", icon: "D" }, { de: "E", es: "E", icon: "E" },
-                { de: "F", es: "F", icon: "F" }, { de: "G", es: "G", icon: "G" }, { de: "H", es: "H", icon: "H" }, { de: "I", es: "I", icon: "I" }, { de: "J", es: "J", icon: "J" },
-                { de: "K", es: "K", icon: "K" }, { de: "L", es: "L", icon: "L" }, { de: "M", es: "M", icon: "M" }, { de: "N", es: "N", icon: "N" }, { de: "O", es: "O", icon: "O" },
-                { de: "P", es: "P", icon: "P" }, { de: "Q", es: "Q", icon: "Q" }, { de: "R", es: "R", icon: "R" }, { de: "S", es: "S", icon: "S" }, { de: "T", es: "T", icon: "T" },
-                { de: "U", es: "U", icon: "U" }, { de: "V", es: "V", icon: "V" }, { de: "W", es: "W", icon: "W" }, { de: "X", es: "X", icon: "X" }, { de: "Y", es: "Y", icon: "Y" }, { de: "Z", es: "Z", icon: "Z" }
+                { de: "A", es: "A", icon: "A", onlyIcon: true }, { de: "B", es: "B", icon: "B", onlyIcon: true }, { de: "C", es: "C", icon: "C", onlyIcon: true }, { de: "D", es: "D", icon: "D", onlyIcon: true }, { de: "E", es: "E", icon: "E", onlyIcon: true },
+                { de: "F", es: "F", icon: "F", onlyIcon: true }, { de: "G", es: "G", icon: "G", onlyIcon: true }, { de: "H", es: "H", icon: "H", onlyIcon: true }, { de: "I", es: "I", icon: "I", onlyIcon: true }, { de: "J", es: "J", icon: "J", onlyIcon: true },
+                { de: "K", es: "K", icon: "K", onlyIcon: true }, { de: "L", es: "L", icon: "L", onlyIcon: true }, { de: "M", es: "M", icon: "M", onlyIcon: true }, { de: "N", es: "N", icon: "N", onlyIcon: true }, { de: "O", es: "O", icon: "O", onlyIcon: true },
+                { de: "P", es: "P", icon: "P", onlyIcon: true }, { de: "Q", es: "Q", icon: "Q", onlyIcon: true }, { de: "R", es: "R", icon: "R", onlyIcon: true }, { de: "S", es: "S", icon: "S", onlyIcon: true }, { de: "T", es: "T", icon: "T", onlyIcon: true },
+                { de: "U", es: "U", icon: "U", onlyIcon: true }, { de: "V", es: "V", icon: "V", onlyIcon: true }, { de: "W", es: "W", icon: "W", onlyIcon: true }, { de: "X", es: "X", icon: "X", onlyIcon: true }, { de: "Y", es: "Y", icon: "Y", onlyIcon: true }, { de: "Z", es: "Z", icon: "Z", onlyIcon: true }
             ]
         };
 
@@ -401,6 +400,8 @@
         function initLevel() {
             if (currentLevel === 'repaso') {
                 wordQueue = [...reviewWords].sort(() => Math.random() - 0.5);
+            } else if (currentLevel === 'aleatorio') {
+                wordQueue = [...allLevels[1], ...allLevels[2], ...allLevels[3], ...allLevels[5], ...allLevels[6]].sort(() => Math.random() - 0.5);
             } else {
                 wordQueue = [...allLevels[currentLevel]].sort(() => Math.random() - 0.5);
             }
@@ -416,7 +417,11 @@
                     document.querySelector('.btn-level').click(); // Clic en el primer botón (Nivel 1)
                     return;
                 }
-                wordQueue = [...allLevels[currentLevel]].sort(() => Math.random() - 0.5);
+                if (currentLevel === 'aleatorio') {
+                    wordQueue = [...allLevels[1], ...allLevels[2], ...allLevels[3], ...allLevels[5], ...allLevels[6]].sort(() => Math.random() - 0.5);
+                } else {
+                    wordQueue = [...allLevels[currentLevel]].sort(() => Math.random() - 0.5);
+                }
             }
             
             currentWord = wordQueue.pop();
@@ -427,8 +432,25 @@
                 choices = [currentWord];
             } else {
                 let distractors = [];
-                // Para los distractores, tomamos palabras de los niveles normales
-                let allAvailable = [...allLevels[1], ...allLevels[2], ...allLevels[3], ...allLevels[5], ...allLevels[6]].filter(w => w.de !== currentWord.de && !w.isPhrase);
+                let sourceForDistractors = [];
+
+                if (currentLevel === 'aleatorio') {
+                    // En modo aleatorio, los distractores pueden ser de todas las categorías (excepto frases)
+                    sourceForDistractors = [...allLevels[1], ...allLevels[2], ...allLevels[3], ...allLevels[5], ...allLevels[6]];
+                } else if (currentLevel === 'repaso') {
+                    // Para repaso, buscar de qué nivel es la palabra para mantener la coherencia
+                    let levelOfWord = Object.keys(allLevels).find(key => allLevels[key].some(w => w.de === currentWord.de));
+                    if (levelOfWord) {
+                        sourceForDistractors = [...allLevels[levelOfWord]];
+                    } else {
+                        sourceForDistractors = [...allLevels[1], ...allLevels[2], ...allLevels[3]];
+                    }
+                } else {
+                    // STRICT CATEGORY: Solo objetos de la misma categoría actual
+                    sourceForDistractors = [...allLevels[currentLevel]];
+                }
+
+                let allAvailable = sourceForDistractors.filter(w => w.de !== currentWord.de && !w.isPhrase);
                 allAvailable.sort(() => Math.random() - 0.5);
                 distractors = allAvailable.slice(0, 2);
                 choices = [currentWord, ...distractors].sort(() => Math.random() - 0.5);
@@ -439,7 +461,15 @@
             choices.forEach(c => {
                 const b = document.createElement('button');
                 b.className = 'btn-option';
-                b.innerHTML = `<span>${c.icon}</span> <span>${c.es}</span>`;
+                
+                // Si la opción está marcada para mostrar solo ícono (Números y ABC)
+                if (c.onlyIcon) {
+                    b.innerHTML = `<span>${c.icon}</span>`;
+                    b.style.fontSize = "2rem"; // Hacer el número/letra más grande y destacado
+                } else {
+                    b.innerHTML = `<span>${c.icon}</span> <span>${c.es}</span>`;
+                }
+                
                 b.onclick = (e) => check(c, e.currentTarget);
                 container.appendChild(b);
             });
