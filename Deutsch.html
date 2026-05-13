@@ -14,11 +14,9 @@
             --idle: #3498db;
             --candy: #e84393;
             --nav-bg: #2c3e50;
-            --phrase: #16a085;
-            --phrase-active: #1abc9c;
-            --invert-off: #16a085;
-            --invert-on: #c0392b;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             font-family: 'Comic Sans MS', cursive, sans-serif;
@@ -29,7 +27,6 @@
             justify-content: flex-start;
             height: 100dvh;
             margin: 0;
-            box-sizing: border-box;
             overflow: hidden;
             user-select: none;
         }
@@ -38,7 +35,6 @@
             width: 100%;
             max-width: 600px;
             padding: 10px;
-            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -46,7 +42,6 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             z-index: 10;
         }
-
         .candy-wallet {
             font-size: 1.4rem;
             font-weight: bold;
@@ -60,7 +55,6 @@
             align-items: center;
             gap: 5px;
         }
-
         .progress-container {
             width: 100%;
             background: #e0e0e0;
@@ -76,12 +70,7 @@
             width: 0%;
             transition: width 0.3s ease;
         }
-        .progress-candy {
-            position: absolute;
-            right: 5px;
-            top: -2px;
-            font-size: 14px;
-        }
+        .progress-candy { position: absolute; right: 5px; top: -2px; font-size: 14px; }
 
         .view-section {
             display: none;
@@ -91,61 +80,110 @@
             max-width: 600px;
             flex-grow: 1;
             padding: 10px;
-            box-sizing: border-box;
             overflow-y: auto;
             overflow-x: hidden;
             padding-bottom: 80px;
         }
         .view-section.active { display: flex; }
 
-        /* Level menu — two labeled rows */
-        .level-group {
+        /* ─── Accordion ─────────────────────────────────────── */
+        .level-accordion {
             width: 100%;
-            margin-bottom: 6px;
-        }
-        .level-group-label {
-            font-size: 0.7rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #aaa;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-            padding-left: 4px;
-        }
-        .level-menu {
             display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .accordion-header {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            padding: 10px 15px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            transition: transform 0.1s;
+        }
+        .accordion-header:active { transform: translateY(2px); }
+        .accordion-header.words-hdr  { background: #e67e22; box-shadow: 0 4px 0 #ca6f1e; }
+        .accordion-header.phrase-hdr { background: #16a085; box-shadow: 0 4px 0 #0e7f65; }
+        .acc-arrow { display: inline-block; transition: transform 0.25s; }
+        .accordion-header.open .acc-arrow { transform: rotate(180deg); }
+
+        .accordion-panel {
+            display: none;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: 6px;
+            padding: 10px 8px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.06);
+            animation: slideDown 0.2s ease;
+        }
+        .accordion-panel.open { display: flex; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* Invert toggle row inside phrases panel */
+        .invert-row {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 4px;
+            border-top: 1px dashed #eee;
+            margin-top: 2px;
+        }
+        #btn-invert {
+            border: none;
+            border-radius: 20px;
+            padding: 7px 14px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            cursor: pointer;
+            color: white;
+            background: #16a085;
+            box-shadow: 0 4px 0 #0e7f65;
+            transition: background 0.25s;
+        }
+        #btn-invert.on { background: #c0392b; box-shadow: 0 4px 0 #922b21; }
+        #btn-invert:active { transform: translateY(3px); box-shadow: none; }
+
+        /* ─── Level buttons ──────────────────────────────────── */
         .btn-level {
-            padding: 7px 10px;
+            padding: 8px 12px;
             border: none;
             border-radius: 12px;
             color: white;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
             cursor: pointer;
             background: #bdc3c7;
             transition: 0.3s;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
         }
-        .btn-level.active { background: var(--primary); transform: scale(1.05); box-shadow: 0 4px 10px rgba(255,152,0,0.4); }
-        .btn-phrase { background: #16a085; }
+        .btn-level.active  { background: var(--primary); transform: scale(1.05); box-shadow: 0 4px 10px rgba(255,152,0,0.4); }
+        .btn-phrase        { background: #16a085; }
         .btn-phrase.active { background: #1abc9c; box-shadow: 0 4px 10px rgba(26,188,156,0.4); }
-        .btn-repaso { background: #9b59b6; }
+        .btn-repaso        { background: #9b59b6; }
         .btn-repaso.active { background: #8e44ad; box-shadow: 0 4px 10px rgba(142,68,173,0.4); }
 
+        /* ─── Controls ──────────────────────────────────────── */
         .controls-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
             margin-bottom: 10px;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 10px;
         }
-
         .speed-control {
             display: flex;
             align-items: center;
@@ -157,7 +195,6 @@
             font-size: 1rem;
             font-weight: bold;
         }
-
         .speed-btn {
             background: none;
             border: none;
@@ -167,30 +204,6 @@
             padding: 0 5px;
         }
         .speed-btn:active { transform: scale(0.8); }
-
-        /* Invert button */
-        #btn-invert {
-            border: none;
-            border-radius: 20px;
-            padding: 7px 13px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-            cursor: pointer;
-            color: white;
-            background: var(--invert-off);
-            box-shadow: 0 4px 0 #0e7f65;
-            transition: background 0.25s, box-shadow 0.25s, opacity 0.25s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        #btn-invert.on {
-            background: var(--invert-on);
-            box-shadow: 0 4px 0 #922b21;
-        }
-        #btn-invert:active { transform: translateY(3px); box-shadow: none; }
-
         .stats {
             display: flex;
             gap: 15px;
@@ -201,33 +214,19 @@
             font-size: 1.1rem;
         }
 
-        /* Direction badge shown above speak button */
-        .direction-badge {
-            font-size: 0.8rem;
-            font-weight: bold;
-            background: #ffeaa7;
-            color: #555;
-            border-radius: 12px;
-            padding: 3px 12px;
-            margin-bottom: 8px;
-            display: none;
-        }
-        .direction-badge.visible { display: block; }
-
+        /* ─── Game box ───────────────────────────────────────── */
         .game-box {
             background: var(--card);
             padding: 15px;
             border-radius: 30px;
             box-shadow: 0 10px 0 rgba(0,0,0,0.05);
             width: 100%;
-            box-sizing: border-box;
             text-align: center;
             z-index: 5;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-
         .btn-speak {
             background: var(--primary);
             border: none;
@@ -243,9 +242,7 @@
             transition: transform 0.1s;
         }
         .btn-speak:active { transform: translateY(4px); box-shadow: 0 2px 0 #e68a00; }
-
         .options-grid { display: grid; gap: 10px; width: 100%; }
-
         .btn-option {
             background: var(--idle);
             border: none;
@@ -266,16 +263,15 @@
             line-height: 1.2;
         }
         .btn-option.correct { background: var(--correct) !important; box-shadow: 0 5px 0 #27ae60 !important; }
-        .btn-option.wrong { background: var(--wrong) !important; box-shadow: 0 5px 0 #c0392b !important; animation: shake 0.4s; }
+        .btn-option.wrong   { background: var(--wrong)   !important; box-shadow: 0 5px 0 #c0392b !important; animation: shake 0.4s; }
 
-        /* Shop */
+        /* ─── Shop ───────────────────────────────────────────── */
         .shop-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 15px;
             width: 100%;
             padding: 10px;
-            box-sizing: border-box;
         }
         .shop-item {
             background: white;
@@ -300,10 +296,10 @@
             box-shadow: 0 4px 0 #219d52;
             cursor: pointer;
         }
-        .shop-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #219d52; }
+        .shop-btn:active   { transform: translateY(3px); box-shadow: 0 1px 0 #219d52; }
         .shop-btn:disabled { background: #95a5a6; box-shadow: 0 4px 0 #7f8c8d; cursor: not-allowed; }
 
-        /* Board */
+        /* ─── Board ──────────────────────────────────────────── */
         .board-container {
             width: 100%;
             height: 100%;
@@ -325,10 +321,10 @@
         }
         .sticker:active { cursor: grabbing; filter: drop-shadow(4px 8px 6px rgba(0,0,0,0.4)); transform: scale(1.1); }
 
+        /* ─── Bottom nav ─────────────────────────────────────── */
         .bottom-nav {
             position: fixed;
-            bottom: 0;
-            left: 0;
+            bottom: 0; left: 0;
             width: 100%;
             height: 70px;
             background: var(--nav-bg);
@@ -356,10 +352,7 @@
         .nav-btn.active { opacity: 1; transform: scale(1.1); color: var(--primary); }
         .nav-icon { font-size: 1.5rem; }
 
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
-
-        #canvas-confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-
+        /* ─── Celebration ────────────────────────────────────── */
         .mega-celebration {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -377,604 +370,529 @@
         .candy-reward-icon { font-size: 8rem; animation: bounce 1s infinite alternate; }
         .celebration-text { color: white; font-size: 2rem; font-weight: bold; text-align: center; margin-top: 20px; }
 
-        @keyframes bounce { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-30px) scale(1.1); } }
+        @keyframes shake  { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+        @keyframes bounce { 0%{transform:translateY(0) scale(1)} 100%{transform:translateY(-30px) scale(1.1)} }
+        #canvas-confetti { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="candy-wallet">🍬 <span id="candy-count">0</span></div>
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar"></div>
-            <span class="progress-candy">🍬</span>
-        </div>
+<div class="top-bar">
+    <div class="candy-wallet">🍬 <span id="candy-count">0</span></div>
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+        <span class="progress-candy">🍬</span>
     </div>
+</div>
 
-    <!-- VISTA 1: JUEGO -->
-    <div id="view-game" class="view-section active">
+<!-- ══ JUEGO ══════════════════════════════════════════════ -->
+<div id="view-game" class="view-section active">
 
-        <!-- PALABRAS -->
-        <div class="level-group">
-            <div class="level-group-label">📚 Palabras</div>
-            <div class="level-menu">
-                <button class="btn-level active" onclick="changeLevel(1, this)">Básicos</button>
-                <button class="btn-level" onclick="changeLevel(2, this)">Ciudad</button>
-                <button class="btn-level" onclick="changeLevel(3, this)">Natura</button>
-                <button class="btn-level" onclick="changeLevel(7, this)">Ropa</button>
-                <button class="btn-level" onclick="changeLevel(8, this)">Comida</button>
-                <button class="btn-level" onclick="changeLevel(9, this)">Cuerpo</button>
-                <button class="btn-level" onclick="changeLevel(5, this)">1-20</button>
-                <button class="btn-level" onclick="changeLevel(6, this)">ABC</button>
-                <button class="btn-level" onclick="changeLevel('aleatorio', this)">🔀 Mix</button>
-            </div>
-        </div>
+    <div class="level-accordion">
 
-        <!-- FRASES -->
-        <div class="level-group">
-            <div class="level-group-label">💬 Frases</div>
-            <div class="level-menu">
-                <button class="btn-level btn-phrase" onclick="changeLevel(41, this)">Frases 1</button>
-                <button class="btn-level btn-phrase" onclick="changeLevel(42, this)">Frases 2</button>
-                <button class="btn-level btn-phrase" onclick="changeLevel(43, this)">Frases 3</button>
-                <button class="btn-level btn-phrase" onclick="changeLevel(44, this)">Frases 4</button>
-                <button class="btn-level btn-phrase" onclick="changeLevel(45, this)">Frases 5</button>
-                <button class="btn-level btn-phrase" onclick="changeLevel(46, this)">Frases 6</button>
-                <button class="btn-level btn-repaso" onclick="changeLevel('repaso', this)">🧠 Repaso</button>
-            </div>
-        </div>
-
-        <div class="controls-row">
-            <div class="speed-control">
-                <button class="speed-btn" onclick="changeSpeed(-0.25)">🐢</button>
-                <span id="speed-display">0.75x</span>
-                <button class="speed-btn" onclick="changeSpeed(0.25)">🐇</button>
-            </div>
-
-            <button id="btn-invert" onclick="toggleInvert()" title="Invertir dirección (solo frases)">
-                🔄 DE → ES
-            </button>
-
-            <div class="stats">
-                <div style="color: #ff9800;">🔥 <span id="streak">0</span></div>
-                <div style="color: #2ecc71;">✅ <span id="good">0</span></div>
-                <div style="color: #e74c3c;">❌ <span id="bad">0</span></div>
-            </div>
-        </div>
-
-        <div class="game-box">
-            <div class="direction-badge" id="direction-badge">🇩🇪 Escucha en alemán → elige en español</div>
-            <button class="btn-speak" onclick="playCurrentWord()">🔊</button>
-            <div class="options-grid" id="options"></div>
-        </div>
-    </div>
-
-    <!-- VISTA 2: TIENDA -->
-    <div id="view-shop" class="view-section">
-        <h2 style="color: #333;">Tienda de Stickers</h2>
-        <div class="shop-grid" id="shop-grid"></div>
-    </div>
-
-    <!-- VISTA 3: CORCHO -->
-    <div id="view-board" class="view-section">
-        <h2 style="color: #333; margin-top: 0;">Mi Corcho</h2>
-        <div class="board-container" id="board-container"></div>
-    </div>
-
-    <!-- MENÚ INFERIOR -->
-    <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="switchView('game', this)">
-            <span class="nav-icon">🎮</span><span>Jugar</span>
+        <!-- Palabras -->
+        <button class="accordion-header words-hdr" id="tab-words" onclick="toggleAcc('words')">
+            <span>📚 Palabras &mdash; <span id="words-label">Básicos</span></span>
+            <span class="acc-arrow">▼</span>
         </button>
-        <button class="nav-btn" onclick="switchView('shop', this)">
-            <span class="nav-icon">🛒</span><span>Tienda</span>
-        </button>
-        <button class="nav-btn" onclick="switchView('board', this)">
-            <span class="nav-icon">📌</span><span>Corcho</span>
-        </button>
-    </nav>
+        <div class="accordion-panel" id="panel-words">
+            <button class="btn-level active" onclick="pickWord(1,this,'Básicos')">Básicos</button>
+            <button class="btn-level" onclick="pickWord(2,this,'Ciudad')">Ciudad</button>
+            <button class="btn-level" onclick="pickWord(3,this,'Natura')">Natura</button>
+            <button class="btn-level" onclick="pickWord(7,this,'Ropa')">Ropa</button>
+            <button class="btn-level" onclick="pickWord(8,this,'Comida')">Comida</button>
+            <button class="btn-level" onclick="pickWord(9,this,'Cuerpo')">Cuerpo</button>
+            <button class="btn-level" onclick="pickWord(5,this,'1-20')">1-20</button>
+            <button class="btn-level" onclick="pickWord(6,this,'ABC')">ABC</button>
+            <button class="btn-level" onclick="pickWord('aleatorio',this,'🔀 Mix')">🔀 Mix</button>
+        </div>
 
-    <div class="mega-celebration" id="mega-celebration">
-        <div class="candy-reward-icon">🍬</div>
-        <div class="celebration-text">Fantastisch!<br>¡Ganaste 1 Caramelo!</div>
+        <!-- Frases -->
+        <button class="accordion-header phrase-hdr" id="tab-phrases" onclick="toggleAcc('phrases')">
+            <span>💬 Frases &mdash; <span id="phrases-label">Frases 1</span></span>
+            <span class="acc-arrow">▼</span>
+        </button>
+        <div class="accordion-panel" id="panel-phrases">
+            <button class="btn-level btn-phrase" onclick="pickPhrase(41,this,'Frases 1')">Frases 1</button>
+            <button class="btn-level btn-phrase" onclick="pickPhrase(42,this,'Frases 2')">Frases 2</button>
+            <button class="btn-level btn-phrase" onclick="pickPhrase(43,this,'Frases 3')">Frases 3</button>
+            <button class="btn-level btn-phrase" onclick="pickPhrase(44,this,'Frases 4')">Frases 4</button>
+            <button class="btn-level btn-phrase" onclick="pickPhrase(45,this,'Frases 5')">Frases 5</button>
+            <button class="btn-level btn-phrase" onclick="pickPhrase(46,this,'Frases 6')">Frases 6</button>
+            <button class="btn-level btn-repaso" onclick="pickPhrase('repaso',this,'🧠 Repaso')">🧠 Repaso</button>
+            <div class="invert-row">
+                <button id="btn-invert" onclick="toggleInvert()">🔄 DE &rarr; ES</button>
+            </div>
+        </div>
+
     </div>
 
-    <canvas id="canvas-confetti"></canvas>
+    <div class="controls-row">
+        <div class="speed-control">
+            <button class="speed-btn" onclick="changeSpeed(-0.25)">🐢</button>
+            <span id="speed-display">0.75x</span>
+            <button class="speed-btn" onclick="changeSpeed(0.25)">🐇</button>
+        </div>
+        <div class="stats">
+            <div style="color:#ff9800;">🔥 <span id="streak">0</span></div>
+            <div style="color:#2ecc71;">✅ <span id="good">0</span></div>
+            <div style="color:#e74c3c;">❌ <span id="bad">0</span></div>
+        </div>
+    </div>
 
-    <script>
-        // ─── VOCABULARIO ───────────────────────────────────────────────────────────
-        const allLevels = {
-            1: [ // BÁSICOS
-                { de: "Apfel", es: "Manzana", icon: "🍎" }, { de: "Haus", es: "Casa", icon: "🏠" }, { de: "Hund", es: "Perro", icon: "🐶" }, { de: "Katze", es: "Gato", icon: "🐱" }, { de: "Milch", es: "Leche", icon: "🥛" },
-                { de: "Wasser", es: "Agua", icon: "💧" }, { de: "Brot", es: "Pan", icon: "🍞" }, { de: "Auto", es: "Coche", icon: "🚗" }, { de: "Sonne", es: "Sol", icon: "☀️" }, { de: "Buch", es: "Libro", icon: "📖" },
-                { de: "Bett", es: "Cama", icon: "🛏️" }, { de: "Ball", es: "Pelota", icon: "⚽" }, { de: "Schuhe", es: "Zapatos", icon: "👟" }, { de: "Mama", es: "Mamá", icon: "👩" }, { de: "Papa", es: "Papá", icon: "👨" },
-                { de: "Tisch", es: "Mesa", icon: "🪑" }, { de: "Stuhl", es: "Silla", icon: "🪑" }, { de: "Mund", es: "Boca", icon: "👄" }, { de: "Nase", es: "Nariz", icon: "👃" }, { de: "Auge", es: "Ojo", icon: "👁️" },
-                { de: "Rot", es: "Rojo", icon: "🔴" }, { de: "Blau", es: "Azul", icon: "🔵" }, { de: "Gelb", es: "Amarillo", icon: "🟡" }, { de: "Grün", es: "Verde", icon: "🟢" },
-                { de: "Orange", es: "Naranja", icon: "🟠" }, { de: "Rosa", es: "Rosa", icon: "🌸" }, { de: "Lila", es: "Morado", icon: "🟣" }, { de: "Braun", es: "Marrón", icon: "🟤" }, { de: "Schwarz", es: "Negro", icon: "⚫" }, { de: "Weiß", es: "Blanco", icon: "⚪" }, { de: "Grau", es: "Gris", icon: "🐺" }
-            ],
-            2: [ // CIUDAD / ANIMALES
-                { de: "Rucksack", es: "Mochila", icon: "🎒" }, { de: "Fahrrad", es: "Bici", icon: "🚲" }, { de: "Elefant", es: "Elefante", icon: "🐘" }, { de: "Löwe", es: "León", icon: "🦁" },
-                { de: "Bär", es: "Oso", icon: "🐻" }, { de: "Giraffe", es: "Jirafa", icon: "🦒" }, { de: "Affe", es: "Mono", icon: "🐒" }, { de: "Schwein", es: "Cerdo", icon: "🐷" }, { de: "Kuh", es: "Vaca", icon: "🐮" },
-                { de: "Pferd", es: "Caballo", icon: "🐴" }, { de: "Hase", es: "Conejo", icon: "🐰" }, { de: "Schildkröte", es: "Tortuga", icon: "🐢" }, { de: "Frosch", es: "Rana", icon: "🐸" }, { de: "Spinne", es: "Araña", icon: "🕷️" },
-                { de: "Schule", es: "Escuela", icon: "🏫" }, { de: "Spielplatz", es: "Parque", icon: "🛝" }, { de: "Bus", es: "Bus", icon: "🚌" }, { de: "Zug", es: "Tren", icon: "🚆" }, { de: "Polizei", es: "Policía", icon: "🚓" }
-            ],
-            3: [ // NATURALEZA
-                { de: "Wald", es: "Bosque", icon: "🌲" }, { de: "Berg", es: "Montaña", icon: "⛰️" }, { de: "See", es: "Lago", icon: "🌊" }, { de: "Meer", es: "Mar", icon: "🌊" }, { de: "Fluss", es: "Río", icon: "🏞️" },
-                { de: "Insel", es: "Isla", icon: "🏝️" }, { de: "Strand", es: "Playa", icon: "🏖️" }, { de: "Schnee", es: "Nieve", icon: "❄️" }, { de: "Wolke", es: "Nube", icon: "☁️" },
-                { de: "Wind", es: "Viento", icon: "🌬️" }, { de: "Gewitter", es: "Tormenta", icon: "⚡" }, { de: "Regenbogen", es: "Arcoíris", icon: "🌈" }, { de: "Erde", es: "Tierra", icon: "🌍" }, { de: "Stein", es: "Piedra", icon: "🪨" },
-                { de: "Blatt", es: "Hoja", icon: "🍃" }, { de: "Vulkan", es: "Volcán", icon: "🌋" }, { de: "Feuer", es: "Fuego", icon: "🔥" }, { de: "Baum", es: "Árbol", icon: "🌳" }, { de: "Blume", es: "Flor", icon: "🌻" }
-            ],
-            7: [ // ROPA (nuevo)
-                { de: "Hut", es: "Sombrero", icon: "🎩" }, { de: "Mütze", es: "Gorro", icon: "🧢" }, { de: "Jacke", es: "Chaqueta", icon: "🧥" }, { de: "T-Shirt", es: "Camiseta", icon: "👕" },
-                { de: "Hose", es: "Pantalón", icon: "👖" }, { de: "Rock", es: "Falda", icon: "👗" }, { de: "Kleid", es: "Vestido", icon: "👗" }, { de: "Socken", es: "Calcetines", icon: "🧦" },
-                { de: "Handschuhe", es: "Guantes", icon: "🧤" }, { de: "Schal", es: "Bufanda", icon: "🧣" }, { de: "Pullover", es: "Jersey", icon: "🧶" }, { de: "Pyjama", es: "Pijama", icon: "😴" },
-                { de: "Stiefel", es: "Botas", icon: "👢" }, { de: "Sandalen", es: "Sandalias", icon: "👡" }, { de: "Brille", es: "Gafas", icon: "👓" }, { de: "Rucksack", es: "Mochila", icon: "🎒" },
-                { de: "Regenjacke", es: "Chubasquero", icon: "🌧️" }, { de: "Badeanzug", es: "Bañador", icon: "🩱" }
-            ],
-            8: [ // COMIDA (nuevo)
-                { de: "Käse", es: "Queso", icon: "🧀" }, { de: "Ei", es: "Huevo", icon: "🥚" }, { de: "Butter", es: "Mantequilla", icon: "🧈" }, { de: "Nudeln", es: "Fideos", icon: "🍝" },
-                { de: "Reis", es: "Arroz", icon: "🍚" }, { de: "Suppe", es: "Sopa", icon: "🍜" }, { de: "Kuchen", es: "Pastel", icon: "🍰" }, { de: "Eis", es: "Helado", icon: "🍦" },
-                { de: "Karotte", es: "Zanahoria", icon: "🥕" }, { de: "Kartoffel", es: "Patata", icon: "🥔" }, { de: "Tomate", es: "Tomate", icon: "🍅" }, { de: "Banane", es: "Plátano", icon: "🍌" },
-                { de: "Erdbeere", es: "Fresa", icon: "🍓" }, { de: "Kirsche", es: "Cereza", icon: "🍒" }, { de: "Wassermelone", es: "Sandía", icon: "🍉" }, { de: "Schokolade", es: "Chocolate", icon: "🍫" },
-                { de: "Pizza", es: "Pizza", icon: "🍕" }, { de: "Keks", es: "Galleta", icon: "🍪" }, { de: "Saft", es: "Zumo", icon: "🧃" }, { de: "Joghurt", es: "Yogur", icon: "🥛" }
-            ],
-            9: [ // CUERPO (nuevo)
-                { de: "Kopf", es: "Cabeza", icon: "🗣️" }, { de: "Ohr", es: "Oreja", icon: "👂" }, { de: "Haar", es: "Pelo", icon: "💇" }, { de: "Zahn", es: "Diente", icon: "🦷" },
-                { de: "Arm", es: "Brazo", icon: "💪" }, { de: "Hand", es: "Mano", icon: "✋" }, { de: "Finger", es: "Dedo", icon: "☝️" }, { de: "Bauch", es: "Barriga", icon: "🫃" },
-                { de: "Rücken", es: "Espalda", icon: "🔙" }, { de: "Bein", es: "Pierna", icon: "🦵" }, { de: "Knie", es: "Rodilla", icon: "🦵" }, { de: "Fuß", es: "Pie", icon: "🦶" },
-                { de: "Herz", es: "Corazón", icon: "❤️" }, { de: "krank", es: "Enfermo", icon: "🤒" }, { de: "gesund", es: "Sano", icon: "💪" }, { de: "Wange", es: "Mejilla", icon: "😊" },
-                { de: "Schulter", es: "Hombro", icon: "🏋️" }, { de: "Hals", es: "Cuello", icon: "🧣" }
-            ],
-            5: [ // 1-20
-                { de: "Eins", es: "Uno", icon: "1", onlyIcon: true }, { de: "Zwei", es: "Dos", icon: "2", onlyIcon: true }, { de: "Drei", es: "Tres", icon: "3", onlyIcon: true }, { de: "Vier", es: "Cuatro", icon: "4", onlyIcon: true }, { de: "Fünf", es: "Cinco", icon: "5", onlyIcon: true },
-                { de: "Sechs", es: "Seis", icon: "6", onlyIcon: true }, { de: "Sieben", es: "Siete", icon: "7", onlyIcon: true }, { de: "Acht", es: "Ocho", icon: "8", onlyIcon: true }, { de: "Neun", es: "Nueve", icon: "9", onlyIcon: true }, { de: "Zehn", es: "Diez", icon: "10", onlyIcon: true },
-                { de: "Elf", es: "Once", icon: "11", onlyIcon: true }, { de: "Zwölf", es: "Doce", icon: "12", onlyIcon: true }, { de: "Dreizehn", es: "Trece", icon: "13", onlyIcon: true }, { de: "Vierzehn", es: "Catorce", icon: "14", onlyIcon: true }, { de: "Fünfzehn", es: "Quince", icon: "15", onlyIcon: true },
-                { de: "Sechzehn", es: "Dieciséis", icon: "16", onlyIcon: true }, { de: "Siebzehn", es: "Diecisiete", icon: "17", onlyIcon: true }, { de: "Achtzehn", es: "Dieciocho", icon: "18", onlyIcon: true }, { de: "Neunzehn", es: "Diecinueve", icon: "19", onlyIcon: true }, { de: "Zwanzig", es: "Veinte", icon: "20", onlyIcon: true }
-            ],
-            6: [ // ABC
-                { de: "A", es: "A", icon: "A", onlyIcon: true }, { de: "B", es: "B", icon: "B", onlyIcon: true }, { de: "C", es: "C", icon: "C", onlyIcon: true }, { de: "D", es: "D", icon: "D", onlyIcon: true }, { de: "E", es: "E", icon: "E", onlyIcon: true },
-                { de: "F", es: "F", icon: "F", onlyIcon: true }, { de: "G", es: "G", icon: "G", onlyIcon: true }, { de: "H", es: "H", icon: "H", onlyIcon: true }, { de: "I", es: "I", icon: "I", onlyIcon: true }, { de: "J", es: "J", icon: "J", onlyIcon: true },
-                { de: "K", es: "K", icon: "K", onlyIcon: true }, { de: "L", es: "L", icon: "L", onlyIcon: true }, { de: "M", es: "M", icon: "M", onlyIcon: true }, { de: "N", es: "N", icon: "N", onlyIcon: true }, { de: "O", es: "O", icon: "O", onlyIcon: true },
-                { de: "P", es: "P", icon: "P", onlyIcon: true }, { de: "Q", es: "Q", icon: "Q", onlyIcon: true }, { de: "R", es: "R", icon: "R", onlyIcon: true }, { de: "S", es: "S", icon: "S", onlyIcon: true }, { de: "T", es: "T", icon: "T", onlyIcon: true },
-                { de: "U", es: "U", icon: "U", onlyIcon: true }, { de: "V", es: "V", icon: "V", onlyIcon: true }, { de: "W", es: "W", icon: "W", onlyIcon: true }, { de: "X", es: "X", icon: "X", onlyIcon: true }, { de: "Y", es: "Y", icon: "Y", onlyIcon: true }, { de: "Z", es: "Z", icon: "Z", onlyIcon: true }
-            ],
+    <div class="game-box">
+        <button class="btn-speak" onclick="playCurrentWord()">🔊</button>
+        <div class="options-grid" id="options"></div>
+    </div>
+</div>
 
-            // ── FRASES ────────────────────────────────────────────────────────────
-            41: [ // FRASES 1: básicas del cole
-                { de: "Darf ich auf die Toilette gehen?", es: "¿Puedo ir al baño?", icon: "🚽", isPhrase: true },
-                { de: "Ich habe Hunger.", es: "Tengo hambre.", icon: "🤤", isPhrase: true },
-                { de: "Ich habe Durst.", es: "Tengo sed.", icon: "💧", isPhrase: true },
-                { de: "Ja, bitte.", es: "Sí, por favor.", icon: "👍", isPhrase: true },
-                { de: "Nein, danke.", es: "No, gracias.", icon: "✋", isPhrase: true },
-                { de: "Hilf mir bitte.", es: "Ayúdame, por favor.", icon: "🤝", isPhrase: true },
-                { de: "Ich bin fertig.", es: "Ya terminé.", icon: "✅", isPhrase: true },
-                { de: "Guten Morgen!", es: "¡Buenos días!", icon: "☀️", isPhrase: true },
-                { de: "Tschüss!", es: "¡Adiós!", icon: "👋", isPhrase: true },
-                { de: "Entschuldigung.", es: "Perdón / Disculpa.", icon: "🥺", isPhrase: true }
-            ],
-            42: [ // FRASES 2: intermedias
-                { de: "Können wir spielen?", es: "¿Podemos jugar?", icon: "🧸", isPhrase: true },
-                { de: "Was ist das?", es: "¿Qué es eso?", icon: "❓", isPhrase: true },
-                { de: "Mir ist kalt.", es: "Tengo frío.", icon: "🥶", isPhrase: true },
-                { de: "Mir ist warm.", es: "Tengo calor.", icon: "🥵", isPhrase: true },
-                { de: "Ich bin müde.", es: "Estoy cansado.", icon: "🥱", isPhrase: true },
-                { de: "Wo ist mein Rucksack?", es: "¿Dónde está mi mochila?", icon: "🎒", isPhrase: true },
-                { de: "Ich möchte das.", es: "Quiero eso.", icon: "👈", isPhrase: true },
-                { de: "Mehr bitte.", es: "Más, por favor.", icon: "➕", isPhrase: true },
-                { de: "Ich weiß nicht.", es: "No sé.", icon: "🤷", isPhrase: true },
-                { de: "Ich bin dran.", es: "Es mi turno.", icon: "⏱️", isPhrase: true }
-            ],
-            43: [ // FRASES 3: complejas
-                { de: "Wann kommt meine Mama?", es: "¿Cuándo viene mi mamá?", icon: "👩‍👦", isPhrase: true },
-                { de: "Wann kommt mein Papa?", es: "¿Cuándo viene mi papá?", icon: "👨‍👦", isPhrase: true },
-                { de: "Mir tut der Bauch weh.", es: "Me duele la barriga.", icon: "🤕", isPhrase: true },
-                { de: "Kannst du mir die Schuhe anziehen?", es: "¿Puedes ponerme los zapatos?", icon: "👟", isPhrase: true },
-                { de: "Ich mag das nicht.", es: "No me gusta eso.", icon: "🙅‍♂️", isPhrase: true },
-                { de: "Lass uns rausgehen.", es: "Salgamos al patio.", icon: "🌳", isPhrase: true },
-                { de: "Darf ich mitspielen?", es: "¿Puedo jugar con ustedes?", icon: "🎲", isPhrase: true },
-                { de: "Das ist meins!", es: "¡Eso es mío!", icon: "😠", isPhrase: true },
-                { de: "Können wir ein Buch lesen?", es: "¿Podemos leer un libro?", icon: "📖", isPhrase: true },
-                { de: "Ich brauche eine Pause.", es: "Necesito un descanso.", icon: "🛋️", isPhrase: true }
-            ],
-            44: [ // FRASES 4: rutinas (nuevo)
-                { de: "Ich wasche mir die Hände.", es: "Me lavo las manos.", icon: "🫧", isPhrase: true },
-                { de: "Ich putze mir die Zähne.", es: "Me lavo los dientes.", icon: "🦷", isPhrase: true },
-                { de: "Ich ziehe mich an.", es: "Me visto.", icon: "👕", isPhrase: true },
-                { de: "Lass uns aufräumen!", es: "¡Vamos a ordenar!", icon: "🧹", isPhrase: true },
-                { de: "Es ist Zeit zu schlafen.", es: "Es hora de dormir.", icon: "😴", isPhrase: true },
-                { de: "Ich stehe auf.", es: "Me levanto.", icon: "🌅", isPhrase: true },
-                { de: "Ich frühstücke.", es: "Desayuno.", icon: "🥐", isPhrase: true },
-                { de: "Kannst du mir helfen?", es: "¿Puedes ayudarme?", icon: "🙏", isPhrase: true },
-                { de: "Das macht Spaß!", es: "¡Esto es divertido!", icon: "🎉", isPhrase: true },
-                { de: "Ich bin glücklich.", es: "Estoy feliz.", icon: "😊", isPhrase: true }
-            ],
-            45: [ // FRASES 5: emociones (nuevo)
-                { de: "Ich bin traurig.", es: "Estoy triste.", icon: "😢", isPhrase: true },
-                { de: "Ich bin wütend.", es: "Estoy enfadado.", icon: "😠", isPhrase: true },
-                { de: "Ich habe Angst.", es: "Tengo miedo.", icon: "😨", isPhrase: true },
-                { de: "Ich bin aufgeregt!", es: "¡Estoy emocionado!", icon: "🤩", isPhrase: true },
-                { de: "Ich freue mich!", es: "¡Me alegro!", icon: "🥳", isPhrase: true },
-                { de: "Das ist lustig!", es: "¡Eso es gracioso!", icon: "😂", isPhrase: true },
-                { de: "Ich mag dich.", es: "Me gustas / Te quiero.", icon: "💛", isPhrase: true },
-                { de: "Du bist mein Freund.", es: "Eres mi amigo.", icon: "🤝", isPhrase: true },
-                { de: "Danke schön!", es: "¡Muchas gracias!", icon: "🙏", isPhrase: true },
-                { de: "Bitte verzeih mir.", es: "Por favor, perdóname.", icon: "🥺", isPhrase: true }
-            ],
-            46: [ // FRASES 6: avanzado (nuevo)
-                { de: "Was machst du heute?", es: "¿Qué haces hoy?", icon: "📅", isPhrase: true },
-                { de: "Ich spiele draußen.", es: "Juego afuera.", icon: "🌞", isPhrase: true },
-                { de: "Wir gehen in den Park.", es: "Vamos al parque.", icon: "🌳", isPhrase: true },
-                { de: "Hast du Hausaufgaben?", es: "¿Tienes deberes?", icon: "📝", isPhrase: true },
-                { de: "Ich mag Mathematik.", es: "Me gustan las matemáticas.", icon: "➗", isPhrase: true },
-                { de: "Ich lerne Deutsch.", es: "Estoy aprendiendo alemán.", icon: "🇩🇪", isPhrase: true },
-                { de: "Wie spät ist es?", es: "¿Qué hora es?", icon: "🕐", isPhrase: true },
-                { de: "Es ist halb drei.", es: "Son las dos y media.", icon: "🕝", isPhrase: true },
-                { de: "Heute ist Montag.", es: "Hoy es lunes.", icon: "📆", isPhrase: true },
-                { de: "Welche Farbe magst du?", es: "¿Qué color te gusta?", icon: "🎨", isPhrase: true }
-            ]
-        };
+<!-- ══ TIENDA ═════════════════════════════════════════════ -->
+<div id="view-shop" class="view-section">
+    <h2 style="color:#333;">Tienda de Stickers</h2>
+    <div class="shop-grid" id="shop-grid"></div>
+</div>
 
-        const PHRASE_LEVELS = [41, 42, 43, 44, 45, 46];
+<!-- ══ CORCHO ═════════════════════════════════════════════ -->
+<div id="view-board" class="view-section">
+    <h2 style="color:#333;margin-top:0;">Mi Corcho</h2>
+    <div class="board-container" id="board-container"></div>
+</div>
 
-        // ─── TIENDA ────────────────────────────────────────────────────────────────
-        const shopItems = [
-            { id: 's1', icon: '🦖', cost: 1 }, { id: 's2', icon: '🚀', cost: 1 }, { id: 's3', icon: '🦄', cost: 1 },
-            { id: 's4', icon: '🚓', cost: 1 }, { id: 's5', icon: '🦸‍♂️', cost: 2 }, { id: 's6', icon: '🌈', cost: 2 },
-            { id: 's7', icon: '🍕', cost: 1 }, { id: 's8', icon: '👻', cost: 2 }, { id: 's9', icon: '👑', cost: 3 }
-        ];
+<nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchView('game',this)"><span class="nav-icon">🎮</span><span>Jugar</span></button>
+    <button class="nav-btn" onclick="switchView('shop',this)"><span class="nav-icon">🛒</span><span>Tienda</span></button>
+    <button class="nav-btn" onclick="switchView('board',this)"><span class="nav-icon">📌</span><span>Corcho</span></button>
+</nav>
 
-        // ─── ESTADO ────────────────────────────────────────────────────────────────
-        let currentLevel = 1;
-        let wordQueue = [];
-        let currentWord = {};
-        let stats = { streak: 0, good: 0, bad: 0 };
-        let milestoneProgress = 0;
-        let isLocked = false;
-        let speechRate = 0.75;
-        let reviewWords = [];
-        let candies = 0;
-        let myStickers = [];
+<div class="mega-celebration" id="mega-celebration">
+    <div class="candy-reward-icon">🍬</div>
+    <div class="celebration-text">Fantastisch!<br>¡Ganaste 1 Caramelo!</div>
+</div>
+<canvas id="canvas-confetti"></canvas>
 
-        // ─── MODO INVERTIDO ────────────────────────────────────────────────────────
-        let invertMode = false;   // false = DE→ES (normal) | true = ES→DE (invertido)
+<script>
+// ═══ DATOS ════════════════════════════════════════════════════════════════════
+const allLevels = {
+    1:[
+        {de:"Apfel",es:"Manzana",icon:"🍎"},{de:"Haus",es:"Casa",icon:"🏠"},{de:"Hund",es:"Perro",icon:"🐶"},
+        {de:"Katze",es:"Gato",icon:"🐱"},{de:"Milch",es:"Leche",icon:"🥛"},{de:"Wasser",es:"Agua",icon:"💧"},
+        {de:"Brot",es:"Pan",icon:"🍞"},{de:"Auto",es:"Coche",icon:"🚗"},{de:"Sonne",es:"Sol",icon:"☀️"},
+        {de:"Buch",es:"Libro",icon:"📖"},{de:"Bett",es:"Cama",icon:"🛏️"},{de:"Ball",es:"Pelota",icon:"⚽"},
+        {de:"Schuhe",es:"Zapatos",icon:"👟"},{de:"Mama",es:"Mamá",icon:"👩"},{de:"Papa",es:"Papá",icon:"👨"},
+        {de:"Tisch",es:"Mesa",icon:"🪑"},{de:"Stuhl",es:"Silla",icon:"🪑"},{de:"Mund",es:"Boca",icon:"👄"},
+        {de:"Nase",es:"Nariz",icon:"👃"},{de:"Auge",es:"Ojo",icon:"👁️"},{de:"Rot",es:"Rojo",icon:"🔴"},
+        {de:"Blau",es:"Azul",icon:"🔵"},{de:"Gelb",es:"Amarillo",icon:"🟡"},{de:"Grün",es:"Verde",icon:"🟢"},
+        {de:"Orange",es:"Naranja",icon:"🟠"},{de:"Rosa",es:"Rosa",icon:"🌸"},{de:"Lila",es:"Morado",icon:"🟣"},
+        {de:"Braun",es:"Marrón",icon:"🟤"},{de:"Schwarz",es:"Negro",icon:"⚫"},{de:"Weiß",es:"Blanco",icon:"⚪"},
+        {de:"Grau",es:"Gris",icon:"🐺"}
+    ],
+    2:[
+        {de:"Rucksack",es:"Mochila",icon:"🎒"},{de:"Fahrrad",es:"Bici",icon:"🚲"},
+        {de:"Elefant",es:"Elefante",icon:"🐘"},{de:"Löwe",es:"León",icon:"🦁"},
+        {de:"Bär",es:"Oso",icon:"🐻"},{de:"Giraffe",es:"Jirafa",icon:"🦒"},
+        {de:"Affe",es:"Mono",icon:"🐒"},{de:"Schwein",es:"Cerdo",icon:"🐷"},
+        {de:"Kuh",es:"Vaca",icon:"🐮"},{de:"Pferd",es:"Caballo",icon:"🐴"},
+        {de:"Hase",es:"Conejo",icon:"🐰"},{de:"Schildkröte",es:"Tortuga",icon:"🐢"},
+        {de:"Frosch",es:"Rana",icon:"🐸"},{de:"Spinne",es:"Araña",icon:"🕷️"},
+        {de:"Schule",es:"Escuela",icon:"🏫"},{de:"Spielplatz",es:"Parque",icon:"🛝"},
+        {de:"Bus",es:"Bus",icon:"🚌"},{de:"Zug",es:"Tren",icon:"🚆"},{de:"Polizei",es:"Policía",icon:"🚓"}
+    ],
+    3:[
+        {de:"Wald",es:"Bosque",icon:"🌲"},{de:"Berg",es:"Montaña",icon:"⛰️"},
+        {de:"See",es:"Lago",icon:"🌊"},{de:"Meer",es:"Mar",icon:"🌊"},
+        {de:"Fluss",es:"Río",icon:"🏞️"},{de:"Insel",es:"Isla",icon:"🏝️"},
+        {de:"Strand",es:"Playa",icon:"🏖️"},{de:"Schnee",es:"Nieve",icon:"❄️"},
+        {de:"Wolke",es:"Nube",icon:"☁️"},{de:"Wind",es:"Viento",icon:"🌬️"},
+        {de:"Gewitter",es:"Tormenta",icon:"⚡"},{de:"Regenbogen",es:"Arcoíris",icon:"🌈"},
+        {de:"Erde",es:"Tierra",icon:"🌍"},{de:"Stein",es:"Piedra",icon:"🪨"},
+        {de:"Blatt",es:"Hoja",icon:"🍃"},{de:"Vulkan",es:"Volcán",icon:"🌋"},
+        {de:"Feuer",es:"Fuego",icon:"🔥"},{de:"Baum",es:"Árbol",icon:"🌳"},
+        {de:"Blume",es:"Flor",icon:"🌻"}
+    ],
+    7:[
+        {de:"Hut",es:"Sombrero",icon:"🎩"},{de:"Mütze",es:"Gorro",icon:"🧢"},
+        {de:"Jacke",es:"Chaqueta",icon:"🧥"},{de:"T-Shirt",es:"Camiseta",icon:"👕"},
+        {de:"Hose",es:"Pantalón",icon:"👖"},{de:"Rock",es:"Falda",icon:"👗"},
+        {de:"Kleid",es:"Vestido",icon:"👗"},{de:"Socken",es:"Calcetines",icon:"🧦"},
+        {de:"Handschuhe",es:"Guantes",icon:"🧤"},{de:"Schal",es:"Bufanda",icon:"🧣"},
+        {de:"Pullover",es:"Jersey",icon:"🧶"},{de:"Pyjama",es:"Pijama",icon:"😴"},
+        {de:"Stiefel",es:"Botas",icon:"👢"},{de:"Sandalen",es:"Sandalias",icon:"👡"},
+        {de:"Brille",es:"Gafas",icon:"👓"},{de:"Regenjacke",es:"Chubasquero",icon:"🌧️"},
+        {de:"Badeanzug",es:"Bañador",icon:"🩱"}
+    ],
+    8:[
+        {de:"Käse",es:"Queso",icon:"🧀"},{de:"Ei",es:"Huevo",icon:"🥚"},
+        {de:"Butter",es:"Mantequilla",icon:"🧈"},{de:"Nudeln",es:"Fideos",icon:"🍝"},
+        {de:"Reis",es:"Arroz",icon:"🍚"},{de:"Suppe",es:"Sopa",icon:"🍜"},
+        {de:"Kuchen",es:"Pastel",icon:"🍰"},{de:"Eis",es:"Helado",icon:"🍦"},
+        {de:"Karotte",es:"Zanahoria",icon:"🥕"},{de:"Kartoffel",es:"Patata",icon:"🥔"},
+        {de:"Tomate",es:"Tomate",icon:"🍅"},{de:"Banane",es:"Plátano",icon:"🍌"},
+        {de:"Erdbeere",es:"Fresa",icon:"🍓"},{de:"Kirsche",es:"Cereza",icon:"🍒"},
+        {de:"Wassermelone",es:"Sandía",icon:"🍉"},{de:"Schokolade",es:"Chocolate",icon:"🍫"},
+        {de:"Pizza",es:"Pizza",icon:"🍕"},{de:"Keks",es:"Galleta",icon:"🍪"},
+        {de:"Saft",es:"Zumo",icon:"🧃"},{de:"Joghurt",es:"Yogur",icon:"🥛"}
+    ],
+    9:[
+        {de:"Kopf",es:"Cabeza",icon:"🗣️"},{de:"Ohr",es:"Oreja",icon:"👂"},
+        {de:"Haar",es:"Pelo",icon:"💇"},{de:"Zahn",es:"Diente",icon:"🦷"},
+        {de:"Arm",es:"Brazo",icon:"💪"},{de:"Hand",es:"Mano",icon:"✋"},
+        {de:"Finger",es:"Dedo",icon:"☝️"},{de:"Bauch",es:"Barriga",icon:"🫃"},
+        {de:"Rücken",es:"Espalda",icon:"🔙"},{de:"Bein",es:"Pierna",icon:"🦵"},
+        {de:"Knie",es:"Rodilla",icon:"🦵"},{de:"Fuß",es:"Pie",icon:"🦶"},
+        {de:"Herz",es:"Corazón",icon:"❤️"},{de:"krank",es:"Enfermo",icon:"🤒"},
+        {de:"gesund",es:"Sano",icon:"💪"},{de:"Wange",es:"Mejilla",icon:"😊"},
+        {de:"Schulter",es:"Hombro",icon:"🏋️"},{de:"Hals",es:"Cuello",icon:"🧣"}
+    ],
+    5:[
+        {de:"Eins",es:"Uno",icon:"1",onlyIcon:true},{de:"Zwei",es:"Dos",icon:"2",onlyIcon:true},
+        {de:"Drei",es:"Tres",icon:"3",onlyIcon:true},{de:"Vier",es:"Cuatro",icon:"4",onlyIcon:true},
+        {de:"Fünf",es:"Cinco",icon:"5",onlyIcon:true},{de:"Sechs",es:"Seis",icon:"6",onlyIcon:true},
+        {de:"Sieben",es:"Siete",icon:"7",onlyIcon:true},{de:"Acht",es:"Ocho",icon:"8",onlyIcon:true},
+        {de:"Neun",es:"Nueve",icon:"9",onlyIcon:true},{de:"Zehn",es:"Diez",icon:"10",onlyIcon:true},
+        {de:"Elf",es:"Once",icon:"11",onlyIcon:true},{de:"Zwölf",es:"Doce",icon:"12",onlyIcon:true},
+        {de:"Dreizehn",es:"Trece",icon:"13",onlyIcon:true},{de:"Vierzehn",es:"Catorce",icon:"14",onlyIcon:true},
+        {de:"Fünfzehn",es:"Quince",icon:"15",onlyIcon:true},{de:"Sechzehn",es:"Dieciséis",icon:"16",onlyIcon:true},
+        {de:"Siebzehn",es:"Diecisiete",icon:"17",onlyIcon:true},{de:"Achtzehn",es:"Dieciocho",icon:"18",onlyIcon:true},
+        {de:"Neunzehn",es:"Diecinueve",icon:"19",onlyIcon:true},{de:"Zwanzig",es:"Veinte",icon:"20",onlyIcon:true}
+    ],
+    6:[
+        {de:"A",es:"A",icon:"A",onlyIcon:true},{de:"B",es:"B",icon:"B",onlyIcon:true},{de:"C",es:"C",icon:"C",onlyIcon:true},
+        {de:"D",es:"D",icon:"D",onlyIcon:true},{de:"E",es:"E",icon:"E",onlyIcon:true},{de:"F",es:"F",icon:"F",onlyIcon:true},
+        {de:"G",es:"G",icon:"G",onlyIcon:true},{de:"H",es:"H",icon:"H",onlyIcon:true},{de:"I",es:"I",icon:"I",onlyIcon:true},
+        {de:"J",es:"J",icon:"J",onlyIcon:true},{de:"K",es:"K",icon:"K",onlyIcon:true},{de:"L",es:"L",icon:"L",onlyIcon:true},
+        {de:"M",es:"M",icon:"M",onlyIcon:true},{de:"N",es:"N",icon:"N",onlyIcon:true},{de:"O",es:"O",icon:"O",onlyIcon:true},
+        {de:"P",es:"P",icon:"P",onlyIcon:true},{de:"Q",es:"Q",icon:"Q",onlyIcon:true},{de:"R",es:"R",icon:"R",onlyIcon:true},
+        {de:"S",es:"S",icon:"S",onlyIcon:true},{de:"T",es:"T",icon:"T",onlyIcon:true},{de:"U",es:"U",icon:"U",onlyIcon:true},
+        {de:"V",es:"V",icon:"V",onlyIcon:true},{de:"W",es:"W",icon:"W",onlyIcon:true},{de:"X",es:"X",icon:"X",onlyIcon:true},
+        {de:"Y",es:"Y",icon:"Y",onlyIcon:true},{de:"Z",es:"Z",icon:"Z",onlyIcon:true}
+    ],
+    41:[
+        {de:"Darf ich auf die Toilette gehen?",es:"¿Puedo ir al baño?",icon:"🚽",isPhrase:true},
+        {de:"Ich habe Hunger.",es:"Tengo hambre.",icon:"🤤",isPhrase:true},
+        {de:"Ich habe Durst.",es:"Tengo sed.",icon:"💧",isPhrase:true},
+        {de:"Ja, bitte.",es:"Sí, por favor.",icon:"👍",isPhrase:true},
+        {de:"Nein, danke.",es:"No, gracias.",icon:"✋",isPhrase:true},
+        {de:"Hilf mir bitte.",es:"Ayúdame, por favor.",icon:"🤝",isPhrase:true},
+        {de:"Ich bin fertig.",es:"Ya terminé.",icon:"✅",isPhrase:true},
+        {de:"Guten Morgen!",es:"¡Buenos días!",icon:"☀️",isPhrase:true},
+        {de:"Tschüss!",es:"¡Adiós!",icon:"👋",isPhrase:true},
+        {de:"Entschuldigung.",es:"Perdón / Disculpa.",icon:"🥺",isPhrase:true}
+    ],
+    42:[
+        {de:"Können wir spielen?",es:"¿Podemos jugar?",icon:"🧸",isPhrase:true},
+        {de:"Was ist das?",es:"¿Qué es eso?",icon:"❓",isPhrase:true},
+        {de:"Mir ist kalt.",es:"Tengo frío.",icon:"🥶",isPhrase:true},
+        {de:"Mir ist warm.",es:"Tengo calor.",icon:"🥵",isPhrase:true},
+        {de:"Ich bin müde.",es:"Estoy cansado.",icon:"🥱",isPhrase:true},
+        {de:"Wo ist mein Rucksack?",es:"¿Dónde está mi mochila?",icon:"🎒",isPhrase:true},
+        {de:"Ich möchte das.",es:"Quiero eso.",icon:"👈",isPhrase:true},
+        {de:"Mehr bitte.",es:"Más, por favor.",icon:"➕",isPhrase:true},
+        {de:"Ich weiß nicht.",es:"No sé.",icon:"🤷",isPhrase:true},
+        {de:"Ich bin dran.",es:"Es mi turno.",icon:"⏱️",isPhrase:true}
+    ],
+    43:[
+        {de:"Wann kommt meine Mama?",es:"¿Cuándo viene mi mamá?",icon:"👩‍👦",isPhrase:true},
+        {de:"Wann kommt mein Papa?",es:"¿Cuándo viene mi papá?",icon:"👨‍👦",isPhrase:true},
+        {de:"Mir tut der Bauch weh.",es:"Me duele la barriga.",icon:"🤕",isPhrase:true},
+        {de:"Kannst du mir die Schuhe anziehen?",es:"¿Puedes ponerme los zapatos?",icon:"👟",isPhrase:true},
+        {de:"Ich mag das nicht.",es:"No me gusta eso.",icon:"🙅‍♂️",isPhrase:true},
+        {de:"Lass uns rausgehen.",es:"Salgamos al patio.",icon:"🌳",isPhrase:true},
+        {de:"Darf ich mitspielen?",es:"¿Puedo jugar con ustedes?",icon:"🎲",isPhrase:true},
+        {de:"Das ist meins!",es:"¡Eso es mío!",icon:"😠",isPhrase:true},
+        {de:"Können wir ein Buch lesen?",es:"¿Podemos leer un libro?",icon:"📖",isPhrase:true},
+        {de:"Ich brauche eine Pause.",es:"Necesito un descanso.",icon:"🛋️",isPhrase:true}
+    ],
+    44:[
+        {de:"Ich wasche mir die Hände.",es:"Me lavo las manos.",icon:"🫧",isPhrase:true},
+        {de:"Ich putze mir die Zähne.",es:"Me lavo los dientes.",icon:"🦷",isPhrase:true},
+        {de:"Ich ziehe mich an.",es:"Me visto.",icon:"👕",isPhrase:true},
+        {de:"Lass uns aufräumen!",es:"¡Vamos a ordenar!",icon:"🧹",isPhrase:true},
+        {de:"Es ist Zeit zu schlafen.",es:"Es hora de dormir.",icon:"😴",isPhrase:true},
+        {de:"Ich stehe auf.",es:"Me levanto.",icon:"🌅",isPhrase:true},
+        {de:"Ich frühstücke.",es:"Desayuno.",icon:"🥐",isPhrase:true},
+        {de:"Kannst du mir helfen?",es:"¿Puedes ayudarme?",icon:"🙏",isPhrase:true},
+        {de:"Das macht Spaß!",es:"¡Esto es divertido!",icon:"🎉",isPhrase:true},
+        {de:"Ich bin glücklich.",es:"Estoy feliz.",icon:"😊",isPhrase:true}
+    ],
+    45:[
+        {de:"Ich bin traurig.",es:"Estoy triste.",icon:"😢",isPhrase:true},
+        {de:"Ich bin wütend.",es:"Estoy enfadado.",icon:"😠",isPhrase:true},
+        {de:"Ich habe Angst.",es:"Tengo miedo.",icon:"😨",isPhrase:true},
+        {de:"Ich bin aufgeregt!",es:"¡Estoy emocionado!",icon:"🤩",isPhrase:true},
+        {de:"Ich freue mich!",es:"¡Me alegro!",icon:"🥳",isPhrase:true},
+        {de:"Das ist lustig!",es:"¡Eso es gracioso!",icon:"😂",isPhrase:true},
+        {de:"Ich mag dich.",es:"Te quiero.",icon:"💛",isPhrase:true},
+        {de:"Du bist mein Freund.",es:"Eres mi amigo.",icon:"🤝",isPhrase:true},
+        {de:"Danke schön!",es:"¡Muchas gracias!",icon:"🙏",isPhrase:true},
+        {de:"Bitte verzeih mir.",es:"Por favor, perdóname.",icon:"🥺",isPhrase:true}
+    ],
+    46:[
+        {de:"Was machst du heute?",es:"¿Qué haces hoy?",icon:"📅",isPhrase:true},
+        {de:"Ich spiele draußen.",es:"Juego afuera.",icon:"🌞",isPhrase:true},
+        {de:"Wir gehen in den Park.",es:"Vamos al parque.",icon:"🌳",isPhrase:true},
+        {de:"Hast du Hausaufgaben?",es:"¿Tienes deberes?",icon:"📝",isPhrase:true},
+        {de:"Ich mag Mathematik.",es:"Me gustan las matemáticas.",icon:"➗",isPhrase:true},
+        {de:"Ich lerne Deutsch.",es:"Estoy aprendiendo alemán.",icon:"🇩🇪",isPhrase:true},
+        {de:"Wie spät ist es?",es:"¿Qué hora es?",icon:"🕐",isPhrase:true},
+        {de:"Es ist halb drei.",es:"Son las dos y media.",icon:"🕝",isPhrase:true},
+        {de:"Heute ist Montag.",es:"Hoy es lunes.",icon:"📆",isPhrase:true},
+        {de:"Welche Farbe magst du?",es:"¿Qué color te gusta?",icon:"🎨",isPhrase:true}
+    ]
+};
 
-        function isCurrentLevelPhrase() {
-            return PHRASE_LEVELS.includes(currentLevel);
+const shopItems = [
+    {id:'s1',icon:'🦖',cost:1},{id:'s2',icon:'🚀',cost:1},{id:'s3',icon:'🦄',cost:1},
+    {id:'s4',icon:'🚓',cost:1},{id:'s5',icon:'🦸‍♂️',cost:2},{id:'s6',icon:'🌈',cost:2},
+    {id:'s7',icon:'🍕',cost:1},{id:'s8',icon:'👻',cost:2},{id:'s9',icon:'👑',cost:3}
+];
+
+// ═══ ESTADO ═══════════════════════════════════════════════════════════════════
+let currentLevel=1, wordQueue=[], currentWord={};
+let stats={streak:0,good:0,bad:0};
+let milestoneProgress=0, isLocked=false, speechRate=0.75;
+let reviewWords=[], candies=0, myStickers=[], invertMode=false;
+
+// ═══ ACCORDION ════════════════════════════════════════════════════════════════
+function toggleAcc(id) {
+    const tab=document.getElementById('tab-'+id);
+    const panel=document.getElementById('panel-'+id);
+    const wasOpen=panel.classList.contains('open');
+    document.querySelectorAll('.accordion-panel').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('.accordion-header').forEach(t=>t.classList.remove('open'));
+    if(!wasOpen){ panel.classList.add('open'); tab.classList.add('open'); }
+}
+
+function closeAllAcc() {
+    document.querySelectorAll('.accordion-panel').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('.accordion-header').forEach(t=>t.classList.remove('open'));
+}
+
+function pickWord(lvl, btn, label) {
+    document.querySelectorAll('.btn-level').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('words-label').textContent=label;
+    closeAllAcc();
+    invertMode=false; updateInvertUI();
+    currentLevel=lvl; initLevel();
+}
+
+function pickPhrase(lvl, btn, label) {
+    if(lvl==='repaso' && reviewWords.length===0){
+        alert("¡No tienes errores guardados! Sigue jugando en otros niveles."); return;
+    }
+    document.querySelectorAll('.btn-level').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('phrases-label').textContent=label;
+    closeAllAcc();
+    currentLevel=lvl; initLevel();
+}
+
+// ═══ INVERT ═══════════════════════════════════════════════════════════════════
+function toggleInvert() { invertMode=!invertMode; updateInvertUI(); nextQuestion(); }
+function updateInvertUI() {
+    const btn=document.getElementById('btn-invert');
+    btn.textContent = invertMode ? '🔄 ES → DE' : '🔄 DE → ES';
+    btn.classList.toggle('on', invertMode);
+}
+
+// ═══ PERSISTENCIA ═════════════════════════════════════════════════════════════
+function loadData() {
+    const sc=localStorage.getItem('deutschApp_candies'); if(sc) candies=parseInt(sc);
+    const ss=localStorage.getItem('deutschApp_stickers'); if(ss) myStickers=JSON.parse(ss);
+    updateCandyUI(); renderShop(); renderBoard();
+}
+function saveData() {
+    localStorage.setItem('deutschApp_candies',candies);
+    localStorage.setItem('deutschApp_stickers',JSON.stringify(myStickers));
+    updateCandyUI();
+}
+function updateCandyUI() { document.getElementById('candy-count').innerText=candies; renderShop(); }
+
+// ═══ VISTAS ═══════════════════════════════════════════════════════════════════
+function switchView(id,btn) {
+    document.querySelectorAll('.view-section').forEach(el=>el.classList.remove('active'));
+    document.getElementById('view-'+id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+    btn.classList.add('active');
+    if(id==='board') renderBoard();
+}
+
+// ═══ JUEGO ════════════════════════════════════════════════════════════════════
+function changeSpeed(d) {
+    speechRate=Math.min(1.5,Math.max(0.25,speechRate+d));
+    document.getElementById('speed-display').innerText=speechRate.toFixed(2)+"x";
+    window.speechSynthesis.cancel();
+}
+
+function initLevel() {
+    if(currentLevel==='repaso'){
+        wordQueue=[...reviewWords].sort(()=>Math.random()-.5);
+    } else if(currentLevel==='aleatorio'){
+        let all=[];
+        [1,2,3,7,8,9].forEach(k=>all.push(...allLevels[k]));
+        [5,6].forEach(k=>all.push(...allLevels[k],...allLevels[k]));
+        wordQueue=all.sort(()=>Math.random()-.5);
+    } else {
+        wordQueue=[...allLevels[currentLevel]].sort(()=>Math.random()-.5);
+    }
+    nextQuestion();
+}
+
+function nextQuestion() {
+    isLocked=false;
+    if(wordQueue.length===0){
+        if(currentLevel==='repaso'){ document.querySelector('.btn-level').click(); return; }
+        initLevel(); return;
+    }
+    currentWord=wordQueue.pop();
+    let choices;
+    if(currentWord.isPhrase){
+        let pool=[...(allLevels[currentLevel]||[])].filter(w=>w.de!==currentWord.de);
+        pool.sort(()=>Math.random()-.5);
+        choices=[currentWord,...pool.slice(0,2)].sort(()=>Math.random()-.5);
+    } else {
+        let src;
+        if(currentLevel==='aleatorio'||currentLevel==='repaso'){
+            let lk=Object.keys(allLevels).find(k=>allLevels[k].some(w=>w.de===currentWord.de));
+            src=lk?[...allLevels[lk]]:[...allLevels[1]];
+        } else { src=[...allLevels[currentLevel]]; }
+        let dist=src.filter(w=>w.de!==currentWord.de&&!w.isPhrase).sort(()=>Math.random()-.5);
+        choices=[currentWord,...dist.slice(0,2)].sort(()=>Math.random()-.5);
+    }
+
+    const container=document.getElementById('options');
+    container.innerHTML='';
+    choices.forEach(c=>{
+        const b=document.createElement('button');
+        b.className='btn-option';
+        if(c.onlyIcon){
+            b.innerHTML=`<span>${c.icon}</span>`; b.style.fontSize="2.5rem";
+        } else if(currentWord.isPhrase && invertMode){
+            b.innerHTML=`<span>${c.icon}</span><span style="font-size:0.9rem">${c.de}</span>`;
+        } else {
+            b.innerHTML=`<span>${c.icon}</span><span>${c.es}</span>`;
         }
+        b.onclick=e=>check(c,e.currentTarget);
+        container.appendChild(b);
+    });
+    playCurrentWord();
+}
 
-        function toggleInvert() {
-            invertMode = !invertMode;
-            updateInvertUI();
-            nextQuestion();
+function playCurrentWord() {
+    window.speechSynthesis.cancel();
+    const inv=invertMode&&currentWord.isPhrase;
+    const ut=new SpeechSynthesisUtterance(inv?currentWord.es:currentWord.de);
+    ut.lang=inv?'es-ES':'de-DE'; ut.rate=speechRate;
+    window.speechSynthesis.speak(ut);
+}
+
+function updateProgressBar() {
+    document.getElementById('progress-bar').style.width=((milestoneProgress/30)*100)+"%";
+}
+
+function triggerMegaCelebration() {
+    candies++; saveData();
+    document.getElementById('mega-celebration').classList.add('active');
+    startConfetti(); setTimeout(startConfetti,500); setTimeout(startConfetti,1000);
+    window.speechSynthesis.cancel();
+    const v=new SpeechSynthesisUtterance("Fantastisch! Du bist ein Champion!"); v.lang='de-DE'; window.speechSynthesis.speak(v);
+    setTimeout(()=>{ document.getElementById('mega-celebration').classList.remove('active'); stopConfetti(); nextQuestion(); },4000);
+}
+
+function check(selected,element) {
+    if(isLocked) return;
+    if(selected.de===currentWord.de){
+        isLocked=true; stats.good++; stats.streak++; milestoneProgress++;
+        updateStats(); updateProgressBar(); element.classList.add('correct');
+        if(currentLevel==='repaso') reviewWords=reviewWords.filter(w=>w.de!==currentWord.de);
+        if(milestoneProgress>=30){ milestoneProgress=0; updateProgressBar(); triggerMegaCelebration(); return; }
+
+        if(currentWord.isPhrase){
+            const inv=invertMode&&currentWord.isPhrase;
+            const vFb=new SpeechSynthesisUtterance(inv?currentWord.de:currentWord.es);
+            vFb.lang=inv?'de-DE':'es-ES'; window.speechSynthesis.speak(vFb);
+            startConfetti();
+            let done=false;
+            const adv=()=>{ if(!done){done=true;stopConfetti();nextQuestion();} };
+            vFb.onend=()=>setTimeout(adv,800); setTimeout(adv,3500);
+            return;
         }
+        const v=new SpeechSynthesisUtterance("Richtig!"); v.lang='de-DE'; window.speechSynthesis.speak(v);
+        startConfetti(); setTimeout(()=>{stopConfetti();nextQuestion();},1500);
+    } else {
+        stats.bad++; stats.streak=0; updateStats(); element.classList.add('wrong');
+        if(!reviewWords.some(w=>w.de===currentWord.de)) reviewWords.push(currentWord);
+        const v=new SpeechSynthesisUtterance("Nein"); v.lang='de-DE'; window.speechSynthesis.speak(v);
+        setTimeout(()=>element.classList.remove('wrong'),500);
+    }
+}
 
-        function updateInvertUI() {
-            const btn = document.getElementById('btn-invert');
-            const badge = document.getElementById('direction-badge');
-            if (invertMode) {
-                btn.textContent = '🔄 ES → DE';
-                btn.classList.add('on');
-                badge.textContent = '🇪🇸 Escucha en español → elige en alemán';
-            } else {
-                btn.textContent = '🔄 DE → ES';
-                btn.classList.remove('on');
-                badge.textContent = '🇩🇪 Escucha en alemán → elige en español';
-            }
-            // Badge only visible on phrase levels
-            badge.classList.toggle('visible', isCurrentLevelPhrase());
-        }
+function updateStats() {
+    document.getElementById('streak').innerText=stats.streak;
+    document.getElementById('good').innerText=stats.good;
+    document.getElementById('bad').innerText=stats.bad;
+}
 
-        // ─── PERSISTENCIA ──────────────────────────────────────────────────────────
-        function loadData() {
-            const savedCandies = localStorage.getItem('deutschApp_candies');
-            if (savedCandies) candies = parseInt(savedCandies);
-            const savedStickers = localStorage.getItem('deutschApp_stickers');
-            if (savedStickers) myStickers = JSON.parse(savedStickers);
-            updateCandyUI();
-            renderShop();
-            renderBoard();
-        }
+// ═══ TIENDA ═══════════════════════════════════════════════════════════════════
+function renderShop() {
+    const grid=document.getElementById('shop-grid'); grid.innerHTML='';
+    shopItems.forEach(item=>{
+        const div=document.createElement('div'); div.className='shop-item';
+        div.innerHTML=`<div class="shop-item-icon">${item.icon}</div>
+            <div style="font-weight:bold;color:#777;">🍬 ${item.cost}</div>
+            <button class="shop-btn" ${candies<item.cost?'disabled':''} onclick="buySticker('${item.id}')">Comprar</button>`;
+        grid.appendChild(div);
+    });
+}
+function buySticker(id) {
+    const item=shopItems.find(i=>i.id===id);
+    if(candies>=item.cost){
+        candies-=item.cost;
+        myStickers.push({id:Date.now()+Math.random(),icon:item.icon,x:50+Math.random()*150,y:50+Math.random()*200});
+        saveData(); alert("¡Sticker comprado! Ve al corcho para pegarlo.");
+    }
+}
 
-        function saveData() {
-            localStorage.setItem('deutschApp_candies', candies);
-            localStorage.setItem('deutschApp_stickers', JSON.stringify(myStickers));
-            updateCandyUI();
-        }
+// ═══ CORCHO ═══════════════════════════════════════════════════════════════════
+function renderBoard() {
+    const board=document.getElementById('board-container'); board.innerHTML='';
+    myStickers.forEach(s=>{
+        const el=document.createElement('div'); el.className='sticker';
+        el.innerText=s.icon; el.style.left=s.x+'px'; el.style.top=s.y+'px';
+        makeDraggable(el,s); board.appendChild(el);
+    });
+}
+function makeDraggable(el,sd) {
+    let drag=false,sx,sy,ix,iy;
+    const start=e=>{ drag=true; const p=e.touches?.[0]||e; sx=p.clientX;sy=p.clientY;ix=parseFloat(el.style.left)||0;iy=parseFloat(el.style.top)||0; el.style.zIndex=1000; };
+    const move=e=>{ if(!drag)return; e.preventDefault(); const p=e.touches?.[0]||e; el.style.left=(ix+(p.clientX-sx))+'px'; el.style.top=(iy+(p.clientY-sy))+'px'; };
+    const end=()=>{ if(!drag)return; drag=false; el.style.zIndex=1; sd.x=parseFloat(el.style.left); sd.y=parseFloat(el.style.top); saveData(); };
+    el.addEventListener('mousedown',start);
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',end);
+    el.addEventListener('touchstart',start,{passive:false});
+    document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('touchend',end);
+}
 
-        function updateCandyUI() {
-            document.getElementById('candy-count').innerText = candies;
-            renderShop();
-        }
+// ═══ CONFETI ══════════════════════════════════════════════════════════════════
+const canvas=document.getElementById("canvas-confetti"), ctx=canvas.getContext("2d");
+let particles=[],animId;
+function startConfetti() {
+    canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+    particles=Array.from({length:40},()=>({x:canvas.width/2,y:canvas.height/2,vx:(Math.random()-.5)*20,vy:(Math.random()-.8)*20,color:`hsl(${Math.random()*360},100%,50%)`,size:8,opacity:1}));
+    animate();
+}
+function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height); let active=0;
+    particles.forEach(p=>{ p.x+=p.vx;p.y+=p.vy;p.vy+=.5;p.opacity-=.015; if(p.opacity>0)active++; ctx.globalAlpha=Math.max(0,p.opacity);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size); });
+    if(active>0) animId=requestAnimationFrame(animate); else ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+function stopConfetti() { cancelAnimationFrame(animId); ctx.clearRect(0,0,canvas.width,canvas.height); }
 
-        // ─── VISTAS ────────────────────────────────────────────────────────────────
-        function switchView(viewId, btn) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById('view-' + viewId).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-            btn.classList.add('active');
-            if (viewId === 'board') renderBoard();
-        }
-
-        // ─── JUEGO ─────────────────────────────────────────────────────────────────
-        function changeSpeed(delta) {
-            speechRate = Math.min(1.5, Math.max(0.25, speechRate + delta));
-            document.getElementById('speed-display').innerText = speechRate.toFixed(2) + "x";
-            window.speechSynthesis.cancel();
-        }
-
-        function changeLevel(lvl, btn) {
-            if (lvl === 'repaso' && reviewWords.length === 0) {
-                alert("¡No tienes errores guardados! Sigue jugando en otros niveles.");
-                return;
-            }
-            currentLevel = lvl;
-            // Reset invert when moving away from phrase levels
-            if (!isCurrentLevelPhrase() && invertMode) {
-                invertMode = false;
-            }
-            document.querySelectorAll('.btn-level').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            updateInvertUI();
-            initLevel();
-        }
-
-        function initLevel() {
-            if (currentLevel === 'repaso') {
-                wordQueue = [...reviewWords].sort(() => Math.random() - 0.5);
-            } else if (currentLevel === 'aleatorio') {
-                let base = [...allLevels[1], ...allLevels[2], ...allLevels[3]];
-                let extra = [...allLevels[7], ...allLevels[8], ...allLevels[9]];
-                let numsAndABC = [...allLevels[5], ...allLevels[6]];
-                wordQueue = [...base, ...extra, ...numsAndABC].sort(() => Math.random() - 0.5);
-            } else {
-                wordQueue = [...allLevels[currentLevel]].sort(() => Math.random() - 0.5);
-            }
-            nextQuestion();
-        }
-
-        function nextQuestion() {
-            isLocked = false;
-            if (wordQueue.length === 0) {
-                if (currentLevel === 'repaso') { document.querySelector('.btn-level').click(); return; }
-                initLevel(); return;
-            }
-            currentWord = wordQueue.pop();
-            let choices = [];
-
-            if (currentWord.isPhrase) {
-                // For phrases, build 3-choice multiple choice
-                let phrasePool = [...(allLevels[currentLevel] || [])].filter(w => w.de !== currentWord.de);
-                phrasePool.sort(() => Math.random() - 0.5);
-                choices = [currentWord, ...phrasePool.slice(0, 2)].sort(() => Math.random() - 0.5);
-            } else {
-                let sourceForDistractors = [];
-                if (currentLevel === 'aleatorio' || currentLevel === 'repaso') {
-                    let levelOfWord = Object.keys(allLevels).find(key => allLevels[key].some(w => w.de === currentWord.de));
-                    sourceForDistractors = levelOfWord ? [...allLevels[levelOfWord]] : [...allLevels[1]];
-                } else {
-                    sourceForDistractors = [...allLevels[currentLevel]];
-                }
-                let allAvailable = sourceForDistractors.filter(w => w.de !== currentWord.de && !w.isPhrase);
-                allAvailable.sort(() => Math.random() - 0.5);
-                choices = [currentWord, ...allAvailable.slice(0, 2)].sort(() => Math.random() - 0.5);
-            }
-
-            const container = document.getElementById('options');
-            container.innerHTML = '';
-            choices.forEach(c => {
-                const b = document.createElement('button');
-                b.className = 'btn-option';
-                if (c.onlyIcon) {
-                    b.innerHTML = `<span>${c.icon}</span>`;
-                    b.style.fontSize = "2.5rem";
-                } else if (currentWord.isPhrase && invertMode) {
-                    // Inverted: show DE options
-                    b.innerHTML = `<span>${c.icon}</span> <span style="font-size:0.95rem">${c.de}</span>`;
-                } else {
-                    b.innerHTML = `<span>${c.icon}</span> <span>${c.es}</span>`;
-                }
-                b.onclick = (e) => check(c, e.currentTarget);
-                container.appendChild(b);
-            });
-            playCurrentWord();
-        }
-
-        function playCurrentWord() {
-            window.speechSynthesis.cancel();
-            // Inverted mode for phrases: speak Spanish, user picks German
-            const isInverted = invertMode && currentWord.isPhrase;
-            const text = isInverted ? currentWord.es : currentWord.de;
-            const lang = isInverted ? 'es-ES' : 'de-DE';
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = lang;
-            ut.rate = speechRate;
-            window.speechSynthesis.speak(ut);
-        }
-
-        function updateProgressBar() {
-            document.getElementById('progress-bar').style.width = ((milestoneProgress / 30) * 100) + "%";
-        }
-
-        function triggerMegaCelebration() {
-            candies++;
-            saveData();
-            const overlay = document.getElementById('mega-celebration');
-            overlay.classList.add('active');
-            startConfetti(); setTimeout(startConfetti, 500); setTimeout(startConfetti, 1000);
-            window.speechSynthesis.cancel();
-            const v = new SpeechSynthesisUtterance("Fantastisch! Du bist ein Champion!");
-            v.lang = 'de-DE';
-            window.speechSynthesis.speak(v);
-            setTimeout(() => { overlay.classList.remove('active'); stopConfetti(); nextQuestion(); }, 4000);
-        }
-
-        function check(selected, element) {
-            if (isLocked) return;
-            if (selected.de === currentWord.de) {
-                isLocked = true;
-                stats.good++; stats.streak++;
-                milestoneProgress++;
-                updateStats();
-                updateProgressBar();
-                element.classList.add('correct');
-
-                if (currentLevel === 'repaso') {
-                    reviewWords = reviewWords.filter(w => w.de !== currentWord.de);
-                }
-
-                if (milestoneProgress >= 30) {
-                    milestoneProgress = 0;
-                    updateProgressBar();
-                    triggerMegaCelebration();
-                    return;
-                }
-
-                if (currentWord.isPhrase) {
-                    // After correct: speak the OTHER language as feedback
-                    const isInverted = invertMode && currentWord.isPhrase;
-                    const feedbackText = isInverted ? currentWord.de : currentWord.es;
-                    const feedbackLang = isInverted ? 'de-DE' : 'es-ES';
-                    const vFeedback = new SpeechSynthesisUtterance(feedbackText);
-                    vFeedback.lang = feedbackLang;
-                    window.speechSynthesis.speak(vFeedback);
-                    startConfetti();
-                    let hasAdvanced = false;
-                    const advance = () => { if (!hasAdvanced) { hasAdvanced = true; stopConfetti(); nextQuestion(); } };
-                    vFeedback.onend = () => setTimeout(advance, 800);
-                    setTimeout(advance, 3500);
-                    return;
-                }
-
-                const v = new SpeechSynthesisUtterance("Richtig!");
-                v.lang = 'de-DE';
-                window.speechSynthesis.speak(v);
-                startConfetti();
-                setTimeout(() => { stopConfetti(); nextQuestion(); }, 1500);
-            } else {
-                stats.bad++; stats.streak = 0;
-                updateStats();
-                element.classList.add('wrong');
-                if (!reviewWords.some(w => w.de === currentWord.de)) reviewWords.push(currentWord);
-                const v = new SpeechSynthesisUtterance("Nein");
-                v.lang = 'de-DE';
-                window.speechSynthesis.speak(v);
-                setTimeout(() => element.classList.remove('wrong'), 500);
-            }
-        }
-
-        function updateStats() {
-            document.getElementById('streak').innerText = stats.streak;
-            document.getElementById('good').innerText = stats.good;
-            document.getElementById('bad').innerText = stats.bad;
-        }
-
-        // ─── TIENDA ────────────────────────────────────────────────────────────────
-        function renderShop() {
-            const grid = document.getElementById('shop-grid');
-            grid.innerHTML = '';
-            shopItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'shop-item';
-                div.innerHTML = `
-                    <div class="shop-item-icon">${item.icon}</div>
-                    <div style="font-weight:bold; color:#777;">🍬 ${item.cost}</div>
-                    <button class="shop-btn" ${candies < item.cost ? 'disabled' : ''} onclick="buySticker('${item.id}')">
-                        Comprar
-                    </button>`;
-                grid.appendChild(div);
-            });
-        }
-
-        function buySticker(id) {
-            const item = shopItems.find(i => i.id === id);
-            if (candies >= item.cost) {
-                candies -= item.cost;
-                myStickers.push({ id: Date.now() + Math.random(), icon: item.icon, x: 50 + Math.random() * 150, y: 50 + Math.random() * 200 });
-                saveData();
-                alert("¡Sticker comprado! Ve al corcho para pegarlo.");
-            }
-        }
-
-        // ─── CORCHO ────────────────────────────────────────────────────────────────
-        function renderBoard() {
-            const board = document.getElementById('board-container');
-            board.innerHTML = '';
-            myStickers.forEach(sticker => {
-                const el = document.createElement('div');
-                el.className = 'sticker';
-                el.innerText = sticker.icon;
-                el.style.left = sticker.x + 'px';
-                el.style.top = sticker.y + 'px';
-                makeDraggable(el, sticker);
-                board.appendChild(el);
-            });
-        }
-
-        function makeDraggable(el, stickerData) {
-            let isDragging = false, startX, startY, initialX, initialY;
-            const startDrag = (e) => {
-                isDragging = true;
-                const src = e.type === 'touchstart' ? e.touches[0] : e;
-                startX = src.clientX; startY = src.clientY;
-                initialX = parseFloat(el.style.left) || 0;
-                initialY = parseFloat(el.style.top) || 0;
-                el.style.zIndex = 1000;
-            };
-            const moveDrag = (e) => {
-                if (!isDragging) return;
-                e.preventDefault();
-                const src = e.type === 'touchmove' ? e.touches[0] : e;
-                el.style.left = (initialX + (src.clientX - startX)) + 'px';
-                el.style.top = (initialY + (src.clientY - startY)) + 'px';
-            };
-            const endDrag = () => {
-                if (!isDragging) return;
-                isDragging = false;
-                el.style.zIndex = 1;
-                stickerData.x = parseFloat(el.style.left);
-                stickerData.y = parseFloat(el.style.top);
-                saveData();
-            };
-            el.addEventListener('mousedown', startDrag);
-            document.addEventListener('mousemove', moveDrag);
-            document.addEventListener('mouseup', endDrag);
-            el.addEventListener('touchstart', startDrag, { passive: false });
-            document.addEventListener('touchmove', moveDrag, { passive: false });
-            document.addEventListener('touchend', endDrag);
-        }
-
-        // ─── CONFETI ───────────────────────────────────────────────────────────────
-        const canvas = document.getElementById("canvas-confetti");
-        const ctx = canvas.getContext("2d");
-        let particles = [], animId;
-
-        function startConfetti() {
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            particles = Array.from({ length: 40 }, () => ({
-                x: canvas.width / 2, y: canvas.height / 2,
-                vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 0.8) * 20,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`, size: 8, opacity: 1
-            }));
-            animate();
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            let active = 0;
-            particles.forEach(p => {
-                p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.opacity -= 0.015;
-                if (p.opacity > 0) active++;
-                ctx.globalAlpha = Math.max(0, p.opacity);
-                ctx.fillStyle = p.color;
-                ctx.fillRect(p.x, p.y, p.size, p.size);
-            });
-            if (active > 0) animId = requestAnimationFrame(animate);
-            else ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-        function stopConfetti() { cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvas.width, canvas.height); }
-
-        // ─── INICIO ────────────────────────────────────────────────────────────────
-        window.onload = () => { loadData(); initLevel(); updateInvertUI(); };
-        window.speechSynthesis.onvoiceschanged = () => { if (wordQueue.length === 0) initLevel(); };
-    </script>
+// ═══ INICIO ═══════════════════════════════════════════════════════════════════
+window.onload=()=>{ loadData(); initLevel(); };
+window.speechSynthesis.onvoiceschanged=()=>{ if(wordQueue.length===0) initLevel(); };
+</script>
 </body>
 </html>
