@@ -14,6 +14,10 @@
             --idle: #3498db;
             --candy: #e84393;
             --nav-bg: #2c3e50;
+            --phrase: #16a085;
+            --phrase-active: #1abc9c;
+            --invert-off: #16a085;
+            --invert-on: #c0392b;
         }
 
         body {
@@ -23,14 +27,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            height: 100dvh; 
+            height: 100dvh;
             margin: 0;
             box-sizing: border-box;
             overflow: hidden;
-            user-select: none; /* Evita selección de texto accidental al arrastrar */
+            user-select: none;
         }
 
-        /* Top Bar & Progress */
         .top-bar {
             width: 100%;
             max-width: 600px;
@@ -80,7 +83,6 @@
             font-size: 14px;
         }
 
-        /* Vistas Principales */
         .view-section {
             display: none;
             flex-direction: column;
@@ -92,30 +94,41 @@
             box-sizing: border-box;
             overflow-y: auto;
             overflow-x: hidden;
-            padding-bottom: 80px; /* Espacio para el nav bottom */
+            padding-bottom: 80px;
         }
         .view-section.active { display: flex; }
 
-        /* Estilos del Juego */
-        .level-menu { 
-            display: flex; 
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 6px; 
-            margin-bottom: 15px; 
+        /* Level menu — two labeled rows */
+        .level-group {
             width: 100%;
+            margin-bottom: 6px;
+        }
+        .level-group-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #aaa;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            padding-left: 4px;
+        }
+        .level-menu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
         }
 
         .btn-level {
-            padding: 8px 12px;
+            padding: 7px 10px;
             border: none;
             border-radius: 12px;
             color: white;
             font-weight: bold;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             cursor: pointer;
             background: #bdc3c7;
             transition: 0.3s;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
         }
         .btn-level.active { background: var(--primary); transform: scale(1.05); box-shadow: 0 4px 10px rgba(255,152,0,0.4); }
         .btn-phrase { background: #16a085; }
@@ -129,7 +142,8 @@
             align-items: center;
             width: 100%;
             margin-bottom: 10px;
-            gap: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .speed-control {
@@ -154,6 +168,29 @@
         }
         .speed-btn:active { transform: scale(0.8); }
 
+        /* Invert button */
+        #btn-invert {
+            border: none;
+            border-radius: 20px;
+            padding: 7px 13px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            cursor: pointer;
+            color: white;
+            background: var(--invert-off);
+            box-shadow: 0 4px 0 #0e7f65;
+            transition: background 0.25s, box-shadow 0.25s, opacity 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #btn-invert.on {
+            background: var(--invert-on);
+            box-shadow: 0 4px 0 #922b21;
+        }
+        #btn-invert:active { transform: translateY(3px); box-shadow: none; }
+
         .stats {
             display: flex;
             gap: 15px;
@@ -163,6 +200,19 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             font-size: 1.1rem;
         }
+
+        /* Direction badge shown above speak button */
+        .direction-badge {
+            font-size: 0.8rem;
+            font-weight: bold;
+            background: #ffeaa7;
+            color: #555;
+            border-radius: 12px;
+            padding: 3px 12px;
+            margin-bottom: 8px;
+            display: none;
+        }
+        .direction-badge.visible { display: block; }
 
         .game-box {
             background: var(--card);
@@ -204,6 +254,7 @@
             font-size: 1.2rem;
             color: white;
             font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
             cursor: pointer;
             box-shadow: 0 5px 0 #2980b9;
             display: flex;
@@ -217,7 +268,7 @@
         .btn-option.correct { background: var(--correct) !important; box-shadow: 0 5px 0 #27ae60 !important; }
         .btn-option.wrong { background: var(--wrong) !important; box-shadow: 0 5px 0 #c0392b !important; animation: shake 0.4s; }
 
-        /* Estilos Tienda */
+        /* Shop */
         .shop-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -243,6 +294,7 @@
             border: none;
             color: white;
             font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
             padding: 8px 15px;
             border-radius: 15px;
             box-shadow: 0 4px 0 #219d52;
@@ -251,11 +303,11 @@
         .shop-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #219d52; }
         .shop-btn:disabled { background: #95a5a6; box-shadow: 0 4px 0 #7f8c8d; cursor: not-allowed; }
 
-        /* Estilos Corcho (Pizarra) */
+        /* Board */
         .board-container {
             width: 100%;
             height: 100%;
-            background-color: #d2b48c; /* Color Corcho base */
+            background-color: #d2b48c;
             background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><g fill="%23c2a37b"><circle cx="20" cy="20" r="2"/><circle cx="70" cy="50" r="3"/><circle cx="30" cy="80" r="2"/><circle cx="80" cy="10" r="1.5"/></g></svg>');
             border-radius: 15px;
             border: 8px solid #8b5a2b;
@@ -269,11 +321,10 @@
             cursor: grab;
             filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.3));
             user-select: none;
-            touch-action: none; /* Crucial para drag en móviles */
+            touch-action: none;
         }
         .sticker:active { cursor: grabbing; filter: drop-shadow(4px 8px 6px rgba(0,0,0,0.4)); transform: scale(1.1); }
 
-        /* Menú Inferior (Navegación) */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -293,6 +344,7 @@
             color: white;
             font-size: 1rem;
             font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -308,7 +360,6 @@
 
         #canvas-confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
-        /* Celebración de 30 palabras */
         .mega-celebration {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -341,17 +392,35 @@
 
     <!-- VISTA 1: JUEGO -->
     <div id="view-game" class="view-section active">
-        <div class="level-menu">
-            <button class="btn-level active" onclick="changeLevel(1, this)">Básicos</button>
-            <button class="btn-level" onclick="changeLevel(2, this)">Ciudad</button>
-            <button class="btn-level" onclick="changeLevel(3, this)">Natura</button>
-            <button class="btn-level" onclick="changeLevel(5, this)">1-20</button>
-            <button class="btn-level" onclick="changeLevel(6, this)">ABC</button>
-            <button class="btn-level" onclick="changeLevel('aleatorio', this)">🔀 Mix</button>
-            <button class="btn-level btn-phrase" onclick="changeLevel(41, this)">Frases 1</button>
-            <button class="btn-level btn-phrase" onclick="changeLevel(42, this)">Frases 2</button>
-            <button class="btn-level btn-phrase" onclick="changeLevel(43, this)">Frases 3</button>
-            <button class="btn-level btn-repaso" onclick="changeLevel('repaso', this)">🧠 Repaso</button>
+
+        <!-- PALABRAS -->
+        <div class="level-group">
+            <div class="level-group-label">📚 Palabras</div>
+            <div class="level-menu">
+                <button class="btn-level active" onclick="changeLevel(1, this)">Básicos</button>
+                <button class="btn-level" onclick="changeLevel(2, this)">Ciudad</button>
+                <button class="btn-level" onclick="changeLevel(3, this)">Natura</button>
+                <button class="btn-level" onclick="changeLevel(7, this)">Ropa</button>
+                <button class="btn-level" onclick="changeLevel(8, this)">Comida</button>
+                <button class="btn-level" onclick="changeLevel(9, this)">Cuerpo</button>
+                <button class="btn-level" onclick="changeLevel(5, this)">1-20</button>
+                <button class="btn-level" onclick="changeLevel(6, this)">ABC</button>
+                <button class="btn-level" onclick="changeLevel('aleatorio', this)">🔀 Mix</button>
+            </div>
+        </div>
+
+        <!-- FRASES -->
+        <div class="level-group">
+            <div class="level-group-label">💬 Frases</div>
+            <div class="level-menu">
+                <button class="btn-level btn-phrase" onclick="changeLevel(41, this)">Frases 1</button>
+                <button class="btn-level btn-phrase" onclick="changeLevel(42, this)">Frases 2</button>
+                <button class="btn-level btn-phrase" onclick="changeLevel(43, this)">Frases 3</button>
+                <button class="btn-level btn-phrase" onclick="changeLevel(44, this)">Frases 4</button>
+                <button class="btn-level btn-phrase" onclick="changeLevel(45, this)">Frases 5</button>
+                <button class="btn-level btn-phrase" onclick="changeLevel(46, this)">Frases 6</button>
+                <button class="btn-level btn-repaso" onclick="changeLevel('repaso', this)">🧠 Repaso</button>
+            </div>
         </div>
 
         <div class="controls-row">
@@ -360,6 +429,11 @@
                 <span id="speed-display">0.75x</span>
                 <button class="speed-btn" onclick="changeSpeed(0.25)">🐇</button>
             </div>
+
+            <button id="btn-invert" onclick="toggleInvert()" title="Invertir dirección (solo frases)">
+                🔄 DE → ES
+            </button>
+
             <div class="stats">
                 <div style="color: #ff9800;">🔥 <span id="streak">0</span></div>
                 <div style="color: #2ecc71;">✅ <span id="good">0</span></div>
@@ -368,6 +442,7 @@
         </div>
 
         <div class="game-box">
+            <div class="direction-badge" id="direction-badge">🇩🇪 Escucha en alemán → elige en español</div>
             <button class="btn-speak" onclick="playCurrentWord()">🔊</button>
             <div class="options-grid" id="options"></div>
         </div>
@@ -376,17 +451,13 @@
     <!-- VISTA 2: TIENDA -->
     <div id="view-shop" class="view-section">
         <h2 style="color: #333;">Tienda de Stickers</h2>
-        <div class="shop-grid" id="shop-grid">
-            <!-- Items generados en JS -->
-        </div>
+        <div class="shop-grid" id="shop-grid"></div>
     </div>
 
     <!-- VISTA 3: CORCHO -->
     <div id="view-board" class="view-section">
         <h2 style="color: #333; margin-top: 0;">Mi Corcho</h2>
-        <div class="board-container" id="board-container">
-            <!-- Stickers generados en JS -->
-        </div>
+        <div class="board-container" id="board-container"></div>
     </div>
 
     <!-- MENÚ INFERIOR -->
@@ -402,7 +473,6 @@
         </button>
     </nav>
 
-    <!-- CELEBRACIÓN -->
     <div class="mega-celebration" id="mega-celebration">
         <div class="candy-reward-icon">🍬</div>
         <div class="celebration-text">Fantastisch!<br>¡Ganaste 1 Caramelo!</div>
@@ -411,7 +481,7 @@
     <canvas id="canvas-confetti"></canvas>
 
     <script>
-        // DATOS DE VOCABULARIO
+        // ─── VOCABULARIO ───────────────────────────────────────────────────────────
         const allLevels = {
             1: [ // BÁSICOS
                 { de: "Apfel", es: "Manzana", icon: "🍎" }, { de: "Haus", es: "Casa", icon: "🏠" }, { de: "Hund", es: "Perro", icon: "🐶" }, { de: "Katze", es: "Gato", icon: "🐱" }, { de: "Milch", es: "Leche", icon: "🥛" },
@@ -433,41 +503,26 @@
                 { de: "Wind", es: "Viento", icon: "🌬️" }, { de: "Gewitter", es: "Tormenta", icon: "⚡" }, { de: "Regenbogen", es: "Arcoíris", icon: "🌈" }, { de: "Erde", es: "Tierra", icon: "🌍" }, { de: "Stein", es: "Piedra", icon: "🪨" },
                 { de: "Blatt", es: "Hoja", icon: "🍃" }, { de: "Vulkan", es: "Volcán", icon: "🌋" }, { de: "Feuer", es: "Fuego", icon: "🔥" }, { de: "Baum", es: "Árbol", icon: "🌳" }, { de: "Blume", es: "Flor", icon: "🌻" }
             ],
-            41: [ // FRASES 1: BÁSICAS
-                { de: "Darf ich auf die Toilette gehen?", es: "¿Puedo ir al baño?", icon: "🚽", isPhrase: true },
-                { de: "Ich habe Hunger.", es: "Tengo hambre.", icon: "🤤", isPhrase: true },
-                { de: "Ich habe Durst.", es: "Tengo sed.", icon: "💧", isPhrase: true },
-                { de: "Ja, bitte.", es: "Sí, por favor.", icon: "👍", isPhrase: true },
-                { de: "Nein, danke.", es: "No, gracias.", icon: "✋", isPhrase: true },
-                { de: "Hilf mir bitte.", es: "Ayúdame, por favor.", icon: "🤝", isPhrase: true },
-                { de: "Ich bin fertig.", es: "Ya terminé.", icon: "✅", isPhrase: true },
-                { de: "Guten Morgen!", es: "¡Buenos días!", icon: "☀️", isPhrase: true },
-                { de: "Tschüss!", es: "¡Adiós!", icon: "👋", isPhrase: true },
-                { de: "Entschuldigung.", es: "Perdón / Disculpa.", icon: "🥺", isPhrase: true }
+            7: [ // ROPA (nuevo)
+                { de: "Hut", es: "Sombrero", icon: "🎩" }, { de: "Mütze", es: "Gorro", icon: "🧢" }, { de: "Jacke", es: "Chaqueta", icon: "🧥" }, { de: "T-Shirt", es: "Camiseta", icon: "👕" },
+                { de: "Hose", es: "Pantalón", icon: "👖" }, { de: "Rock", es: "Falda", icon: "👗" }, { de: "Kleid", es: "Vestido", icon: "👗" }, { de: "Socken", es: "Calcetines", icon: "🧦" },
+                { de: "Handschuhe", es: "Guantes", icon: "🧤" }, { de: "Schal", es: "Bufanda", icon: "🧣" }, { de: "Pullover", es: "Jersey", icon: "🧶" }, { de: "Pyjama", es: "Pijama", icon: "😴" },
+                { de: "Stiefel", es: "Botas", icon: "👢" }, { de: "Sandalen", es: "Sandalias", icon: "👡" }, { de: "Brille", es: "Gafas", icon: "👓" }, { de: "Rucksack", es: "Mochila", icon: "🎒" },
+                { de: "Regenjacke", es: "Chubasquero", icon: "🌧️" }, { de: "Badeanzug", es: "Bañador", icon: "🩱" }
             ],
-            42: [ // FRASES 2: INTERMEDIAS
-                { de: "Können wir spielen?", es: "¿Podemos jugar?", icon: "🧸", isPhrase: true },
-                { de: "Was ist das?", es: "¿Qué es eso?", icon: "❓", isPhrase: true },
-                { de: "Mir ist kalt.", es: "Tengo frío.", icon: "🥶", isPhrase: true },
-                { de: "Mir ist warm.", es: "Tengo calor.", icon: "🥵", isPhrase: true },
-                { de: "Ich bin müde.", es: "Estoy cansado.", icon: "🥱", isPhrase: true },
-                { de: "Wo ist mein Rucksack?", es: "¿Dónde está mi mochila?", icon: "🎒", isPhrase: true },
-                { de: "Ich möchte das.", es: "Quiero eso.", icon: "👈", isPhrase: true },
-                { de: "Mehr bitte.", es: "Más, por favor.", icon: "➕", isPhrase: true },
-                { de: "Ich weiß nicht.", es: "No sé.", icon: "🤷", isPhrase: true },
-                { de: "Ich bin dran.", es: "Es mi turno.", icon: "⏱️", isPhrase: true }
+            8: [ // COMIDA (nuevo)
+                { de: "Käse", es: "Queso", icon: "🧀" }, { de: "Ei", es: "Huevo", icon: "🥚" }, { de: "Butter", es: "Mantequilla", icon: "🧈" }, { de: "Nudeln", es: "Fideos", icon: "🍝" },
+                { de: "Reis", es: "Arroz", icon: "🍚" }, { de: "Suppe", es: "Sopa", icon: "🍜" }, { de: "Kuchen", es: "Pastel", icon: "🍰" }, { de: "Eis", es: "Helado", icon: "🍦" },
+                { de: "Karotte", es: "Zanahoria", icon: "🥕" }, { de: "Kartoffel", es: "Patata", icon: "🥔" }, { de: "Tomate", es: "Tomate", icon: "🍅" }, { de: "Banane", es: "Plátano", icon: "🍌" },
+                { de: "Erdbeere", es: "Fresa", icon: "🍓" }, { de: "Kirsche", es: "Cereza", icon: "🍒" }, { de: "Wassermelone", es: "Sandía", icon: "🍉" }, { de: "Schokolade", es: "Chocolate", icon: "🍫" },
+                { de: "Pizza", es: "Pizza", icon: "🍕" }, { de: "Keks", es: "Galleta", icon: "🍪" }, { de: "Saft", es: "Zumo", icon: "🧃" }, { de: "Joghurt", es: "Yogur", icon: "🥛" }
             ],
-            43: [ // FRASES 3: COMPLEJAS
-                { de: "Wann kommt meine Mama?", es: "¿Cuándo viene mi mamá?", icon: "👩‍👦", isPhrase: true },
-                { de: "Wann kommt mein Papa?", es: "¿Cuándo viene mi papá?", icon: "👨‍👦", isPhrase: true },
-                { de: "Mir tut der Bauch weh.", es: "Me duele la barriga.", icon: "🤕", isPhrase: true },
-                { de: "Kannst du mir die Schuhe anziehen?", es: "¿Puedes ponerme los zapatos?", icon: "👟", isPhrase: true },
-                { de: "Ich mag das nicht.", es: "No me gusta eso.", icon: "🙅‍♂️", isPhrase: true },
-                { de: "Lass uns rausgehen.", es: "Salgamos al patio.", icon: "🌳", isPhrase: true },
-                { de: "Darf ich mitspielen?", es: "¿Puedo jugar con ustedes?", icon: "🎲", isPhrase: true },
-                { de: "Das ist meins!", es: "¡Eso es mío!", icon: "😠", isPhrase: true },
-                { de: "Können wir ein Buch lesen?", es: "¿Podemos leer un libro?", icon: "📖", isPhrase: true },
-                { de: "Ich brauche eine Pause.", es: "Necesito un descanso.", icon: "🛋️", isPhrase: true }
+            9: [ // CUERPO (nuevo)
+                { de: "Kopf", es: "Cabeza", icon: "🗣️" }, { de: "Ohr", es: "Oreja", icon: "👂" }, { de: "Haar", es: "Pelo", icon: "💇" }, { de: "Zahn", es: "Diente", icon: "🦷" },
+                { de: "Arm", es: "Brazo", icon: "💪" }, { de: "Hand", es: "Mano", icon: "✋" }, { de: "Finger", es: "Dedo", icon: "☝️" }, { de: "Bauch", es: "Barriga", icon: "🫃" },
+                { de: "Rücken", es: "Espalda", icon: "🔙" }, { de: "Bein", es: "Pierna", icon: "🦵" }, { de: "Knie", es: "Rodilla", icon: "🦵" }, { de: "Fuß", es: "Pie", icon: "🦶" },
+                { de: "Herz", es: "Corazón", icon: "❤️" }, { de: "krank", es: "Enfermo", icon: "🤒" }, { de: "gesund", es: "Sano", icon: "💪" }, { de: "Wange", es: "Mejilla", icon: "😊" },
+                { de: "Schulter", es: "Hombro", icon: "🏋️" }, { de: "Hals", es: "Cuello", icon: "🧣" }
             ],
             5: [ // 1-20
                 { de: "Eins", es: "Uno", icon: "1", onlyIcon: true }, { de: "Zwei", es: "Dos", icon: "2", onlyIcon: true }, { de: "Drei", es: "Tres", icon: "3", onlyIcon: true }, { de: "Vier", es: "Cuatro", icon: "4", onlyIcon: true }, { de: "Fünf", es: "Cinco", icon: "5", onlyIcon: true },
@@ -481,17 +536,93 @@
                 { de: "K", es: "K", icon: "K", onlyIcon: true }, { de: "L", es: "L", icon: "L", onlyIcon: true }, { de: "M", es: "M", icon: "M", onlyIcon: true }, { de: "N", es: "N", icon: "N", onlyIcon: true }, { de: "O", es: "O", icon: "O", onlyIcon: true },
                 { de: "P", es: "P", icon: "P", onlyIcon: true }, { de: "Q", es: "Q", icon: "Q", onlyIcon: true }, { de: "R", es: "R", icon: "R", onlyIcon: true }, { de: "S", es: "S", icon: "S", onlyIcon: true }, { de: "T", es: "T", icon: "T", onlyIcon: true },
                 { de: "U", es: "U", icon: "U", onlyIcon: true }, { de: "V", es: "V", icon: "V", onlyIcon: true }, { de: "W", es: "W", icon: "W", onlyIcon: true }, { de: "X", es: "X", icon: "X", onlyIcon: true }, { de: "Y", es: "Y", icon: "Y", onlyIcon: true }, { de: "Z", es: "Z", icon: "Z", onlyIcon: true }
+            ],
+
+            // ── FRASES ────────────────────────────────────────────────────────────
+            41: [ // FRASES 1: básicas del cole
+                { de: "Darf ich auf die Toilette gehen?", es: "¿Puedo ir al baño?", icon: "🚽", isPhrase: true },
+                { de: "Ich habe Hunger.", es: "Tengo hambre.", icon: "🤤", isPhrase: true },
+                { de: "Ich habe Durst.", es: "Tengo sed.", icon: "💧", isPhrase: true },
+                { de: "Ja, bitte.", es: "Sí, por favor.", icon: "👍", isPhrase: true },
+                { de: "Nein, danke.", es: "No, gracias.", icon: "✋", isPhrase: true },
+                { de: "Hilf mir bitte.", es: "Ayúdame, por favor.", icon: "🤝", isPhrase: true },
+                { de: "Ich bin fertig.", es: "Ya terminé.", icon: "✅", isPhrase: true },
+                { de: "Guten Morgen!", es: "¡Buenos días!", icon: "☀️", isPhrase: true },
+                { de: "Tschüss!", es: "¡Adiós!", icon: "👋", isPhrase: true },
+                { de: "Entschuldigung.", es: "Perdón / Disculpa.", icon: "🥺", isPhrase: true }
+            ],
+            42: [ // FRASES 2: intermedias
+                { de: "Können wir spielen?", es: "¿Podemos jugar?", icon: "🧸", isPhrase: true },
+                { de: "Was ist das?", es: "¿Qué es eso?", icon: "❓", isPhrase: true },
+                { de: "Mir ist kalt.", es: "Tengo frío.", icon: "🥶", isPhrase: true },
+                { de: "Mir ist warm.", es: "Tengo calor.", icon: "🥵", isPhrase: true },
+                { de: "Ich bin müde.", es: "Estoy cansado.", icon: "🥱", isPhrase: true },
+                { de: "Wo ist mein Rucksack?", es: "¿Dónde está mi mochila?", icon: "🎒", isPhrase: true },
+                { de: "Ich möchte das.", es: "Quiero eso.", icon: "👈", isPhrase: true },
+                { de: "Mehr bitte.", es: "Más, por favor.", icon: "➕", isPhrase: true },
+                { de: "Ich weiß nicht.", es: "No sé.", icon: "🤷", isPhrase: true },
+                { de: "Ich bin dran.", es: "Es mi turno.", icon: "⏱️", isPhrase: true }
+            ],
+            43: [ // FRASES 3: complejas
+                { de: "Wann kommt meine Mama?", es: "¿Cuándo viene mi mamá?", icon: "👩‍👦", isPhrase: true },
+                { de: "Wann kommt mein Papa?", es: "¿Cuándo viene mi papá?", icon: "👨‍👦", isPhrase: true },
+                { de: "Mir tut der Bauch weh.", es: "Me duele la barriga.", icon: "🤕", isPhrase: true },
+                { de: "Kannst du mir die Schuhe anziehen?", es: "¿Puedes ponerme los zapatos?", icon: "👟", isPhrase: true },
+                { de: "Ich mag das nicht.", es: "No me gusta eso.", icon: "🙅‍♂️", isPhrase: true },
+                { de: "Lass uns rausgehen.", es: "Salgamos al patio.", icon: "🌳", isPhrase: true },
+                { de: "Darf ich mitspielen?", es: "¿Puedo jugar con ustedes?", icon: "🎲", isPhrase: true },
+                { de: "Das ist meins!", es: "¡Eso es mío!", icon: "😠", isPhrase: true },
+                { de: "Können wir ein Buch lesen?", es: "¿Podemos leer un libro?", icon: "📖", isPhrase: true },
+                { de: "Ich brauche eine Pause.", es: "Necesito un descanso.", icon: "🛋️", isPhrase: true }
+            ],
+            44: [ // FRASES 4: rutinas (nuevo)
+                { de: "Ich wasche mir die Hände.", es: "Me lavo las manos.", icon: "🫧", isPhrase: true },
+                { de: "Ich putze mir die Zähne.", es: "Me lavo los dientes.", icon: "🦷", isPhrase: true },
+                { de: "Ich ziehe mich an.", es: "Me visto.", icon: "👕", isPhrase: true },
+                { de: "Lass uns aufräumen!", es: "¡Vamos a ordenar!", icon: "🧹", isPhrase: true },
+                { de: "Es ist Zeit zu schlafen.", es: "Es hora de dormir.", icon: "😴", isPhrase: true },
+                { de: "Ich stehe auf.", es: "Me levanto.", icon: "🌅", isPhrase: true },
+                { de: "Ich frühstücke.", es: "Desayuno.", icon: "🥐", isPhrase: true },
+                { de: "Kannst du mir helfen?", es: "¿Puedes ayudarme?", icon: "🙏", isPhrase: true },
+                { de: "Das macht Spaß!", es: "¡Esto es divertido!", icon: "🎉", isPhrase: true },
+                { de: "Ich bin glücklich.", es: "Estoy feliz.", icon: "😊", isPhrase: true }
+            ],
+            45: [ // FRASES 5: emociones (nuevo)
+                { de: "Ich bin traurig.", es: "Estoy triste.", icon: "😢", isPhrase: true },
+                { de: "Ich bin wütend.", es: "Estoy enfadado.", icon: "😠", isPhrase: true },
+                { de: "Ich habe Angst.", es: "Tengo miedo.", icon: "😨", isPhrase: true },
+                { de: "Ich bin aufgeregt!", es: "¡Estoy emocionado!", icon: "🤩", isPhrase: true },
+                { de: "Ich freue mich!", es: "¡Me alegro!", icon: "🥳", isPhrase: true },
+                { de: "Das ist lustig!", es: "¡Eso es gracioso!", icon: "😂", isPhrase: true },
+                { de: "Ich mag dich.", es: "Me gustas / Te quiero.", icon: "💛", isPhrase: true },
+                { de: "Du bist mein Freund.", es: "Eres mi amigo.", icon: "🤝", isPhrase: true },
+                { de: "Danke schön!", es: "¡Muchas gracias!", icon: "🙏", isPhrase: true },
+                { de: "Bitte verzeih mir.", es: "Por favor, perdóname.", icon: "🥺", isPhrase: true }
+            ],
+            46: [ // FRASES 6: avanzado (nuevo)
+                { de: "Was machst du heute?", es: "¿Qué haces hoy?", icon: "📅", isPhrase: true },
+                { de: "Ich spiele draußen.", es: "Juego afuera.", icon: "🌞", isPhrase: true },
+                { de: "Wir gehen in den Park.", es: "Vamos al parque.", icon: "🌳", isPhrase: true },
+                { de: "Hast du Hausaufgaben?", es: "¿Tienes deberes?", icon: "📝", isPhrase: true },
+                { de: "Ich mag Mathematik.", es: "Me gustan las matemáticas.", icon: "➗", isPhrase: true },
+                { de: "Ich lerne Deutsch.", es: "Estoy aprendiendo alemán.", icon: "🇩🇪", isPhrase: true },
+                { de: "Wie spät ist es?", es: "¿Qué hora es?", icon: "🕐", isPhrase: true },
+                { de: "Es ist halb drei.", es: "Son las dos y media.", icon: "🕝", isPhrase: true },
+                { de: "Heute ist Montag.", es: "Hoy es lunes.", icon: "📆", isPhrase: true },
+                { de: "Welche Farbe magst du?", es: "¿Qué color te gusta?", icon: "🎨", isPhrase: true }
             ]
         };
 
-        // INVENTARIO TIENDA
+        const PHRASE_LEVELS = [41, 42, 43, 44, 45, 46];
+
+        // ─── TIENDA ────────────────────────────────────────────────────────────────
         const shopItems = [
             { id: 's1', icon: '🦖', cost: 1 }, { id: 's2', icon: '🚀', cost: 1 }, { id: 's3', icon: '🦄', cost: 1 },
             { id: 's4', icon: '🚓', cost: 1 }, { id: 's5', icon: '🦸‍♂️', cost: 2 }, { id: 's6', icon: '🌈', cost: 2 },
             { id: 's7', icon: '🍕', cost: 1 }, { id: 's8', icon: '👻', cost: 2 }, { id: 's9', icon: '👑', cost: 3 }
         ];
 
-        // ESTADO DE LA APP
+        // ─── ESTADO ────────────────────────────────────────────────────────────────
         let currentLevel = 1;
         let wordQueue = [];
         let currentWord = {};
@@ -500,18 +631,44 @@
         let isLocked = false;
         let speechRate = 0.75;
         let reviewWords = [];
-
-        // ECONOMÍA Y PERSISTENCIA
         let candies = 0;
-        let myStickers = []; // [{ id, icon, x, y }]
+        let myStickers = [];
 
+        // ─── MODO INVERTIDO ────────────────────────────────────────────────────────
+        let invertMode = false;   // false = DE→ES (normal) | true = ES→DE (invertido)
+
+        function isCurrentLevelPhrase() {
+            return PHRASE_LEVELS.includes(currentLevel);
+        }
+
+        function toggleInvert() {
+            invertMode = !invertMode;
+            updateInvertUI();
+            nextQuestion();
+        }
+
+        function updateInvertUI() {
+            const btn = document.getElementById('btn-invert');
+            const badge = document.getElementById('direction-badge');
+            if (invertMode) {
+                btn.textContent = '🔄 ES → DE';
+                btn.classList.add('on');
+                badge.textContent = '🇪🇸 Escucha en español → elige en alemán';
+            } else {
+                btn.textContent = '🔄 DE → ES';
+                btn.classList.remove('on');
+                badge.textContent = '🇩🇪 Escucha en alemán → elige en español';
+            }
+            // Badge only visible on phrase levels
+            badge.classList.toggle('visible', isCurrentLevelPhrase());
+        }
+
+        // ─── PERSISTENCIA ──────────────────────────────────────────────────────────
         function loadData() {
             const savedCandies = localStorage.getItem('deutschApp_candies');
             if (savedCandies) candies = parseInt(savedCandies);
-            
             const savedStickers = localStorage.getItem('deutschApp_stickers');
             if (savedStickers) myStickers = JSON.parse(savedStickers);
-            
             updateCandyUI();
             renderShop();
             renderBoard();
@@ -525,25 +682,21 @@
 
         function updateCandyUI() {
             document.getElementById('candy-count').innerText = candies;
-            renderShop(); // Actualiza botones de compra según saldo
+            renderShop();
         }
 
-        // CONTROL DE VISTAS (Juego / Tienda / Corcho)
+        // ─── VISTAS ────────────────────────────────────────────────────────────────
         function switchView(viewId, btn) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
-            
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
             btn.classList.add('active');
-            
             if (viewId === 'board') renderBoard();
         }
 
-        // LÓGICA DEL JUEGO
+        // ─── JUEGO ─────────────────────────────────────────────────────────────────
         function changeSpeed(delta) {
-            speechRate += delta;
-            if(speechRate < 0.25) speechRate = 0.25;
-            if(speechRate > 1.5) speechRate = 1.5;
+            speechRate = Math.min(1.5, Math.max(0.25, speechRate + delta));
             document.getElementById('speed-display').innerText = speechRate.toFixed(2) + "x";
             window.speechSynthesis.cancel();
         }
@@ -554,8 +707,13 @@
                 return;
             }
             currentLevel = lvl;
+            // Reset invert when moving away from phrase levels
+            if (!isCurrentLevelPhrase() && invertMode) {
+                invertMode = false;
+            }
             document.querySelectorAll('.btn-level').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            updateInvertUI();
             initLevel();
         }
 
@@ -563,10 +721,10 @@
             if (currentLevel === 'repaso') {
                 wordQueue = [...reviewWords].sort(() => Math.random() - 0.5);
             } else if (currentLevel === 'aleatorio') {
-                // Modo Mix: Une las listas principales. Aumentamos la ponderación de ABC/Números duplicándolos para balancear
                 let base = [...allLevels[1], ...allLevels[2], ...allLevels[3]];
-                let numsAndABC = [...allLevels[5], ...allLevels[6], ...allLevels[5], ...allLevels[6]]; 
-                wordQueue = [...base, ...numsAndABC].sort(() => Math.random() - 0.5);
+                let extra = [...allLevels[7], ...allLevels[8], ...allLevels[9]];
+                let numsAndABC = [...allLevels[5], ...allLevels[6]];
+                wordQueue = [...base, ...extra, ...numsAndABC].sort(() => Math.random() - 0.5);
             } else {
                 wordQueue = [...allLevels[currentLevel]].sort(() => Math.random() - 0.5);
             }
@@ -575,37 +733,29 @@
 
         function nextQuestion() {
             isLocked = false;
-            
             if (wordQueue.length === 0) {
-                if (currentLevel === 'repaso') {
-                    document.querySelector('.btn-level').click(); // Vuelve al nivel 1
-                    return;
-                }
-                initLevel(); // Rellena la cola
-                return;
+                if (currentLevel === 'repaso') { document.querySelector('.btn-level').click(); return; }
+                initLevel(); return;
             }
-            
             currentWord = wordQueue.pop();
             let choices = [];
 
             if (currentWord.isPhrase) {
-                choices = [currentWord];
+                // For phrases, build 3-choice multiple choice
+                let phrasePool = [...(allLevels[currentLevel] || [])].filter(w => w.de !== currentWord.de);
+                phrasePool.sort(() => Math.random() - 0.5);
+                choices = [currentWord, ...phrasePool.slice(0, 2)].sort(() => Math.random() - 0.5);
             } else {
-                let distractors = [];
                 let sourceForDistractors = [];
-
                 if (currentLevel === 'aleatorio' || currentLevel === 'repaso') {
-                    // Buscar en qué nivel original está esta palabra
                     let levelOfWord = Object.keys(allLevels).find(key => allLevels[key].some(w => w.de === currentWord.de));
                     sourceForDistractors = levelOfWord ? [...allLevels[levelOfWord]] : [...allLevels[1]];
                 } else {
                     sourceForDistractors = [...allLevels[currentLevel]];
                 }
-
                 let allAvailable = sourceForDistractors.filter(w => w.de !== currentWord.de && !w.isPhrase);
                 allAvailable.sort(() => Math.random() - 0.5);
-                distractors = allAvailable.slice(0, 2);
-                choices = [currentWord, ...distractors].sort(() => Math.random() - 0.5);
+                choices = [currentWord, ...allAvailable.slice(0, 2)].sort(() => Math.random() - 0.5);
             }
 
             const container = document.getElementById('options');
@@ -616,6 +766,9 @@
                 if (c.onlyIcon) {
                     b.innerHTML = `<span>${c.icon}</span>`;
                     b.style.fontSize = "2.5rem";
+                } else if (currentWord.isPhrase && invertMode) {
+                    // Inverted: show DE options
+                    b.innerHTML = `<span>${c.icon}</span> <span style="font-size:0.95rem">${c.de}</span>`;
                 } else {
                     b.innerHTML = `<span>${c.icon}</span> <span>${c.es}</span>`;
                 }
@@ -627,101 +780,82 @@
 
         function playCurrentWord() {
             window.speechSynthesis.cancel();
-            const ut = new SpeechSynthesisUtterance(currentWord.de);
-            ut.lang = 'de-DE';
-            ut.rate = speechRate; 
+            // Inverted mode for phrases: speak Spanish, user picks German
+            const isInverted = invertMode && currentWord.isPhrase;
+            const text = isInverted ? currentWord.es : currentWord.de;
+            const lang = isInverted ? 'es-ES' : 'de-DE';
+            const ut = new SpeechSynthesisUtterance(text);
+            ut.lang = lang;
+            ut.rate = speechRate;
             window.speechSynthesis.speak(ut);
         }
 
         function updateProgressBar() {
-            const bar = document.getElementById('progress-bar');
-            const percentage = (milestoneProgress / 30) * 100;
-            bar.style.width = percentage + "%";
+            document.getElementById('progress-bar').style.width = ((milestoneProgress / 30) * 100) + "%";
         }
 
         function triggerMegaCelebration() {
-            candies++; // GANA EL CARAMELO
+            candies++;
             saveData();
-            
             const overlay = document.getElementById('mega-celebration');
             overlay.classList.add('active');
-            
             startConfetti(); setTimeout(startConfetti, 500); setTimeout(startConfetti, 1000);
-
             window.speechSynthesis.cancel();
             const v = new SpeechSynthesisUtterance("Fantastisch! Du bist ein Champion!");
             v.lang = 'de-DE';
             window.speechSynthesis.speak(v);
-
-            setTimeout(() => {
-                overlay.classList.remove('active');
-                stopConfetti();
-                nextQuestion();
-            }, 4000);
+            setTimeout(() => { overlay.classList.remove('active'); stopConfetti(); nextQuestion(); }, 4000);
         }
 
         function check(selected, element) {
-            if(isLocked) return;
-            
-            if(selected.de === currentWord.de) {
+            if (isLocked) return;
+            if (selected.de === currentWord.de) {
                 isLocked = true;
                 stats.good++; stats.streak++;
                 milestoneProgress++;
                 updateStats();
                 updateProgressBar();
-                
                 element.classList.add('correct');
 
                 if (currentLevel === 'repaso') {
                     reviewWords = reviewWords.filter(w => w.de !== currentWord.de);
                 }
 
-                // ¿Gana caramelo? (Cada 30 aciertos)
                 if (milestoneProgress >= 30) {
-                    milestoneProgress = 0; 
+                    milestoneProgress = 0;
                     updateProgressBar();
                     triggerMegaCelebration();
-                    return; 
-                }
-
-                // FIX FRASES: Asegurar que avance una sola vez
-                if (currentWord.isPhrase) {
-                    const vEs = new SpeechSynthesisUtterance(currentWord.es);
-                    vEs.lang = 'es-ES';
-                    window.speechSynthesis.speak(vEs);
-                    startConfetti();
-                    
-                    let hasAdvanced = false;
-                    const advance = () => {
-                        if(!hasAdvanced) {
-                            hasAdvanced = true;
-                            stopConfetti();
-                            nextQuestion();
-                        }
-                    };
-                    vEs.onend = () => setTimeout(advance, 800);
-                    // Respaldo de seguridad por si falla el onend en el móvil
-                    setTimeout(advance, 3500); 
                     return;
                 }
 
-                const v = new SpeechSynthesisUtterance("Richtig!"); 
-                v.lang = 'de-DE'; 
+                if (currentWord.isPhrase) {
+                    // After correct: speak the OTHER language as feedback
+                    const isInverted = invertMode && currentWord.isPhrase;
+                    const feedbackText = isInverted ? currentWord.de : currentWord.es;
+                    const feedbackLang = isInverted ? 'de-DE' : 'es-ES';
+                    const vFeedback = new SpeechSynthesisUtterance(feedbackText);
+                    vFeedback.lang = feedbackLang;
+                    window.speechSynthesis.speak(vFeedback);
+                    startConfetti();
+                    let hasAdvanced = false;
+                    const advance = () => { if (!hasAdvanced) { hasAdvanced = true; stopConfetti(); nextQuestion(); } };
+                    vFeedback.onend = () => setTimeout(advance, 800);
+                    setTimeout(advance, 3500);
+                    return;
+                }
+
+                const v = new SpeechSynthesisUtterance("Richtig!");
+                v.lang = 'de-DE';
                 window.speechSynthesis.speak(v);
                 startConfetti();
                 setTimeout(() => { stopConfetti(); nextQuestion(); }, 1500);
-
             } else {
                 stats.bad++; stats.streak = 0;
                 updateStats();
                 element.classList.add('wrong');
-                
-                if (!reviewWords.some(w => w.de === currentWord.de)) {
-                    reviewWords.push(currentWord);
-                }
-
-                const v = new SpeechSynthesisUtterance("Nein"); 
-                v.lang = 'de-DE'; 
+                if (!reviewWords.some(w => w.de === currentWord.de)) reviewWords.push(currentWord);
+                const v = new SpeechSynthesisUtterance("Nein");
+                v.lang = 'de-DE';
                 window.speechSynthesis.speak(v);
                 setTimeout(() => element.classList.remove('wrong'), 500);
             }
@@ -733,7 +867,7 @@
             document.getElementById('bad').innerText = stats.bad;
         }
 
-        // TIENDA LÓGICA
+        // ─── TIENDA ────────────────────────────────────────────────────────────────
         function renderShop() {
             const grid = document.getElementById('shop-grid');
             grid.innerHTML = '';
@@ -745,8 +879,7 @@
                     <div style="font-weight:bold; color:#777;">🍬 ${item.cost}</div>
                     <button class="shop-btn" ${candies < item.cost ? 'disabled' : ''} onclick="buySticker('${item.id}')">
                         Comprar
-                    </button>
-                `;
+                    </button>`;
                 grid.appendChild(div);
             });
         }
@@ -755,19 +888,13 @@
             const item = shopItems.find(i => i.id === id);
             if (candies >= item.cost) {
                 candies -= item.cost;
-                // Agrega a la lista con posición inicial aleatoria en el corcho
-                myStickers.push({
-                    id: Date.now() + Math.random(), // ID único de instancia
-                    icon: item.icon,
-                    x: 50 + Math.random() * 150,
-                    y: 50 + Math.random() * 200
-                });
+                myStickers.push({ id: Date.now() + Math.random(), icon: item.icon, x: 50 + Math.random() * 150, y: 50 + Math.random() * 200 });
                 saveData();
                 alert("¡Sticker comprado! Ve al corcho para pegarlo.");
             }
         }
 
-        // CORCHO LÓGICA (Drag & Drop para móvil y PC)
+        // ─── CORCHO ────────────────────────────────────────────────────────────────
         function renderBoard() {
             const board = document.getElementById('board-container');
             board.innerHTML = '';
@@ -783,95 +910,71 @@
         }
 
         function makeDraggable(el, stickerData) {
-            let isDragging = false;
-            let startX, startY, initialX, initialY;
-
+            let isDragging = false, startX, startY, initialX, initialY;
             const startDrag = (e) => {
                 isDragging = true;
-                if(e.type === 'touchstart') {
-                    startX = e.touches[0].clientX;
-                    startY = e.touches[0].clientY;
-                } else {
-                    startX = e.clientX;
-                    startY = e.clientY;
-                }
+                const src = e.type === 'touchstart' ? e.touches[0] : e;
+                startX = src.clientX; startY = src.clientY;
                 initialX = parseFloat(el.style.left) || 0;
                 initialY = parseFloat(el.style.top) || 0;
                 el.style.zIndex = 1000;
             };
-
             const moveDrag = (e) => {
                 if (!isDragging) return;
-                e.preventDefault(); // Evita scroll al arrastrar
-                let currentX, currentY;
-                if(e.type === 'touchmove') {
-                    currentX = e.touches[0].clientX;
-                    currentY = e.touches[0].clientY;
-                } else {
-                    currentX = e.clientX;
-                    currentY = e.clientY;
-                }
-                el.style.left = (initialX + (currentX - startX)) + 'px';
-                el.style.top = (initialY + (currentY - startY)) + 'px';
+                e.preventDefault();
+                const src = e.type === 'touchmove' ? e.touches[0] : e;
+                el.style.left = (initialX + (src.clientX - startX)) + 'px';
+                el.style.top = (initialY + (src.clientY - startY)) + 'px';
             };
-
-            const endDrag = (e) => {
-                if(!isDragging) return;
+            const endDrag = () => {
+                if (!isDragging) return;
                 isDragging = false;
                 el.style.zIndex = 1;
                 stickerData.x = parseFloat(el.style.left);
                 stickerData.y = parseFloat(el.style.top);
-                saveData(); // Guarda la nueva posición
+                saveData();
             };
-
-            // Mouse
             el.addEventListener('mousedown', startDrag);
             document.addEventListener('mousemove', moveDrag);
             document.addEventListener('mouseup', endDrag);
-
-            // Touch
-            el.addEventListener('touchstart', startDrag, {passive: false});
-            document.addEventListener('touchmove', moveDrag, {passive: false});
+            el.addEventListener('touchstart', startDrag, { passive: false });
+            document.addEventListener('touchmove', moveDrag, { passive: false });
             document.addEventListener('touchend', endDrag);
         }
 
-        // EFECTOS
+        // ─── CONFETI ───────────────────────────────────────────────────────────────
         const canvas = document.getElementById("canvas-confetti");
         const ctx = canvas.getContext("2d");
-        let particles = [];
-        let animId;
+        let particles = [], animId;
 
         function startConfetti() {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            particles = Array.from({length: 40}, () => ({
-                x: canvas.width/2, y: canvas.height/2,
-                vx: (Math.random()-0.5)*20, vy: (Math.random()-0.8)*20,
-                color: `hsl(${Math.random()*360}, 100%, 50%)`, size: 8, opacity: 1
+            particles = Array.from({ length: 40 }, () => ({
+                x: canvas.width / 2, y: canvas.height / 2,
+                vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 0.8) * 20,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`, size: 8, opacity: 1
             }));
             animate();
         }
 
         function animate() {
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            let activeParticles = 0;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = 0;
             particles.forEach(p => {
                 p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.opacity -= 0.015;
-                if(p.opacity > 0) activeParticles++;
+                if (p.opacity > 0) active++;
                 ctx.globalAlpha = Math.max(0, p.opacity);
                 ctx.fillStyle = p.color;
                 ctx.fillRect(p.x, p.y, p.size, p.size);
             });
-            if(activeParticles > 0) animId = requestAnimationFrame(animate);
-            else ctx.clearRect(0,0,canvas.width,canvas.height);
+            if (active > 0) animId = requestAnimationFrame(animate);
+            else ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
-        function stopConfetti() { cancelAnimationFrame(animId); ctx.clearRect(0,0,canvas.width,canvas.height); }
+        function stopConfetti() { cancelAnimationFrame(animId); ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
-        // INICIO APP
-        window.onload = () => {
-            loadData(); // Carga caramelos y stickers guardados
-            initLevel();
-        }
-        window.speechSynthesis.onvoiceschanged = () => { if(wordQueue.length===0) initLevel(); };
+        // ─── INICIO ────────────────────────────────────────────────────────────────
+        window.onload = () => { loadData(); initLevel(); updateInvertUI(); };
+        window.speechSynthesis.onvoiceschanged = () => { if (wordQueue.length === 0) initLevel(); };
     </script>
 </body>
 </html>
