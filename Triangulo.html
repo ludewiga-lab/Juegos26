@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b0f19">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Chain Chess - Juego de Gomas en Línea Recta</title>
+    <!-- Tailwind CSS para una interfaz espectacular -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons para iconos limpios y modernos -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0b0f19;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* Efecto de brillo de neon realista para las gomas */
+        .band-glow {
+            filter: drop-shadow(0 0 5px var(--glow-color));
+        }
+        /* Sombra suave para dar relieve 3D */
+        .shadow-3d {
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+        }
+        /* Transiciones suaves para elementos interactivos */
+        .smooth-transition {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Animación para nuevos reclamos */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Encabezado Principal -->
+    <header class="bg-slate-950/80 backdrop-blur border-b border-slate-900 py-3.5 px-6 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3.5">
+                <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-600/30">
+                    <i data-lucide="layers" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black tracking-wider bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                        CHAIN CHESS
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium hidden sm:block">¡Coloca gomas de 4 clavijas y conquista territorios!</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button id="btn-rules" class="bg-slate-900 hover:bg-slate-800 text-slate-300 p-2.5 rounded-xl transition border border-slate-800" title="Ver Reglas del Juego">
+                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                </button>
+                <button id="btn-sound" class="bg-slate-900 hover:bg-slate-800 text-slate-300 p-2.5 rounded-xl transition border border-slate-800" title="Activar/Silenciar Sonido">
+                    <i id="sound-icon" data-lucide="volume-2" class="w-5 h-5"></i>
+                </button>
+                <button id="btn-reset" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition flex items-center space-x-2">
+                    <i data-lucide="rotate-ccw" class="w-4.5 h-4.5"></i>
+                    <span class="hidden sm:inline">Nueva Partida</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Área de Contenido Principal -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Panel Lateral Izquierdo: Configuración e Información (4 columnas) -->
+        <section class="lg:col-span-4 bg-slate-950/50 backdrop-blur border border-slate-900 rounded-3xl p-6 shadow-2xl space-y-6">
+            
+            <!-- Configuración rápida de la partida -->
+            <div class="space-y-4">
+                <h2 class="text-xs font-black tracking-widest text-slate-400 uppercase flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4 text-indigo-400"></i> CONFIGURACIÓN DE JUEGO
+                </h2>
+                
+                <!-- Selección de Jugadores -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-bold text-slate-400">Jugadores en Mesa</label>
+                        <span id="player-count-badge" class="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-extrabold">2 Jugadores</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-900">
+                        <button onclick="changePlayerCount(2)" id="btn-p2" class="py-2 text-xs font-black rounded-lg bg-indigo-600 text-white shadow">2</button>
+                        <button onclick="changePlayerCount(3)" id="btn-p3" class="py-2 text-xs font-black rounded-lg text-slate-400 hover:text-white transition">3</button>
+                        <button onclick="changePlayerCount(4)" id="btn-p4" class="py-2 text-xs font-black rounded-lg text-slate-400 hover:text-white transition">4</button>
+                    </div>
+                </div>
+
+                <!-- Modos Extra -->
+                <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-900">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold">Turno Extra Opcional</span>
+                        <span class="text-[10px] text-slate-500">Repetir turno al cerrar triángulo</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="chk-extra-turn" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <hr class="border-slate-900">
+
+            <!-- Marcador y Estado de los Jugadores -->
+            <div class="space-y-3">
+                <h2 class="text-xs font-black tracking-widest text-slate-400 uppercase flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-purple-400"></i> MARCADOR DE PIEZAS
+                </h2>
+                <div id="players-list" class="space-y-2.5">
+                    <!-- Se renderiza dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Registro de movimientos para seguimiento táctico -->
+            <div class="bg-slate-950 rounded-2xl p-4 border border-slate-900">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="scroll" class="w-3.5 h-3.5 text-pink-400"></i> REGISTRO TÁCTICO
+                    </h3>
+                    <button id="btn-clear-log" class="text-[10px] text-slate-500 hover:text-slate-300">Limpiar</button>
+                </div>
+                <div id="game-log" class="h-24 overflow-y-auto text-[11px] space-y-1 pr-1 font-mono text-slate-400">
+                    <!-- Historial del juego -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Tablero de Juego Central (8 columnas) -->
+        <section class="lg:col-span-8 flex flex-col items-center space-y-4">
+            
+            <!-- Barra de estado superior del juego -->
+            <div class="w-full bg-slate-950/40 border border-slate-900 rounded-2xl px-5 py-3 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400">Método de colocar goma:</span>
+                    <div class="inline-flex rounded-lg bg-slate-950 p-0.5 border border-slate-900">
+                        <button id="input-tap" class="px-3 py-1 text-xs font-bold rounded-md bg-indigo-600 text-white shadow">
+                            Toque Clavija
+                        </button>
+                        <button id="input-direct" class="px-3 py-1 text-xs font-bold rounded-md text-slate-400 hover:text-white transition">
+                            Toque Directo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Estado del Turno -->
+                <div id="turn-badge" class="px-4 py-1.5 rounded-full text-xs font-black tracking-wide flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-current animate-ping"></span>
+                    TURNO DEL JUGADOR 1
+                </div>
+            </div>
+
+            <!-- Contenedor del Canvas SVG del Tablero -->
+            <div class="w-full aspect-square max-w-[550px] bg-slate-950 rounded-3xl p-4 md:p-6 border border-slate-900 shadow-2xl relative flex items-center justify-center overflow-hidden">
+                
+                <svg id="board-svg" class="w-full h-full cursor-pointer select-none" viewBox="0 0 600 600">
+                    <defs>
+                        <!-- Filtros para un look 3D real de madera/plástico negro de alta gama -->
+                        <filter id="shadow-filter" x="-10%" y="-10%" width="120%" height="120%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.8"/>
+                        </filter>
+                        <radialGradient id="hex-base-gradient" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#18181b" />
+                            <stop offset="80%" stop-color="#0e0e11" />
+                            <stop offset="100%" stop-color="#050507" />
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Base de Plástico Hexagonal Matte (Como el tablero físico de las fotos) -->
+                    <polygon points="300,15 547,157 547,443 300,585 53,443 53,157" fill="url(#hex-base-gradient)" stroke="#27272a" stroke-width="8" filter="url(#shadow-filter)" />
+                    <polygon points="300,22 541,161 541,439 300,578 59,439 59,161" fill="none" stroke="#3f3f46" stroke-width="2.5" opacity="0.4" />
+
+                    <!-- Líneas guías de la red triangular del tablero -->
+                    <g id="grid-lines-layer" stroke="#1f2025" stroke-width="2.5" opacity="0.85"></g>
+
+                    <!-- Orificios triangulares (Hollow recesses) -->
+                    <g id="triangle-holes-layer"></g>
+
+                    <!-- Fichas de Ajedrez Reclamadas (Insertadas en los agujeros) -->
+                    <g id="claimed-pieces-layer"></g>
+
+                    <!-- Gomas Elásticas Colocadas en el Tablero -->
+                    <g id="bands-layer" filter="url(#shadow-filter)"></g>
+
+                    <!-- Líneas fantasmas para interactuar de forma Directa con Toque -->
+                    <g id="hit-lines-layer"></g>
+
+                    <!-- Goma en previsualización de estiramiento -->
+                    <g id="preview-layer" opacity="0.75"></g>
+
+                    <!-- Clavijas Físicas (Cilindros siempre en la parte superior) -->
+                    <g id="pegs-layer"></g>
+                </svg>
+
+                <!-- Pantalla Flotante de Victoria / Fin del juego -->
+                <div id="victory-modal" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center hidden z-30">
+                    <div class="bg-indigo-950/20 border border-indigo-500/30 p-8 rounded-3xl max-w-sm space-y-6 shadow-2xl">
+                        <div class="w-20 h-20 bg-gradient-to-tr from-yellow-400 to-amber-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-amber-500/30">
+                            <i data-lucide="trophy" class="w-10 h-10 text-slate-900"></i>
+                        </div>
+                        <div class="space-y-2">
+                            <h3 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500">
+                                ¡PARTIDA TERMINADA!
+                            </h3>
+                            <p id="victory-message" class="text-sm text-slate-300 font-medium">
+                                El Jugador Azul domina el tablero con más territorios conquistados.
+                            </p>
+                        </div>
+                        <button onclick="resetGame()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-3.5 px-6 rounded-2xl transition shadow-xl shadow-indigo-500/20">
+                            Volver a Jugar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consejos dinámicos / Ayuda rápida -->
+            <div class="w-full text-center py-2.5 px-4 rounded-xl bg-slate-900/20 border border-slate-900 max-w-[550px]">
+                <p id="hint-text" class="text-xs text-slate-400 flex items-center justify-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
+                    <span id="hint-inner">Toque Clavija: Toca una clavija inicial, luego selecciona el destino resaltado a 3 unidades de distancia.</span>
+                </p>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Modal de Reglas Oficiales -->
+    <dialog id="rules-dialog" class="bg-slate-950 text-slate-100 rounded-3xl border border-slate-900 p-6 max-w-md w-11/12 shadow-2xl backdrop:bg-black/75">
+        <div class="space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-900 pb-3">
+                <h3 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i> Reglas Oficiales Chain Chess
+                </h3>
+                <button onclick="document.getElementById('rules-dialog').close()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-900 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4 text-xs leading-relaxed text-slate-300 overflow-y-auto max-h-[60vh] pr-1 font-medium">
+                <p><strong>El Objetivo del juego:</strong> Coloca tus fichas de ajedrez triangulares de plástico dentro de los orificios del tablero. Quien logre colocar la mayor cantidad de piezas de su color al final de la partida, será el ganador.</p>
+                
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-900 space-y-2">
+                    <p class="font-bold text-indigo-400 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> 1. Colocación de Gomas
+                    </p>
+                    <p>En tu turno, debes estirar una sola goma elástica en <strong>línea recta sobre exactamente 4 clavijas consecutivas</strong> de la cuadrícula triangular. No se permiten curvas ni saltos de agujeros.</p>
+                </div>
+
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-900 space-y-2">
+                    <p class="font-bold text-pink-400 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-pink-400"></span> 2. Reclamar Triángulos
+                    </p>
+                    <p>Si la línea de goma que colocas completa el tercer lado de un triángulo pequeño de $1 \times 1$, ¡ese territorio es tuyo! Colocas tu ficha tridimensional de color en el orificio del centro.</p>
+                </div>
+
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-900 space-y-2">
+                    <p class="font-bold text-amber-400 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> 3. Conquistas Múltiples
+                    </p>
+                    <p>Si logras cerrar varios triángulos pequeños al mismo tiempo con una sola línea de goma elástica, tienes derecho a colocar una ficha de tu color en cada uno de ellos inmediatamente.</p>
+                </div>
+
+                <div class="p-3 bg-slate-900/50 rounded-xl border border-slate-900 space-y-1.5">
+                    <p class="font-bold text-emerald-400">Controles de Entrada:</p>
+                    <p><strong class="text-white">Toque Clavija:</strong> Toca cualquier clavija para ver las opciones a 3 distancias en línea recta. Toca la opción deseada para estirar la goma.</p>
+                    <p><strong class="text-white">Toque Directo:</strong> Pasa el ratón o desliza sobre el tablero para ver directamente la línea completa de 4 clavijas y colócala en un solo clic.</p>
+                </div>
+            </div>
+
+            <button onclick="document.getElementById('rules-dialog').close()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold transition">
+                ¡Entendido, a Jugar!
+            </button>
+        </div>
+    </dialog>
+
+    <!-- Pie de Página -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-3 text-center text-[11px] text-slate-500 font-medium">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between px-6 gap-2">
+            <p>Chain Chess - Adaptación Fiel e Interactiva de Trigon.</p>
+            <p>Múnich &copy; 2026 - Especialmente para Alejandro y familia.</p>
+        </div>
+    </footer>
+
+    <!-- Script de Control de Juego Completo -->
+    <script>
+        // --- SINTETIZADOR DE AUDIO AVANZADO (WEB AUDIO API) ---
+        class GameAudioFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            toggle() {
+                this.muted = !this.muted;
+                return this.muted;
+            }
+            playStretch() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(500, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+            playSnap() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const noise = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(60, now + 0.15);
+                
+                noise.type = 'sawtooth';
+                noise.frequency.setValueAtTime(400, now);
+                noise.frequency.exponentialRampToValueAtTime(120, now + 0.1);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                
+                osc.connect(gain);
+                noise.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                noise.start();
+                osc.stop(now + 0.15);
+                noise.stop(now + 0.15);
+            }
+            playPop() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(450, now);
+                osc.frequency.exponentialRampToValueAtTime(950, now + 0.12);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.12);
+            }
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+            playVictory() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const chords = [261.63, 329.63, 392.00, 523.25, 659.25];
+                chords.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+                    gain.gain.setValueAtTime(0.12, now + i * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.001, now + i * 0.1 + 0.4);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.4);
+                });
+            }
+        }
+
+        const sound = new GameAudioFX();
+
+        // --- PALETA DE JUGADORES (Coincide con las fotos físicas) ---
+        const PLAYER_PALETTE = [
+            { id: 1, name: "Azul", color: "#3b82f6", glow: "rgba(59, 130, 246, 0.7)", class: "from-blue-500 to-indigo-600", borderClass: "border-blue-500/30", tokenClass: "bg-blue-500 border-blue-300" },
+            { id: 2, name: "Naranja", color: "#f97316", glow: "rgba(249, 115, 22, 0.7)", class: "from-orange-500 to-red-600", borderClass: "border-orange-500/30", tokenClass: "bg-orange-500 border-orange-300" },
+            { id: 3, name: "Verde", color: "#22c55e", glow: "rgba(34, 197, 94, 0.7)", class: "from-green-500 to-emerald-600", borderClass: "border-green-500/30", tokenClass: "bg-green-500 border-green-300" },
+            { id: 4, name: "Amarillo", color: "#eab308", glow: "rgba(234, 179, 8, 0.7)", class: "from-yellow-400 to-amber-500", borderClass: "border-yellow-500/30", tokenClass: "bg-yellow-400 border-yellow-300" }
+        ];
+
+        // --- CONFIGURACIÓN DE JUEGO ---
+        let config = {
+            playerCount: 2,
+            extraTurnOnClaim: false, // Por defecto en el juego real es alterno estricto
+            inputMode: 'tap' // 'tap' para Toque Clavija, 'direct' para Toque Directo de línea
+        };
+
+        // --- ESTADO TÁCTICO INTERNO ---
+        let state = {
+            players: [],
+            activePlayerIdx: 0,
+            pegs: [],         // Lista de clavijas { id, q, r, x, y }
+            edges: {},        // Mapa de aristas activas `${p1}-${p2}`: boolean
+            triangles: [],    // Lista de triángulos { id, pegs: [], edges: [], claimedBy: null }
+            validLines: [],   // Las 48 líneas rectas posibles de 4 clavijas consecutivas
+            placedBands: [],  // Lista de gomas colocadas { lineId, pegs: [], color, playerId }
+            selectedPegId: null, // Clavija seleccionada en modo Toque Clavija
+            gameOver: false,
+            isBotThinking: false
+        };
+
+        // --- CONFIGURACIÓN AL INICIAR DOM ---
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            
+            // Vincular botones y controles de interfaz
+            document.getElementById("btn-rules").addEventListener("click", () => document.getElementById("rules-dialog").showModal());
+            document.getElementById("btn-sound").addEventListener("click", toggleSound);
+            document.getElementById("btn-reset").addEventListener("click", resetGame);
+            document.getElementById("btn-clear-log").addEventListener("click", () => document.getElementById("game-log").innerHTML = "");
+            
+            document.getElementById("input-tap").addEventListener("click", () => setInputMode('tap'));
+            document.getElementById("input-direct").addEventListener("click", () => setInputMode('direct'));
+            document.getElementById("chk-extra-turn").addEventListener("change", (e) => config.extraTurnOnClaim = e.target.checked);
+            
+            // Iniciar partida
+            initGame();
+        });
+
+        function toggleSound() {
+            const isMuted = sound.toggle();
+            const icon = document.getElementById("sound-icon");
+            icon.setAttribute("data-lucide", isMuted ? "volume-x" : "volume-2");
+            lucide.createIcons();
+            
+            const btn = document.getElementById("btn-sound");
+            if (isMuted) {
+                btn.classList.add("bg-red-950/40", "border-red-900/40", "text-red-400");
+                btn.classList.remove("bg-slate-900", "border-slate-800", "text-slate-300");
+            } else {
+                btn.classList.remove("bg-red-950/40", "border-red-900/40", "text-red-400");
+                btn.classList.add("bg-slate-900", "border-slate-800", "text-slate-300");
+            }
+        }
+
+        function setInputMode(mode) {
+            config.inputMode = mode;
+            state.selectedPegId = null;
+            
+            const tapBtn = document.getElementById("input-tap");
+            const dirBtn = document.getElementById("input-direct");
+            const hintInner = document.getElementById("hint-inner");
+
+            if (mode === 'tap') {
+                tapBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-indigo-600 text-white shadow";
+                dirBtn.className = "px-3 py-1 text-xs font-bold rounded-md text-slate-400 hover:text-white transition";
+                hintInner.innerText = "Toque Clavija: Toca una clavija inicial, luego selecciona el destino resaltado a 3 unidades de distancia.";
+            } else {
+                dirBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-indigo-600 text-white shadow";
+                tapBtn.className = "px-3 py-1 text-xs font-bold rounded-md text-slate-400 hover:text-white transition";
+                hintInner.innerText = "Toque Directo: Pasa el cursor sobre el tablero para ver directamente la línea completa y colócala en un clic.";
+            }
+
+            // Limpiar previsualizaciones del canvas
+            document.getElementById("preview-layer").innerHTML = "";
+            renderPegs();
+            renderHitLines();
+        }
+
+        function changePlayerCount(count) {
+            config.playerCount = count;
+            document.getElementById("player-count-badge").innerText = `${count} Jugadores`;
+            for (let i = 2; i <= 4; i++) {
+                const btn = document.getElementById(`btn-p${i}`);
+                if (i === count) {
+                    btn.className = "py-2 text-xs font-black rounded-lg bg-indigo-600 text-white shadow";
+                } else {
+                    btn.className = "py-2 text-xs font-black rounded-lg text-slate-400 hover:text-white transition";
+                }
+            }
+            initGame();
+        }
+
+        // --- CONSTRUCCIÓN DE LA GEOMETRÍA DEL TABLERO ---
+        function initGame() {
+            state.gameOver = false;
+            state.isBotThinking = false;
+            state.placedBands = [];
+            state.selectedPegId = null;
+            state.activePlayerIdx = 0;
+            state.edges = {};
+            document.getElementById("victory-modal").classList.add("hidden");
+
+            // Mantener los tipos de jugadores si ya existen, o crear los iniciales
+            const currentPlayers = state.players.length > 0 ? [...state.players] : null;
+
+            state.players = [];
+            for (let i = 0; i < config.playerCount; i++) {
+                // Nombres familiares por defecto para jugar en el móvil
+                const defaultHumanName = i === 0 ? "Alejandro" : (i === 1 ? "Anasofía" : `Jugador ${i+1}`);
+                
+                // Si ya había una configuración de jugador, la mantenemos, si no, inicializamos (J1 y J2 Humanos, resto Bots)
+                const isHumanDefault = (i < 2); 
+                
+                let pType = currentPlayers ? currentPlayers[i]?.type || (isHumanDefault ? 'human' : 'bot') : (isHumanDefault ? 'human' : 'bot');
+                let pDiff = currentPlayers ? currentPlayers[i]?.difficulty || 'medium' : 'medium';
+                let pName = pType === 'human' ? defaultHumanName : `Bot ${PLAYER_PALETTE[i].name}`;
+
+                state.players.push({
+                    id: PLAYER_PALETTE[i].id,
+                    name: pName,
+                    palette: PLAYER_PALETTE[i],
+                    type: pType, 
+                    difficulty: pDiff,
+                    score: 0
+                });
+            }
+
+            // Generar cuadrícula de 37 clavijas (Hexagonal de radio 3)
+            generatePegsTopology();
+
+            // Calcular todos los caminos y aristas de conexión
+            calculateTrianglesAndLines();
+
+            // Renderizar todo el tablero SVG
+            renderGridLines();
+            renderTriangleHoles();
+            renderBands();
+            renderClaimedPieces();
+            renderHitLines();
+            renderPegs();
+
+            // Sincronizar UI
+            updatePlayersPanel();
+            updateTurnIndicator();
+            document.getElementById("game-log").innerHTML = "";
+            logMessage("¡Partida Iniciada! Coloca tu primera goma elástica.");
+
+            // Si es turno del Bot, actuar
+            checkBotTurn();
+        }
+
+        function generatePegsTopology() {
+            state.pegs = [];
+            const centerX = 300;
+            const centerY = 300;
+            const spacing = 75; // Espacio geométrico ideal para ocupar el hexágono base
+            const N = 3; // Radio del hexágono
+            
+            let pegId = 0;
+            for (let r = -N; r <= N; r++) {
+                for (let q = -N; q <= N; q++) {
+                    if (Math.abs(q + r) <= N) {
+                        // Coordenadas cartesianas perfectas para red triangular
+                        const x = centerX + spacing * (q + r / 2);
+                        const y = centerY + spacing * (Math.sqrt(3) / 2 * r);
+                        state.pegs.push({ id: pegId++, q, r, x, y });
+                    }
+                }
+            }
+        }
+
+        function calculateTrianglesAndLines() {
+            state.validLines = [];
+            state.triangles = [];
+            
+            const nPegs = state.pegs.length;
+            
+            // Función auxiliar para obtener ID de clavija por coordenadas (q, r)
+            const getPegId = (q, r) => {
+                const p = state.pegs.find(peg => peg.q === q && peg.r === r);
+                return p ? p.id : null;
+            };
+
+            // 1. Generar todas las líneas rectas de 4 clavijas consecutivas (48 en total)
+            state.pegs.forEach(p => {
+                // Dirección Horizontal (Aumentando q)
+                const h1 = p.id;
+                const h2 = getPegId(p.q + 1, p.r);
+                const h3 = getPegId(p.q + 2, p.r);
+                const h4 = getPegId(p.q + 3, p.r);
+                if (h2 !== null && h3 !== null && h4 !== null) {
+                    state.validLines.push({
+                        id: state.validLines.length,
+                        pegs: [h1, h2, h3, h4],
+                        edges: [getEdgeKey(h1, h2), getEdgeKey(h2, h3), getEdgeKey(h3, h4)]
+                    });
+                }
+
+                // Dirección Diagonal Abajo-Derecha (Aumentando r)
+                const d1 = p.id;
+                const d2 = getPegId(p.q, p.r + 1);
+                const d3 = getPegId(p.q, p.r + 2);
+                const d4 = getPegId(p.q, p.r + 3);
+                if (d2 !== null && d3 !== null && d4 !== null) {
+                    state.validLines.push({
+                        id: state.validLines.length,
+                        pegs: [d1, d2, d3, d4],
+                        edges: [getEdgeKey(d1, d2), getEdgeKey(d2, d3), getEdgeKey(d3, d4)]
+                    });
+                }
+
+                // Dirección Diagonal Abajo-Izquierda (Disminuyendo q, Aumentando r)
+                const a1 = p.id;
+                const a2 = getPegId(p.q - 1, p.r + 1);
+                const a3 = getPegId(p.q - 2, p.r + 2);
+                const a4 = getPegId(p.q - 3, p.r + 3);
+                if (a2 !== null && a3 !== null && a4 !== null) {
+                    state.validLines.push({
+                        id: state.validLines.length,
+                        pegs: [a1, a2, a3, a4],
+                        edges: [getEdgeKey(a1, a2), getEdgeKey(a2, a3), getEdgeKey(a3, a4)]
+                    });
+                }
+            });
+
+            // 2. Generar todos los triángulos pequeños de 1x1 del tablero (54 en total)
+            state.pegs.forEach(p => {
+                const right = getPegId(p.q + 1, p.r);
+                const downRight = getPegId(p.q, p.r + 1);
+                const downLeft = getPegId(p.q - 1, p.r + 1);
+
+                // Triángulo apuntando hacia abajo
+                if (right !== null && downRight !== null) {
+                    const pegs = [p.id, right, downRight].sort((a,b) => a-b);
+                    state.triangles.push({
+                        id: state.triangles.length,
+                        pegs: pegs,
+                        edges: [getEdgeKey(pegs[0], pegs[1]), getEdgeKey(pegs[1], pegs[2]), getEdgeKey(pegs[0], pegs[2])],
+                        claimedBy: null
+                    });
+                }
+
+                // Triángulo apuntando hacia arriba
+                if (downLeft !== null && downRight !== null) {
+                    const pegs = [p.id, downLeft, downRight].sort((a,b) => a-b);
+                    state.triangles.push({
+                        id: state.triangles.length,
+                        pegs: pegs,
+                        edges: [getEdgeKey(pegs[0], pegs[1]), getEdgeKey(pegs[1], pegs[2]), getEdgeKey(pegs[0], pegs[2])],
+                        claimedBy: null
+                    });
+                }
+            });
+        }
+
+        // Clave única estandarizada para identificar un segmento entre dos clavijas
+        function getEdgeKey(p1, p2) {
+            return p1 < p2 ? `${p1}-${p2}` : `${p2}-${p1}`;
+        }
+
+        // --- RENDERIZADO DEL ESCENARIO ---
+
+        function renderGridLines() {
+            const container = document.getElementById("grid-lines-layer");
+            let html = "";
+            
+            // Dibujar las aristas estructurales del tablero
+            const drawn = new Set();
+            state.validLines.forEach(line => {
+                for (let i = 0; i < 3; i++) {
+                    const k = getEdgeKey(line.pegs[i], line.pegs[i+1]);
+                    if (!drawn.has(k)) {
+                        drawn.add(k);
+                        const p1 = state.pegs[line.pegs[i]];
+                        const p2 = state.pegs[line.pegs[i+1]];
+                        html += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" />`;
+                    }
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function renderTriangleHoles() {
+            const container = document.getElementById("triangle-holes-layer");
+            let html = "";
+
+            state.triangles.forEach(tri => {
+                const p1 = state.pegs[tri.pegs[0]];
+                const p2 = state.pegs[tri.pegs[1]];
+                const p3 = state.pegs[tri.pegs[2]];
+
+                // Calcular centro para escalar el agujero triangular
+                const cx = (p1.x + p2.x + p3.x) / 3;
+                const cy = (p1.y + p2.y + p3.y) / 3;
+
+                // Escalar vértices hacia adentro (k=0.45 de escala)
+                const scaleVertex = (p) => {
+                    const k = 0.45;
+                    return {
+                        x: cx + k * (p.x - cx),
+                        y: cy + k * (p.y - cy)
+                    };
+                };
+
+                const h1 = scaleVertex(p1);
+                const h2 = scaleVertex(p2);
+                const h3 = scaleVertex(p3);
+
+                // Dibujar el orificio con look de hundido en plástico negro
+                html += `
+                    <polygon points="${h1.x},${h1.y} ${h2.x},${h2.y} ${h3.x},${h3.y}" 
+                        fill="#050507" 
+                        stroke="#1a1b1f" 
+                        stroke-width="1.5" />
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderBands() {
+            const container = document.getElementById("bands-layer");
+            let html = "";
+
+            state.placedBands.forEach(band => {
+                const pFirst = state.pegs[band.pegs[0]];
+                const pLast = state.pegs[band.pegs[3]];
+
+                // Goma elástica con grosor y un sutil canal de luz más claro para efecto 3D
+                html += `
+                    <!-- Brillo de neón de fondo -->
+                    <line x1="${pFirst.x}" y1="${pFirst.y}" x2="${pLast.x}" y2="${pLast.y}" 
+                        stroke="${band.color}" stroke-width="6.5" stroke-linecap="round"
+                        style="--glow-color: ${band.color}" class="band-glow" opacity="0.85" />
+                    <!-- Núcleo de la goma -->
+                    <line x1="${pFirst.x}" y1="${pFirst.y}" x2="${pLast.x}" y2="${pLast.y}" 
+                        stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" opacity="0.75" />
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderClaimedPieces() {
+            const container = document.getElementById("claimed-pieces-layer");
+            let html = "";
+
+            state.triangles.forEach(tri => {
+                if (tri.claimedBy !== null) {
+                    const player = state.players.find(p => p.id === tri.claimedBy);
+                    if (player) {
+                        const p1 = state.pegs[tri.pegs[0]];
+                        const p2 = state.pegs[tri.pegs[1]];
+                        const p3 = state.pegs[tri.pegs[2]];
+
+                        const cx = (p1.x + p2.x + p3.x) / 3;
+                        const cy = (p1.y + p2.y + p3.y) / 3;
+
+                        // Las fichas encajan perfectamente en los agujeros reducidos (escala 0.42)
+                        const scaleVertex = (p) => {
+                            const k = 0.42;
+                            return {
+                                x: cx + k * (p.x - cx),
+                                y: cy + k * (p.y - cy)
+                            };
+                        };
+
+                        const f1 = scaleVertex(p1);
+                        const f2 = scaleVertex(p2);
+                        const f3 = scaleVertex(p3);
+
+                        // Sombras de color degradadas para conseguir las 3 alas/faldones de plástico brillante de la pieza física
+                        const shadeColor = (col, percent) => {
+                            const num = parseInt(col.replace("#",""),16),
+                            amt = Math.round(2.55 * percent),
+                            R = (num >> 16) + amt,
+                            G = (num >> 8 & 0x00FF) + amt,
+                            B = (num & 0x0000FF) + amt;
+                            return "#" + (0x1000000 + (R<255?R<0?0:R:255)*0x10000 + (G<255?G<0?0:G:255)*0x100 + (B<255?B<0?0:B:255)).toString(16).slice(1);
+                        };
+
+                        const colorNormal = player.palette.color;
+                        const colorClaro = shadeColor(colorNormal, 35);
+                        const colorOscuro = shadeColor(colorNormal, -30);
+
+                        html += `
+                            <g class="animate-pop shadow-3d" style="transform-origin: ${cx}px ${cy}px">
+                                <!-- Base de la pieza -->
+                                <polygon points="${f1.x},${f1.y} ${f2.x},${f2.y} ${f3.x},${f3.y}" fill="${colorNormal}" />
+                                
+                                <!-- Ala 1 (Top/Izquierda) -->
+                                <polygon points="${cx},${cy} ${f1.x},${f1.y} ${f2.x},${f2.y}" fill="${colorClaro}" opacity="0.9" />
+                                
+                                <!-- Ala 2 (Derecha) -->
+                                <polygon points="${cx},${cy} ${f2.x},${f2.y} ${f3.x},${f3.y}" fill="${colorOscuro}" opacity="0.95" />
+                                
+                                <!-- Ala 3 (Abajo) -->
+                                <polygon points="${cx},${cy} ${f3.x},${f3.y} ${f1.x},${f1.y}" fill="${colorNormal}" opacity="0.85" />
+                                
+                                <!-- Agarre central superior de la pieza física -->
+                                <circle cx="${cx}" cy="${cy}" r="2.5" fill="#ffffff" opacity="0.6" />
+                            </g>
+                        `;
+                    }
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function renderPegs() {
+            const container = document.getElementById("pegs-layer");
+            let html = "";
+
+            state.pegs.forEach(peg => {
+                const isSelected = peg.id === state.selectedPegId;
+                
+                // Determinar si esta clavija es un destino válido si hay una seleccionada
+                let isValidTarget = false;
+                if (state.selectedPegId !== null) {
+                    isValidTarget = getValidTargetsForPeg(state.selectedPegId).includes(peg.id);
+                }
+
+                const r = isSelected ? 9.5 : (isValidTarget ? 8.5 : 7.2);
+                const stroke = isSelected ? "#ec4899" : (isValidTarget ? "#22c55e" : "#2d2f36");
+                const strokeWidth = isSelected ? 3.5 : (isValidTarget ? 3 : 2);
+
+                // Dibujar el poste vertical 3D negro de plástico con su hendidura para gomas
+                html += `
+                    <g transform="translate(${peg.x}, ${peg.y})" class="smooth-transition">
+                        <!-- Sombra del poste -->
+                        <circle cx="0" cy="3.5" r="${r}" fill="#000000" opacity="0.6" />
+                        
+                        <!-- Cuerpo cilíndrico de la clavija -->
+                        <circle cx="0" cy="0" r="${r}" fill="#14151a" stroke="${stroke}" stroke-width="${strokeWidth}" />
+                        
+                        <!-- Tapa superior plateada -->
+                        <circle cx="0" cy="-0.5" r="${r * 0.7}" fill="#2e303d" />
+                        
+                        <!-- Ranura para cruce de goma -->
+                        <line x1="-3.5" y1="-0.5" x2="3.5" y2="-0.5" stroke="#050507" stroke-width="1.5" />
+                        <line x1="0" y1="-4" x2="0" y2="3" stroke="#050507" stroke-width="1.5" />
+
+                        <!-- Indicador luminoso si es destino de estiramiento -->
+                        ${isValidTarget ? `<circle cx="0" cy="-0.5" r="${r * 0.8}" fill="none" stroke="#22c55e" stroke-width="2.5" class="animate-ping" opacity="0.65" />` : ''}
+
+                        <!-- Colisionador de toque más grande para mejorar la experiencia móvil -->
+                        <circle cx="0" cy="0" r="18" fill="transparent" class="cursor-pointer" 
+                            onclick="handlePegClick(${peg.id})" 
+                            onmouseenter="handlePegHover(${peg.id})" 
+                            onmouseleave="handlePegLeave()" />
+                    </g>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderHitLines() {
+            const container = document.getElementById("hit-lines-layer");
+            container.innerHTML = "";
+            if (config.inputMode !== 'direct' || state.gameOver || state.isBotThinking) return;
+
+            state.validLines.forEach(line => {
+                // Una línea solo se puede jugar si no ha sido ocupada exactamente por otra goma
+                const alreadyPlaced = state.placedBands.some(b => b.lineId === line.id);
+                if (alreadyPlaced) return;
+
+                const p1 = state.pegs[line.pegs[0]];
+                const p2 = state.pegs[line.pegs[3]];
+
+                // Creamos una línea invisible de colisión interactiva para Toque Directo
+                const hitLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                hitLine.setAttribute("x1", p1.x);
+                hitLine.setAttribute("y1", p1.y);
+                hitLine.setAttribute("x2", p2.x);
+                hitLine.setAttribute("y2", p2.y);
+                hitLine.setAttribute("stroke", "transparent");
+                hitLine.setAttribute("stroke-width", "16"); // Ancho generoso de toque
+                hitLine.setAttribute("class", "cursor-pointer");
+
+                hitLine.addEventListener("mouseenter", () => showLinePreview(line));
+                hitLine.addEventListener("mouseleave", hideLinePreview);
+                hitLine.addEventListener("click", () => placeRubberBand(line));
+
+                // Soporte para gestos móviles rápidos
+                hitLine.addEventListener("touchstart", (e) => {
+                    e.preventDefault();
+                    showLinePreview(line);
+                });
+                hitLine.addEventListener("touchend", (e) => {
+                    e.preventDefault();
+                    hideLinePreview();
+                    placeRubberBand(line);
+                });
+
+                container.appendChild(hitLine);
+            });
+        }
+
+        // --- SISTEMA DE INTERACCIÓN ---
+
+        function handlePegClick(id) {
+            if (config.inputMode !== 'tap' || state.gameOver || state.isBotThinking) return;
+
+            sound.playClick();
+
+            if (state.selectedPegId === null) {
+                // Seleccionar clavija inicial
+                state.selectedPegId = id;
+                renderPegs();
+                logMessage(`Estirando goma desde Clavija #${id}. Selecciona un extremo.`);
+            } else {
+                // Verificar si es un objetivo de 3 distancias válido
+                const targets = getValidTargetsForPeg(state.selectedPegId);
+                if (targets.includes(id)) {
+                    // Encontrar la línea correspondiente a este emparejamiento
+                    const line = state.validLines.find(l => 
+                        (l.pegs[0] === state.selectedPegId && l.pegs[3] === id) ||
+                        (l.pegs[3] === state.selectedPegId && l.pegs[0] === id)
+                    );
+                    if (line) {
+                        placeRubberBand(line);
+                    }
+                } else {
+                    // Cancelar o cambiar de clavija seleccionada
+                    state.selectedPegId = id;
+                    renderPegs();
+                }
+            }
+        }
+
+        function handlePegHover(id) {
+            if (config.inputMode !== 'tap' || state.selectedPegId === null) return;
+            const targets = getValidTargetsForPeg(state.selectedPegId);
+            
+            if (targets.includes(id)) {
+                const line = state.validLines.find(l => 
+                    (l.pegs[0] === state.selectedPegId && l.pegs[3] === id) ||
+                    (l.pegs[3] === state.selectedPegId && l.pegs[0] === id)
+                );
+                if (line) {
+                    showLinePreview(line);
+                }
+            }
+        }
+
+        function handlePegLeave() {
+            if (config.inputMode === 'tap') {
+                hideLinePreview();
+            }
+        }
+
+        // Obtener destinos que forman una línea recta de exactamente 4 clavijas desde "pegId"
+        function getValidTargetsForPeg(pegId) {
+            const targets = [];
+            state.validLines.forEach(line => {
+                // No permitir volver a jugar en una línea que ya tiene una goma idéntica colocada
+                const alreadyPlaced = state.placedBands.some(b => b.lineId === line.id);
+                if (alreadyPlaced) return;
+
+                if (line.pegs[0] === pegId) {
+                    targets.push(line.pegs[3]);
+                } else if (line.pegs[3] === pegId) {
+                    targets.push(line.pegs[0]);
+                }
+            });
+            return targets;
+        }
+
+        // --- PREVISUALIZACIONES ---
+
+        function showLinePreview(line) {
+            const player = state.players[state.activePlayerIdx];
+            const p1 = state.pegs[line.pegs[0]];
+            const p2 = state.pegs[line.pegs[3]];
+
+            const container = document.getElementById("preview-layer");
+            container.innerHTML = `
+                <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" 
+                    stroke="${player.palette.color}" stroke-width="5" stroke-linecap="round"
+                    stroke-dasharray="6,4" opacity="0.65" />
+            `;
+            sound.playStretch();
+        }
+
+        function hideLinePreview() {
+            document.getElementById("preview-layer").innerHTML = "";
+        }
+
+        // --- COLOCAR GOMA ELÁSTICA (MOVIMIENTO) ---
+
+        function placeRubberBand(line) {
+            sound.playSnap();
+            hideLinePreview();
+
+            const player = state.players[state.activePlayerIdx];
+
+            // Activar las 3 aristas de conexión en la lógica
+            line.edges.forEach(edgeKey => {
+                state.edges[edgeKey] = true;
+            });
+
+            // Guardar el elástico físicamente
+            state.placedBands.push({
+                lineId: line.id,
+                pegs: [...line.pegs],
+                color: player.palette.color,
+                playerId: player.id
+            });
+
+            logMessage(`¡${player.name} estiró una goma recta sobre 4 clavijas!`);
+
+            // Evaluar conquistas de orificios triangulares
+            let claimedThisTurn = 0;
+            state.triangles.forEach(tri => {
+                if (tri.claimedBy === null) {
+                    // Si todos sus 3 bordes de contorno están activos, se cierra el territorio
+                    const isCompleted = tri.edges.every(edgeKey => state.edges[edgeKey] === true);
+                    if (isCompleted) {
+                        tri.claimedBy = player.id;
+                        player.score++;
+                        claimedThisTurn++;
+                        
+                        // Sonido encadenado de reclamos múltiples
+                        setTimeout(() => {
+                            sound.playPop();
+                        }, claimedThisTurn * 130);
+                    }
+                }
+            });
+
+            if (claimedThisTurn > 0) {
+                logMessage(`🎉 ¡${player.name} conquistó ${claimedThisTurn} triángulo(s) con esta goma!`);
+            }
+
+            // Reset de selección manual
+            state.selectedPegId = null;
+
+            // Redibujar
+            renderBands();
+            renderClaimedPieces();
+            renderHitLines();
+            renderPegs();
+            updatePlayersPanel();
+
+            // Comprobar fin de partida
+            if (checkGameOver()) {
+                endGame();
+                return;
+            }
+
+            // Secuencia del Siguiente Turno
+            let nextPlayer = true;
+            if (claimedThisTurn > 0 && config.extraTurnOnClaim) {
+                nextPlayer = false; // El jugador obtiene un turno extra si la opción está activada
+                logMessage(`🔄 ¡Turno Extra para ${player.name}!`);
+            }
+
+            if (nextPlayer) {
+                state.activePlayerIdx = (state.activePlayerIdx + 1) % state.players.length;
+            }
+
+            updateTurnIndicator();
+
+            // Gatillar bot si es su turno
+            setTimeout(() => {
+                checkBotTurn();
+            }, 600);
+        }
+
+        // --- SISTEMA DE INTELIGENCIA ARTIFICIAL (BOT) ---
+
+        function checkBotTurn() {
+            if (state.gameOver) return;
+            const player = state.players[state.activePlayerIdx];
+
+            if (player.type === 'bot') {
+                state.isBotThinking = true;
+                
+                // Deshabilitar la entrada de jugador tapando temporalmente
+                renderHitLines();
+                renderPegs();
+
+                document.getElementById("turn-badge").innerText = `BOT PENSANDO...`;
+                document.getElementById("turn-badge").className = `px-4 py-1.5 rounded-full text-xs font-black tracking-wide bg-slate-900 text-slate-500 animate-pulse border border-slate-800`;
+
+                setTimeout(() => {
+                    makeBotDecision(player);
+                }, 900); // Retraso agradable de simulación humana
+            }
+        }
+
+        function makeBotDecision(botPlayer) {
+            // Filtrar todos los movimientos de línea válidos restantes
+            const availableLines = state.validLines.filter(line => {
+                const placed = state.placedBands.some(b => b.lineId === line.id);
+                return !placed;
+            });
+
+            if (availableLines.length === 0) {
+                state.isBotThinking = false;
+                endGame();
+                return;
+            }
+
+            let chosenLine = null;
+
+            if (botPlayer.difficulty === 'easy') {
+                // Fácil: Elección totalmente aleatoria
+                chosenLine = availableLines[Math.floor(Math.random() * availableLines.length)];
+            } 
+            else {
+                // Estratégico (Medio / Difícil): Evalúa el mejor puntaje de cierre
+                const scoredLines = availableLines.map(line => {
+                    let score = 0;
+                    
+                    // 1. Sumar puntos por cada triángulo que se cerraría con esta línea de goma
+                    let closedTriangles = 0;
+                    state.triangles.forEach(tri => {
+                        if (tri.claimedBy === null) {
+                            // Contar cuántas aristas están activas o se activarán con esta línea
+                            const activeCount = tri.edges.filter(edgeKey => {
+                                return state.edges[edgeKey] === true || line.edges.includes(edgeKey);
+                            }).length;
+
+                            if (activeCount === 3) {
+                                closedTriangles++;
+                            }
+                        }
+                    });
+                    score += (closedTriangles * 150);
+
+                    // 2. Penalizar movimientos que dejen triángulos a sólo 1 arista de ser completados (Regalar la jugada fácil al rival)
+                    let criticalTriangles = 0;
+                    state.triangles.forEach(tri => {
+                        if (tri.claimedBy === null) {
+                            const activeCountBefore = tri.edges.filter(edgeKey => state.edges[edgeKey] === true).length;
+                            const activeCountAfter = tri.edges.filter(edgeKey => {
+                                return state.edges[edgeKey] === true || line.edges.includes(edgeKey);
+                            }).length;
+
+                            // Si pasa de 1 a 2 lados activos, queda expuesto para el oponente en el siguiente turno
+                            if (activeCountBefore < 2 && activeCountAfter === 2) {
+                                criticalTriangles++;
+                            }
+                        }
+                    });
+                    score -= (criticalTriangles * 40);
+
+                    return { line, score };
+                });
+
+                // Ordenar para encontrar el mejor movimiento disponible
+                scoredLines.sort((a,b) => b.score - a.score);
+                chosenLine = scoredLines[0].line;
+            }
+
+            state.isBotThinking = false;
+            setInputMode(config.inputMode); // Restaurar interacciones normales
+
+            if (chosenLine) {
+                placeRubberBand(chosenLine);
+            }
+        }
+
+        // --- COMPROBAR ESTADO DE FIN DE PARTIDA ---
+
+        function checkGameOver() {
+            // Todas las gomas posibles colocadas
+            if (state.placedBands.length === state.validLines.length) return true;
+
+            // Todos los 54 triángulos conquistados
+            const allClaimed = state.triangles.every(t => t.claimedBy !== null);
+            return allClaimed;
+        }
+
+        function endGame() {
+            state.gameOver = true;
+            sound.playVictory();
+
+            // Calcular ganador por cantidad de fichas colocadas
+            let maxScore = -1;
+            let winners = [];
+
+            state.players.forEach(p => {
+                if (p.score > maxScore) {
+                    maxScore = p.score;
+                    winners = [p];
+                } else if (p.score === maxScore) {
+                    winners.push(p);
+                }
+            });
+
+            let msg = "";
+            if (winners.length === 1) {
+                msg = `🎉 ¡${winners[0].name} gana la partida con ${winners[0].score} territorios reclamados!`;
+            } else {
+                msg = `🤝 ¡Es un empate! ${winners.map(w => w.name).join(' y ')} dominaron el tablero con ${maxScore} puntos cada uno.`;
+            }
+
+            document.getElementById("victory-message").innerText = msg;
+            document.getElementById("victory-modal").classList.remove("hidden");
+            logMessage(`🏆 RESULTADO FINAL: ${msg}`);
+        }
+
+        window.resetGame = function() {
+            initGame();
+        };
+
+        // --- ACTUALIZACIÓN DE INTERFACES RECEPTIVAS ---
+
+        function updatePlayersPanel() {
+            const container = document.getElementById("players-list");
+            container.innerHTML = "";
+
+            const totalTriangles = state.triangles.length;
+
+            state.players.forEach((player, idx) => {
+                const isActive = idx === state.activePlayerIdx;
+                const percent = totalTriangles > 0 ? (player.score / totalTriangles) * 100 : 0;
+
+                const isBot = player.type === 'bot';
+                let diffText = "";
+                if (isBot) {
+                    diffText = player.difficulty === 'easy' ? 'FÁCIL' : (player.difficulty === 'medium' ? 'MEDIO' : 'DIFÍCIL');
+                }
+
+                const badgeText = isBot ? `BOT ${diffText}` : 'HUMANO';
+                const badgeClass = isBot
+                    ? `bg-pink-500/20 text-pink-400 border-pink-500/30`
+                    : `bg-emerald-500/20 text-emerald-400 border-emerald-500/30`;
+
+                const botBadge = `<span onclick="togglePlayerType(${idx})" class="cursor-pointer hover:bg-slate-800 transition text-[9px] font-black px-1.5 py-0.5 rounded border ${badgeClass} uppercase shadow-sm" title="Haz clic para cambiar tipo de jugador">${badgeText}</span>`;
+
+                const div = document.createElement("div");
+                div.className = `p-3.5 rounded-2xl border smooth-transition relative overflow-hidden ${
+                    isActive 
+                        ? 'bg-slate-900 border-indigo-500/50 shadow-lg' 
+                        : 'bg-slate-950/40 border-slate-900 opacity-70'
+                }`;
+
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full border-2 ${player.palette.tokenClass}"></span>
+                            <span class="font-extrabold text-xs ${isActive ? 'text-white' : 'text-slate-300'}">${player.name}</span>
+                        </div>
+                        ${botBadge}
+                    </div>
+
+                    <div class="flex justify-between items-baseline mt-2">
+                        <span class="text-[10px] text-slate-500">Fichas en Tablero</span>
+                        <span class="text-lg font-black text-slate-100">${player.score} <span class="text-xs font-normal text-slate-500">/ ${totalTriangles}</span></span>
+                    </div>
+
+                    <!-- Barra de progreso de dominación de territorio -->
+                    <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden mt-1 border border-slate-900">
+                        <div class="h-full bg-gradient-to-r ${player.palette.class} transition-all duration-500" style="width: ${percent}%"></div>
+                    </div>
+
+                    ${isActive ? `<div class="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b ${player.palette.class}"></div>` : ''}
+                `;
+
+                container.appendChild(div);
+            });
+        }
+
+        // --- SISTEMA PARA CAMBIAR JUGADORES MANUALMENTE ---
+        window.togglePlayerType = function(idx) {
+            if (state.isBotThinking) return; // Evitar romper el juego si el bot está calculando
+            
+            const player = state.players[idx];
+            const defaultHumanName = idx === 0 ? "Alejandro" : (idx === 1 ? "Anasofía" : `Jugador ${idx+1}`);
+
+            // Ciclo: Humano -> Bot Fácil -> Bot Medio -> Bot Difícil -> Humano
+            if (player.type === 'human') {
+                player.type = 'bot';
+                player.difficulty = 'easy';
+                player.name = `Bot ${player.palette.name}`;
+            } else if (player.type === 'bot' && player.difficulty === 'easy') {
+                player.difficulty = 'medium';
+            } else if (player.type === 'bot' && player.difficulty === 'medium') {
+                player.difficulty = 'hard';
+            } else {
+                player.type = 'human';
+                player.name = defaultHumanName;
+            }
+            
+            sound.playClick();
+            updatePlayersPanel();
+            
+            // Si cambiaste al jugador actual a Bot, forzar que juegue inmediatamente
+            if (idx === state.activePlayerIdx) {
+                checkBotTurn();
+            }
+        };
+
+        function updateTurnIndicator() {
+            if (state.gameOver) return;
+            const player = state.players[state.activePlayerIdx];
+            const badge = document.getElementById("turn-badge");
+
+            badge.innerText = `TURNO: ${player.name.toUpperCase()}`;
+            badge.style.color = player.palette.color;
+            badge.className = `px-4 py-1.5 rounded-full text-xs font-black tracking-wide bg-slate-950 border transition duration-300 flex items-center gap-2`;
+            badge.style.borderColor = `${player.palette.color}40`;
+            badge.style.boxShadow = `0 0 12px ${player.palette.color}15`;
+        }
+
+        function logMessage(text) {
+            const log = document.getElementById("game-log");
+            const entry = document.createElement("div");
+            entry.className = "py-0.5 border-b border-slate-900/40 text-[11px] leading-relaxed";
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            entry.innerHTML = `<span class="text-slate-600 font-sans">[${time}]</span> ${text}`;
+            
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+    </script>
+</body>
+</html>
