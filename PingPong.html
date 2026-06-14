@@ -280,16 +280,7 @@
 
 <script>
 /* ═══════════════════════════════════════════════
-   PING PONG ARCADE — Mobile-first
-   Features:
-   • 3 difficulty levels (easy / medium / hard)
-   • Touch/drag paddle control with spin physics
-   • Power-ups: Turbo, BigBall, Shield, SlowMo
-   • Combo system & score multiplier
-   • Haptic feedback on hit
-   • Dynamic ball trail
-   • AI with realistic imperfection
-   • Pause on tap-outside-paddle
+   PING PONG ARCADE — Mobile-first & Frame-Independent
 ═══════════════════════════════════════════════ */
 
 const canvas  = document.getElementById('gameCanvas');
@@ -412,13 +403,16 @@ function startGame(diff) {
   document.getElementById('levelBadge').style.color  = cfg.color;
   hide('menuOverlay'); hide('gameOverOverlay'); hide('pauseOverlay');
   state = 'playing';
+  
+  // CORRECCIÓN: Resetear el tiempo para evitar saltos locos al iniciar
+  lastTime = null; 
+  
   initObjects();
   requestAnimationFrame(loop);
 }
 
 function goMenu() {
   state = 'menu';
-  // remove active power-up timers
   Object.values(activePowerUps).forEach(p => clearTimeout(p._timeout));
   activePowerUps = {};
   show('menuOverlay'); hide('pauseOverlay'); hide('gameOverOverlay');
@@ -433,6 +427,10 @@ function pauseGame() {
 function resumeGame() {
   if(state !== 'paused') return;
   state = 'playing';
+  
+  // CORRECCIÓN: Resetear el tiempo para evitar que se acelere tras la pausa
+  lastTime = null;
+  
   hide('pauseOverlay');
   requestAnimationFrame(loop);
 }
@@ -478,7 +476,6 @@ function spawnPowerUp() {
 
 function activatePowerUp(pu) {
   const t = pu.type;
-  // remove existing same type
   if(activePowerUps[t.id]) {
     clearTimeout(activePowerUps[t.id]._timeout);
     t.remove();
@@ -528,6 +525,7 @@ function updateAI(dt) {
     + (Math.random()-0.5) * (1 - cfg.aiReact) * aiPaddle.h * 1.5;
 
   const diff = target - aiPaddle.y;
+  // La IA ya era Frame-Independent porque usaba el 'dt' aquí.
   const move = Math.sign(diff) * Math.min(Math.abs(diff), cfg.aiSpeed * dt * 0.06);
   aiPaddle.y += move;
   aiPaddle.y  = Math.max(0, Math.min(canvas.height - aiPaddle.h, aiPaddle.y));
@@ -539,7 +537,8 @@ let puTimer  = 0;
 
 function loop(ts) {
   if(state !== 'playing') return;
-  const dt = lastTime ? Math.min(ts - lastTime, 50) : 16;
+  // Asumimos ~16.66ms para 60 FPS si es el primer frame
+  const dt = lastTime ? Math.min(ts - lastTime, 50) : 16.666; 
   lastTime = ts;
 
   puTimer += dt;
@@ -554,17 +553,23 @@ function loop(ts) {
 function update(dt) {
   const W = canvas.width, H = canvas.height;
   const slowFactor = (ball.slowmo ? 0.45 : 1);
-  const speed = ball.speed * slowFactor;
+  
+  // ── CORRECCIÓN PRINCIPAL PARA PANTALLAS DE 120Hz ──
+  // Transformamos el delta de tiempo real en un multiplicador.
+  // A 60 FPS el dt es ~16.66, lo que hace el timeScale ~1.0
+  // A 120 FPS (cuando tocas tu S24 FE), el dt es ~8.33, lo que hace el timeScale ~0.5
+  // Esto mantiene la velocidad exacta de la bola sin importar la tasa de refresco.
+  const timeScale = dt / 16.666;
 
-  // Move ball
-  ball.x += ball.vx * slowFactor;
-  ball.y += ball.vy * slowFactor + ball.spin * 0.4 * slowFactor;
+  // Movemos la bola multiplicando por el timeScale
+  ball.x += ball.vx * slowFactor * timeScale;
+  ball.y += (ball.vy * slowFactor + ball.spin * 0.4 * slowFactor) * timeScale;
 
-  // Trail
+  // Controlamos la estela (Trail)
   trail.push({ x: ball.x, y: ball.y, r: ball.radius, ts: performance.now() });
   if(trail.length > 18) trail.shift();
 
-  // Wall bounce (top/bottom)
+  // Rebote en pared (arriba/abajo)
   if(ball.y - ball.radius < 0) {
     ball.y = ball.radius;
     ball.vy = Math.abs(ball.vy);
@@ -576,7 +581,7 @@ function update(dt) {
     spawnParticles(ball.x, H-ball.radius, '#fff', 5);
   }
 
-  // Paddle collision – player
+  // Colisión Paleta – Jugador
   if(
     ball.vx < 0 &&
     ball.x - ball.radius < playerPaddle.x + playerPaddle.w &&
@@ -587,7 +592,7 @@ function update(dt) {
     hitPaddle(playerPaddle, true);
   }
 
-  // Paddle collision – AI
+  // Colisión Paleta – CPU
   if(
     ball.vx > 0 &&
     ball.x + ball.radius > aiPaddle.x &&
@@ -598,10 +603,10 @@ function update(dt) {
     hitPaddle(aiPaddle, false);
   }
 
-  // Power-up collision
+  // Colisión Power-ups
   for(let i = powerUps.length-1; i>=0; i--) {
     const pu = powerUps[i];
-    pu.angle += 0.05;
+    pu.angle += 0.05 * timeScale; // Ajustado por timeScale
     if(performance.now() - pu.born > pu.life) { powerUps.splice(i,1); continue; }
     const dx = ball.x - pu.x, dy = ball.y - pu.y;
     if(Math.hypot(dx,dy) < pu.r + ball.radius) {
@@ -610,7 +615,7 @@ function update(dt) {
     }
   }
 
-  // Score
+  // Puntuación
   if(ball.x < -ball.radius*2) {
     if(playerPaddle.shielded) { launchBall(false); return; }
     aiScore++;
@@ -629,16 +634,21 @@ function update(dt) {
     setTimeout(() => launchBall(true), 600);
   }
 
-  // Particles update
+  // Actualización de Partículas (Frame-independent)
   for(let i = particles.length-1; i>=0; i--) {
     const p = particles[i];
-    p.x += p.vx; p.y += p.vy;
-    p.vy += 0.15;
-    p.alpha -= 0.035;
+    p.x += p.vx * timeScale; 
+    p.y += p.vy * timeScale;
+    p.vy += 0.15 * timeScale; // Gravedad
+    p.alpha -= 0.035 * timeScale;
     if(p.alpha <= 0) particles.splice(i,1);
   }
 
-  // AI
+  // Desvanecer el brillo de impacto gradualmente
+  playerPaddle.glowT = Math.max(0, playerPaddle.glowT - 0.05 * timeScale);
+  aiPaddle.glowT = Math.max(0, aiPaddle.glowT - 0.05 * timeScale);
+
+  // CPU IA
   updateAI(dt);
 }
 
@@ -653,7 +663,7 @@ function hitPaddle(paddle, isPlayer) {
   ball.vx = isPlayer ?  Math.cos(angle) * s : -Math.cos(angle) * s;
   ball.vy = Math.sin(angle) * s;
 
-  // Spin from paddle velocity (touch-only)
+  // Efecto en la bola según la velocidad táctil (Spin)
   if(isPlayer && touchVelY !== null) {
     ball.spin = touchVelY * 0.25;
   }
@@ -673,10 +683,9 @@ function draw(ts) {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  // Background grid
   drawGrid(W, H);
 
-  // Net
+  // Red
   ctx.setLineDash([10, 14]);
   ctx.strokeStyle = 'rgba(255,255,255,0.12)';
   ctx.lineWidth = 2;
@@ -685,7 +694,7 @@ function draw(ts) {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Trail
+  // Estela de movimiento
   for(let i=0; i<trail.length; i++) {
     const t = trail[i];
     const alpha = (i/trail.length) * 0.5;
@@ -695,7 +704,7 @@ function draw(ts) {
     ctx.fill();
   }
 
-  // Power-ups (spinning hexagons)
+  // Power-ups
   for(const pu of powerUps) {
     const age = (performance.now() - pu.born) / pu.life;
     const alpha = age > 0.8 ? 1-(age-0.8)/0.2 : 1;
@@ -707,7 +716,7 @@ function draw(ts) {
     ctx.fillText(puIcon(pu.type.id), pu.x, pu.y);
   }
 
-  // Particles
+  // Partículas
   for(const p of particles) {
     ctx.globalAlpha = p.alpha;
     ctx.beginPath();
@@ -717,11 +726,11 @@ function draw(ts) {
   }
   ctx.globalAlpha = 1;
 
-  // Paddles
+  // Paletas
   drawPaddle(playerPaddle, '#00e5ff', ts);
   drawPaddle(aiPaddle,     '#ff4081', ts);
 
-  // Ball
+  // Bola
   drawBall(ts);
 }
 
@@ -739,12 +748,10 @@ function drawGrid(W, H) {
 
 function drawPaddle(p, color, ts) {
   const glowSize = p.glowT > 0 ? p.glowT * 20 : 4;
-  p.glowT = Math.max(0, p.glowT - 0.05);
 
   ctx.shadowColor = color;
   ctx.shadowBlur  = glowSize;
 
-  // Shield aura
   if(p.shielded) {
     ctx.strokeStyle = '#00e5ff';
     ctx.lineWidth = 3;
@@ -788,7 +795,7 @@ function drawHexagon(x, y, r, angle, color, alpha) {
   for(let i=0; i<6; i++) {
     const a = angle + i*Math.PI/3;
     i===0 ? ctx.moveTo(x+r*Math.cos(a), y+r*Math.sin(a))
-           : ctx.lineTo(x+r*Math.cos(a), y+r*Math.sin(a));
+          : ctx.lineTo(x+r*Math.cos(a), y+r*Math.sin(a));
   }
   ctx.closePath();
   ctx.strokeStyle = color;
@@ -811,7 +818,7 @@ canvas.addEventListener('touchstart', e => {
   lastTouchY = t.clientY;
   touchVelY  = 0;
 
-  // single tap on right half = pause
+  // Pausa con un toque a la derecha
   if(state === 'playing' && t.clientX > canvas.width*0.5) {
     pauseTapTimer = setTimeout(() => { if(state==='playing') pauseGame(); }, 300);
   }
@@ -867,7 +874,6 @@ if(!CanvasRenderingContext2D.prototype.roundRect) {
   };
 }
 
-// Initial draw (background only while on menu)
 (function menuIdle() {
   if(state !== 'menu' && state !== 'gameover') return;
   const W = canvas.width, H = canvas.height;
