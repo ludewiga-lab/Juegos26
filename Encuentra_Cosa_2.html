@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Juego de Reacción Emoji</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Previene la selección de texto al tocar */
+            -webkit-user-select: none;
+            touch-action: none; /* Previene zoom y scroll en el juego */
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+        }
+
+        /* PANTALLA DE INICIO */
+        #menu-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #1e1e1e 0%, #0d0d0d 100%);
+        }
+
+        #menu-screen h1 {
+            font-size: 2.5rem;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        #menu-screen p {
+            font-size: 1.1rem;
+            color: #b0b0b0;
+            margin-bottom: 40px;
+            max-width: 400px;
+        }
+
+        .menu-section {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .menu-section label {
+            display: block;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .speed-options {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            flex: 1;
+            font-weight: bold;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
+        }
+
+        .btn-outline.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .play-btn {
+            background: #2196F3;
+            width: 100%;
+            font-size: 1.3rem;
+            padding: 20px;
+            margin-top: 10px;
+            border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(33, 150, 243, 0.4);
+        }
+
+        /* PANTALLA DE JUEGO */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+
+        .player-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        /* P2 invertido para que juegue de frente a P1 */
+        #area-p2 {
+            transform: rotate(180deg);
+            border-bottom: 2px solid #333;
+            background-color: #1a1a2e;
+        }
+
+        #area-p1 {
+            border-top: 2px solid #333;
+            background-color: #16213e;
+        }
+
+        /* En modo 1 Jugador ocultamos a P2 */
+        #game-screen.mode-1 #area-p2 {
+            display: none;
+        }
+        #game-screen.mode-1 #area-p1 {
+            border-top: none;
+            justify-content: flex-end;
+            padding-bottom: 20vh; /* Espacio para que juegue cómodo abajo */
+        }
+
+        .score-board {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: rgba(255,255,255,0.7);
+            background: rgba(0,0,0,0.4);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .options-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .emoji-btn {
+            background: #333;
+            border: 3px solid #555;
+            font-size: 3.5rem;
+            width: 90px;
+            height: 90px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 0 #111;
+            transition: all 0.1s;
+        }
+
+        .emoji-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #111;
+        }
+
+        .emoji-btn.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #111;
+        }
+
+        /* ÁREA CENTRAL */
+        #center-target {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: #e94560;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4.5rem;
+            z-index: 10;
+            box-shadow: 0 0 25px rgba(233, 69, 96, 0.8), inset 0 0 15px rgba(0,0,0,0.3);
+            border: 4px solid #fff;
+            transition: transform 0.1s;
+        }
+
+        /* Cuando está oculto el objetivo entre rondas */
+        #center-target.hidden {
+            transform: translate(-50%, -50%) scale(0);
+        }
+
+        /* Botón salir en medio izquierda */
+        #btn-exit {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+            z-index: 20;
+            cursor: pointer;
+        }
+
+        /* FEEDBACK VISUAL */
+        .area-win { background-color: #2e7d32 !important; }
+        .area-fail { background-color: #c62828 !important; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Menú de Inicio -->
+    <div id="menu-screen">
+        <h1>¡Reacción Emoji!</h1>
+        <p>Hola Alejandro, un juego rápido para entrenar los reflejos. ¡Ideal para 1 o 2 jugadores!</p>
+        
+        <div class="menu-section">
+            <label>Velocidad del Objetivo</label>
+            <div class="speed-options">
+                <button class="btn btn-outline" onclick="selectSpeed(1500, this)">Lento</button>
+                <button class="btn btn-outline active" onclick="selectSpeed(1000, this)">Normal</button>
+                <button class="btn btn-outline" onclick="selectSpeed(700, this)">Rápido</button>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <label>Modo de Juego</label>
+            <div class="speed-options">
+                <button class="btn btn-outline active" onclick="selectMode(1, this)">1 Jugador</button>
+                <button class="btn btn-outline" onclick="selectMode(2, this)">2 Jugadores</button>
+            </div>
+        </div>
+
+        <button class="btn play-btn" onclick="startGame()">¡JUGAR AHORA!</button>
+    </div>
+
+    <!-- Pantalla de Juego -->
+    <div id="game-screen">
+        <button id="btn-exit" onclick="exitGame()">✖</button>
+        
+        <!-- Jugador 2 (Arriba, invertido) -->
+        <div id="area-p2" class="player-area">
+            <div class="score-board">P2: <span id="score-p2">0</span></div>
+            <div class="options-container" id="options-p2">
+                <!-- Botones generados por JS -->
+            </div>
+        </div>
+
+        <!-- Objetivo Central -->
+        <div id="center-target" class="hidden">❓</div>
+
+        <!-- Jugador 1 (Abajo) -->
+        <div id="area-p1" class="player-area">
+            <div class="score-board">P1: <span id="score-p1">0</span></div>
+            <div class="options-container" id="options-p1">
+                <!-- Botones generados por JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gran pool de emojis (> 150 opciones)
+        const emojiPool = [
+            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦅',
+            '🦉','🦇','🐺','🐗','🐴','🐝','🐛','🦋','🐌','🐞','🐜','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞',
+            '🦀','🐡','🐠','🐟','🐬','🐳','🦈','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪','🦒','🦘','🐃','🐎',
+            '🐖','🐏','🐑','🐐','🦌','🐕','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🐇','🦝','🦨','🦡','🦦','🦥','🐁',
+            '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥒',
+            '🌶️','🌽','🥕','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🥓','🥩','🍗',
+            '🌭','🍔','🍟','🍕','🥪','🌮','🌯','🥗','🥘','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🍤','🍙','🍚','🍘',
+            '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🎱','🏓','🏸','🏒','🥊','🥋','🛹','⛸️','🎿','🎯','🎳','🎮',
+            '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚜','🛵','🚲','🛴','🚁','✈️','🚀','🛸'
+        ];
+
+        // Variables de Configuración
+        let currentSpeed = 1000; // milisegundos
+        let currentMode = 1;     // 1 o 2 jugadores
+        
+        // Estado del Juego
+        let scoreP1 = 0;
+        let scoreP2 = 0;
+        let targetEmoji = '';
+        let isRoundActive = false;
+        let p1Locked = false;
+        let p2Locked = false;
+        
+        // Control de Tiempos para evitar la aceleración de pantalla
+        let roundTimeout = null;
+        let nextRoundTimeout = null;
+
+        // Referencias del DOM
+        const menuScreen = document.getElementById('menu-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const areaP1 = document.getElementById('area-p1');
+        const areaP2 = document.getElementById('area-p2');
+        const centerTarget = document.getElementById('center-target');
+
+        // Configuración en Menú
+        function selectSpeed(speed, btnElement) {
+            currentSpeed = speed;
+            const buttons = btnElement.parentElement.querySelectorAll('.btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        function selectMode(mode, btnElement) {
+            currentMode = mode;
+            const buttons = btnElement.parentElement.querySelectorAll('.btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        // Iniciar Juego
+        function startGame() {
+            scoreP1 = 0;
+            scoreP2 = 0;
+            updateScores();
+
+            menuScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            
+            // Configurar clase según modo
+            if(currentMode === 1) {
+                gameScreen.classList.add('mode-1');
+            } else {
+                gameScreen.classList.remove('mode-1');
+            }
+
+            // Iniciar la primera ronda después de un breve momento
+            setTimeout(generateRound, 800);
+        }
+
+        function exitGame() {
+            // Limpiar temporizadores
+            if(roundTimeout) clearTimeout(roundTimeout);
+            if(nextRoundTimeout) clearTimeout(nextRoundTimeout);
+            isRoundActive = false;
+
+            gameScreen.style.display = 'none';
+            menuScreen.style.display = 'flex';
+        }
+
+        // Generar una nueva ronda
+        function generateRound() {
+            // Limpiar estados anteriores estrictamente
+            if(roundTimeout) clearTimeout(roundTimeout);
+            if(nextRoundTimeout) clearTimeout(nextRoundTimeout);
+            
+            p1Locked = false;
+            p2Locked = false;
+            isRoundActive = true;
+
+            // Limpiar colores de feedback
+            areaP1.classList.remove('area-win', 'area-fail');
+            areaP2.classList.remove('area-win', 'area-fail');
+
+            // 1. Elegir 1 objetivo y 2 incorrectos
+            targetEmoji = getRandomEmoji();
+            let wrong1 = getRandomEmoji([targetEmoji]);
+            let wrong2 = getRandomEmoji([targetEmoji, wrong1]);
+
+            // 2. Mezclar opciones para cada jugador
+            let optionsP1 = shuffleArray([targetEmoji, wrong1, wrong2]);
+            let optionsP2 = shuffleArray([targetEmoji, wrong1, wrong2]); // Pueden estar en diferente orden
+
+            // 3. Renderizar botones
+            renderOptions('p1', optionsP1);
+            if(currentMode === 2) {
+                renderOptions('p2', optionsP2);
+            }
+
+            // 4. Mostrar el objetivo central
+            centerTarget.innerText = targetEmoji;
+            centerTarget.classList.remove('hidden');
+
+            // 5. Iniciar el temporizador estricto de la ronda
+            roundTimeout = setTimeout(() => {
+                if(isRoundActive) {
+                    endRoundTimeOut();
+                }
+            }, currentSpeed);
+        }
+
+        // Manejar toque en un botón
+        function handleTap(player, selectedEmoji, btnElement) {
+            // Evitar toques si la ronda terminó o el jugador ya se equivocó
+            if(!isRoundActive) return;
+            if(player === 'p1' && p1Locked) return;
+            if(player === 'p2' && p2Locked) return;
+
+            if(selectedEmoji === targetEmoji) {
+                // ¡Acierto! El jugador gana la ronda.
+                isRoundActive = false; // Bloquea a todos inmediatamente
+                if(roundTimeout) clearTimeout(roundTimeout);
+
+                if(player === 'p1') {
+                    scoreP1++;
+                    areaP1.classList.add('area-win');
+                } else {
+                    scoreP2++;
+                    areaP2.classList.add('area-win');
+                }
+                
+                updateScores();
+                centerTarget.classList.add('hidden'); // Ocultar centro
+                
+                // Programar siguiente ronda sin acelerar
+                nextRoundTimeout = setTimeout(generateRound, 800);
+
+            } else {
+                // ¡Error! El jugador pierde su oportunidad esta ronda
+                btnElement.classList.add('disabled');
+                
+                if(player === 'p1') {
+                    p1Locked = true;
+                    areaP1.classList.add('area-fail');
+                } else {
+                    p2Locked = true;
+                    areaP2.classList.add('area-fail');
+                }
+
+                // Si ambos están bloqueados (o si P1 se bloquea en modo 1 jugador), termina la ronda
+                if (currentMode === 1 || (p1Locked && p2Locked)) {
+                    isRoundActive = false;
+                    if(roundTimeout) clearTimeout(roundTimeout);
+                    centerTarget.classList.add('hidden');
+                    
+                    nextRoundTimeout = setTimeout(generateRound, 600);
+                }
+            }
+        }
+
+        // Cuando se acaba el tiempo sin que nadie acierte
+        function endRoundTimeOut() {
+            isRoundActive = false;
+            centerTarget.classList.add('hidden'); // Se oculta
+            
+            // Ligero feedback de fallo para ambos
+            if(!p1Locked) areaP1.classList.add('area-fail');
+            if(currentMode === 2 && !p2Locked) areaP2.classList.add('area-fail');
+
+            nextRoundTimeout = setTimeout(generateRound, 600);
+        }
+
+        // Funciones de Ayuda
+        function renderOptions(player, emojisArr) {
+            const container = document.getElementById(`options-${player}`);
+            container.innerHTML = ''; // Limpiar anteriores
+            
+            emojisArr.forEach(emoji => {
+                const btn = document.createElement('div');
+                btn.className = 'emoji-btn';
+                btn.innerText = emoji;
+                // Usamos onpointerdown para reacción instántanea en móviles
+                btn.onpointerdown = () => handleTap(player, emoji, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function updateScores() {
+            document.getElementById('score-p1').innerText = scoreP1;
+            document.getElementById('score-p2').innerText = scoreP2;
+        }
+
+        function getRandomEmoji(excludeArray = []) {
+            let emoji;
+            do {
+                emoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
+            } while(excludeArray.includes(emoji));
+            return emoji;
+        }
+
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId);
+                curId -= 1;
+                let tmp = array[curId];
+                array[curId] = array[randId];
+                array[randId] = tmp;
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>
